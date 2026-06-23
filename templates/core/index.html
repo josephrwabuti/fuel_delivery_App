@@ -1,0 +1,559 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FuelGo – Smart Fuel Delivery Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/landing.css' %}"/>
+</head>
+<body>
+
+<!-- ===================== NAVBAR ===================== -->
+<nav class="navbar navbar-expand-lg fixed-top" id="mainNav">
+  <div class="container">
+    <a class="navbar-brand" href="#">
+      <span class="brand-icon"><i class="fas fa-gas-pump"></i></span>
+      <span class="brand-text">Fuel<span class="brand-accent">Go</span></span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="toggler-icon"><i class="fas fa-bars"></i></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav mx-auto">
+        <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+        <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
+        <li class="nav-item"><a class="nav-link" href="#roles">Who It's For</a></li>
+        <li class="nav-item"><a class="nav-link" href="#stats">Impact</a></li>
+        <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+      </ul>
+      <div class="nav-auth-buttons d-flex gap-2 align-items-center flex-wrap">
+        <!--<a href="{% url 'customer_login' %}" class="btn btn-auth btn-customer">-->
+          <i class="fas fa-user me-1"></i> Customer
+        </a>
+        <a href="{% url 'provider_login' %}" class="btn btn-auth btn-provider">
+          <i class="fas fa-gas-pump me-1"></i> Station Owner
+        </a>
+        <a href="{% url 'admin_login' %}" class="btn btn-auth btn-admin">
+          <i class="fas fa-shield-halved me-1"></i> Admin
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ===================== HERO ===================== -->
+<section class="hero-section" id="home">
+  <div class="hero-overlay"></div>
+  <div class="hero-bg-image"></div>
+  <div class="container hero-content">
+    <div class="row align-items-center min-vh-100 py-5">
+      <div class="col-lg-7 col-12 pt-5">
+        <div class="hero-eyebrow">
+          <span class="eyebrow-dot"></span>
+          AI-Powered Fuel Delivery
+        </div>
+        <h1 class="hero-title">
+          Fuel Delivered<br/>
+          <span class="hero-accent">On Demand.</span><br/>
+          <span class="hero-sub-title">Smarter Every Time.</span>
+        </h1>
+        <p class="hero-desc">
+          FuelGo connects customers with nearby petrol stations for seamless on-demand fuel delivery — powered by AI demand prediction to keep supply ahead of need.
+        </p>
+        <div class="hero-actions d-flex flex-wrap gap-3 mt-4">
+          <a href="{% url 'customer_register' %}" class="btn btn-hero-primary">
+            <i class="fas fa-bolt me-2"></i>Order Fuel Now
+          </a>
+          <a href="#how-it-works" class="btn btn-hero-outline">
+            <i class="fas fa-play-circle me-2"></i>See How It Works
+          </a>
+        </div>
+        <div class="hero-badges d-flex flex-wrap gap-3 mt-5">
+          <div class="hero-badge"><i class="fas fa-shield-check"></i> Secure & Verified</div>
+          <div class="hero-badge"><i class="fas fa-bolt"></i> Fast Delivery</div>
+          <div class="hero-badge"><i class="fas fa-brain"></i> AI Predictions</div>
+          <div class="hero-badge"><i class="fas fa-map-location-dot"></i> Real-time Tracking</div>
+        </div>
+      </div>
+      <div class="col-lg-5 col-12 d-none d-lg-flex justify-content-center">
+        <div class="hero-card-float">
+          <div class="float-card">
+            <div class="float-card-header">
+              <span class="fc-dot active"></span> Live Order
+            </div>
+            <div class="float-card-body">
+              <div class="fc-row"><i class="fas fa-location-dot text-orange"></i><span>Kinondoni, Dar es Salaam</span></div>
+              <div class="fc-row"><i class="fas fa-gas-pump text-orange"></i><span>Petrol · 20 Litres</span></div>
+              <div class="fc-row"><i class="fas fa-truck text-orange"></i><span>Driver en route · 4 min away</span></div>
+              <div class="fc-progress">
+                <div class="fc-progress-bar" style="width:72%"></div>
+              </div>
+              <small class="text-muted">Order #FG-2047 · Delivering...</small>
+            </div>
+          </div>
+          <div class="float-prediction-card">
+            <div class="fp-label"><i class="fas fa-brain text-orange"></i> AI Demand Forecast</div>
+            <div class="fp-bars">
+              <div class="fp-bar-group"><div class="fp-bar" style="height:40%"></div><span>Mon</span></div>
+              <div class="fp-bar-group"><div class="fp-bar" style="height:65%"></div><span>Tue</span></div>
+              <div class="fp-bar-group"><div class="fp-bar" style="height:50%"></div><span>Wed</span></div>
+              <div class="fp-bar-group"><div class="fp-bar high" style="height:90%"></div><span>Thu</span></div>
+              <div class="fp-bar-group"><div class="fp-bar high" style="height:100%"></div><span>Fri</span></div>
+              <div class="fp-bar-group"><div class="fp-bar" style="height:75%"></div><span>Sat</span></div>
+              <div class="fp-bar-group"><div class="fp-bar" style="height:45%"></div><span>Sun</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-scroll-hint">
+    <a href="#features"><i class="fas fa-chevron-down"></i></a>
+  </div>
+</section>
+
+<!-- ===================== STATS STRIP ===================== -->
+<section class="stats-strip" id="stats">
+  <div class="container">
+    <div class="row g-0 stats-row">
+      <div class="col-6 col-md-3 stat-item">
+        <div class="stat-num" data-count="1200">0</div>
+        <div class="stat-label">Orders Delivered</div>
+      </div>
+      <div class="col-6 col-md-3 stat-item">
+        <div class="stat-num" data-count="48">0</div>
+        <div class="stat-label">Partner Stations</div>
+      </div>
+      <div class="col-6 col-md-3 stat-item">
+        <div class="stat-num" data-count="97">0</div>
+        <div class="stat-label">% On-Time Rate</div>
+      </div>
+      <div class="col-6 col-md-3 stat-item border-end-0">
+        <div class="stat-num" data-count="5">0</div>
+        <div class="stat-label">Avg. Delivery (min)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FEATURES ===================== -->
+<section class="features-section section-pad" id="features">
+  <div class="container">
+    <div class="section-header text-center mb-5">
+      <div class="section-eyebrow">Platform Features</div>
+      <h2 class="section-title">Everything You Need,<br/><span class="text-orange">All in One Place</span></h2>
+      <p class="section-desc">From placing an order to tracking delivery in real-time — FuelGo handles every step.</p>
+    </div>
+    <div class="row g-4">
+      <!-- Row 1: 3 cards -->
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="feature-card">
+          <div class="feat-icon-wrap orange">
+            <i class="fas fa-location-crosshairs"></i>
+          </div>
+          <h5>Find Nearby Stations</h5>
+          <p>Customers discover verified fuel stations closest to their location with live availability and pricing.</p>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="feature-card">
+          <div class="feat-icon-wrap blue">
+            <i class="fas fa-truck-fast"></i>
+          </div>
+          <h5>Real-Time Delivery Tracking</h5>
+          <p>Track your driver's live location from dispatch to doorstep. Know exactly when your fuel arrives.</p>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="feature-card">
+          <div class="feat-icon-wrap purple">
+            <i class="fas fa-brain"></i>
+          </div>
+          <h5>AI Demand Prediction</h5>
+          <p>Machine learning models forecast fuel demand by region and time, helping stations stay stocked.</p>
+        </div>
+      </div>
+      <!-- Row 2: 3 cards -->
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="feature-card">
+          <div class="feat-icon-wrap orange">
+            <i class="fas fa-boxes-stacked"></i>
+          </div>
+          <h5>Stock & Price Management</h5>
+          <p>Station owners update fuel stock levels and prices in real-time, keeping customers informed.</p>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="feature-card">
+          <div class="feat-icon-wrap blue">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <h5>Driver Management</h5>
+          <p>Assign verified drivers to orders instantly. Drivers get route details and update status on the go.</p>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="feature-card">
+          <div class="feat-icon-wrap purple">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <h5>Analytics & Reports</h5>
+          <p>System-wide dashboards for administrators, and per-station reports for fuel service providers.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== HOW IT WORKS ===================== -->
+<section class="how-section section-pad" id="how-it-works">
+  <div class="container">
+    <div class="section-header text-center mb-5">
+      <div class="section-eyebrow">The Workflow</div>
+      <h2 class="section-title">From Order to Tank,<br/><span class="text-orange">In Minutes</span></h2>
+    </div>
+    <div class="row g-4 justify-content-center">
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="step-card">
+          <div class="step-num">01</div>
+          <div class="step-icon"><i class="fas fa-mobile-screen-button"></i></div>
+          <h5>Customer Places Order</h5>
+          <p>Choose your fuel type, quantity, and delivery location. Pick a nearby verified station.</p>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="step-card">
+          <div class="step-num">02</div>
+          <div class="step-icon"><i class="fas fa-gas-pump"></i></div>
+          <h5>Station Receives & Assigns</h5>
+          <p>The fuel service provider accepts the order and assigns an available driver for delivery.</p>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="step-card">
+          <div class="step-num">03</div>
+          <div class="step-icon"><i class="fas fa-truck"></i></div>
+          <h5>Driver Delivers Fuel</h5>
+          <p>The driver picks up the fuel and delivers it to your location while you track in real-time.</p>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="step-card">
+          <div class="step-num">04</div>
+          <div class="step-icon"><i class="fas fa-circle-check"></i></div>
+          <h5>Customer Confirms</h5>
+          <p>You confirm receipt of delivery. Payment is processed and order is marked complete.</p>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="step-card">
+          <div class="step-num">05</div>
+          <div class="step-icon"><i class="fas fa-database"></i></div>
+          <h5>Data Powers Prediction</h5>
+          <p>Each completed order feeds the AI model, improving demand forecasts for all partners.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ROLES / WHO IT'S FOR ===================== -->
+<section class="roles-section section-pad" id="roles">
+  <div class="container">
+    <div class="section-header text-center mb-5">
+      <div class="section-eyebrow">Four Roles, One Platform</div>
+      <h2 class="section-title">Built for Everyone<br/><span class="text-orange">in the Fuel Chain</span></h2>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="role-card role-customer">
+          <div class="role-icon"><i class="fas fa-user"></i></div>
+          <h5>Customer</h5>
+          <ul>
+            <li>Register &amp; log in</li>
+            <li>View nearby stations</li>
+            <li>Place fuel orders</li>
+            <li>Track deliveries live</li>
+            <li>View order history</li>
+          </ul>
+          <a href="{% url 'customer_register' %}" class="btn btn-role btn-role-customer">Get Started</a>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="role-card role-provider">
+          <div class="role-icon"><i class="fas fa-gas-pump"></i></div>
+          <h5>Station Owner</h5>
+          <ul>
+            <li>Register your station</li>
+            <li>Manage stock &amp; prices</li>
+            <li>Accept/reject orders</li>
+            <li>Assign drivers</li>
+            <li>View demand reports</li>
+          </ul>
+          <a href="{% url 'provider_login' %}" class="btn btn-role btn-role-provider">Partner With Us</a>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="role-card role-driver">
+          <div class="role-icon"><i class="fas fa-id-badge"></i></div>
+          <h5>Driver</h5>
+          <ul>
+            <li>Log in securely</li>
+            <li>View assigned orders</li>
+            <li>Update delivery status</li>
+            <li>View delivery history</li>
+          </ul>
+          <a href="{% url 'driver_login' %}" class="btn btn-role btn-role-driver">Driver Login</a>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 col-12">
+        <div class="role-card role-admin">
+          <div class="role-icon"><i class="fas fa-shield-halved"></i></div>
+          <h5>Administrator</h5>
+          <ul>
+            <li>Approve fuel stations</li>
+            <li>Manage users &amp; drivers</li>
+            <li>Monitor system activity</li>
+            <li>System-wide reports</li>
+          </ul>
+          <a href="{% url 'admin_login' %}" class="btn btn-role btn-role-admin">Admin Portal</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== AI PREDICTION HIGHLIGHT ===================== -->
+<section class="ai-section section-pad">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6 col-12">
+        <div class="ai-visual">
+          <div class="ai-chart-mock">
+            <div class="acm-header">
+              <span class="acm-title"><i class="fas fa-brain text-orange me-2"></i>Weekly Demand Forecast</span>
+              <span class="acm-badge">LIVE</span>
+            </div>
+            <div class="acm-bars">
+              <div class="acm-col"><div class="acm-bar" style="height:45%"><span>Mon</span></div></div>
+              <div class="acm-col"><div class="acm-bar" style="height:60%"><span>Tue</span></div></div>
+              <div class="acm-col"><div class="acm-bar" style="height:55%"><span>Wed</span></div></div>
+              <div class="acm-col"><div class="acm-bar high" style="height:88%"><span>Thu</span></div></div>
+              <div class="acm-col"><div class="acm-bar high" style="height:100%"><span>Fri</span></div></div>
+              <div class="acm-col"><div class="acm-bar" style="height:72%"><span>Sat</span></div></div>
+              <div class="acm-col"><div class="acm-bar" style="height:40%"><span>Sun</span></div></div>
+            </div>
+            <div class="acm-footer">
+              <span class="acm-stat"><i class="fas fa-arrow-trend-up text-orange"></i> High demand predicted Friday</span>
+              <span class="acm-stat"><i class="fas fa-check text-success"></i> Stock alert sent</span>
+            </div>
+          </div>
+          <div class="ai-insight-chips">
+            <div class="ai-chip"><i class="fas fa-fire text-orange"></i> Peak Zone: Kariakoo</div>
+            <div class="ai-chip"><i class="fas fa-clock text-blue"></i> Rush: 6–9 PM</div>
+            <div class="ai-chip"><i class="fas fa-bottle-droplet text-purple"></i> Diesel demand +18%</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6 col-12">
+        <div class="section-eyebrow">AI Intelligence</div>
+        <h2 class="section-title">Demand Prediction<br/><span class="text-orange">Before You Need It</span></h2>
+        <p class="section-desc mt-3">
+          FuelGo's built-in machine learning engine analyzes historical orders, time patterns, and location data to forecast fuel demand — helping stations stock up before demand spikes.
+        </p>
+        <div class="ai-benefits mt-4">
+          <div class="ai-benefit-item">
+            <div class="ai-benefit-icon"><i class="fas fa-chart-bar"></i></div>
+            <div>
+              <strong>Reduce Stockouts</strong>
+              <p>Stations get alerts before they run low, cutting disruptions for customers.</p>
+            </div>
+          </div>
+          <div class="ai-benefit-item">
+            <div class="ai-benefit-icon"><i class="fas fa-route"></i></div>
+            <div>
+              <strong>Optimize Delivery Routes</strong>
+              <p>Drivers are routed efficiently during predicted high-demand periods.</p>
+            </div>
+          </div>
+          <div class="ai-benefit-item">
+            <div class="ai-benefit-icon"><i class="fas fa-coins"></i></div>
+            <div>
+              <strong>Lower Operational Costs</strong>
+              <p>Better planning means less waste, fewer emergency restocks, and smoother operations.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TRUST / SECURITY ===================== -->
+<section class="trust-section section-pad" id="trust">
+  <div class="container">
+    <div class="section-header text-center mb-5">
+      <div class="section-eyebrow">Why Trust FuelGo</div>
+      <h2 class="section-title">Built Secure.<br/><span class="text-orange">Built to Scale.</span></h2>
+    </div>
+    <div class="row g-4 justify-content-center">
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="trust-card">
+          <i class="fas fa-lock trust-icon"></i>
+          <h6>Data Security</h6>
+          <p>All user data is encrypted. Role-based access ensures each user only sees what they need.</p>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="trust-card">
+          <i class="fas fa-server trust-icon"></i>
+          <h6>Scalable Infrastructure</h6>
+          <p>Designed to support hundreds of fuel stations and thousands of concurrent users without degradation.</p>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="trust-card">
+          <i class="fas fa-gauge-high trust-icon"></i>
+          <h6>Fast Response Times</h6>
+          <p>Optimized backend ensures quick order processing, live updates, and snappy user experience.</p>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="trust-card">
+          <i class="fas fa-database trust-icon"></i>
+          <h6>Data Accuracy</h6>
+          <p>Verified station data, accurate pricing, and consistent order records you can rely on.</p>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="trust-card">
+          <i class="fas fa-mobile trust-icon"></i>
+          <h6>Easy to Use</h6>
+          <p>Intuitive interface for all roles — no training needed. Works on desktop and mobile browsers.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CTA SECTION ===================== -->
+<section class="cta-section">
+  <div class="cta-overlay"></div>
+  <div class="container cta-content text-center">
+    <div class="section-eyebrow">Ready to Start?</div>
+    <h2 class="cta-title">Join FuelGo Today</h2>
+    <p class="cta-desc">Whether you're a customer, station owner, or driver — FuelGo has a place for you.</p>
+    <div class="cta-actions d-flex flex-wrap justify-content-center gap-3 mt-4">
+      <a href="{% url 'customer_register' %}" class="btn btn-cta-primary"><i class="fas fa-user-plus me-2"></i>Register as Customer</a>
+      <a href="{% url 'provider_login' %}" class="btn btn-cta-outline"><i class="fas fa-gas-pump me-2"></i>Register Your Station</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CONTACT ===================== -->
+<section class="contact-section section-pad" id="contact">
+  <div class="container">
+    <div class="row g-5 align-items-start">
+      <div class="col-lg-5 col-12">
+        <div class="section-eyebrow">Get In Touch</div>
+        <h2 class="section-title">Have Questions?<br/><span class="text-orange">We're Here.</span></h2>
+        <p class="section-desc mt-3">Reach out to learn more about FuelGo, partnering your station, or getting support.</p>
+        <div class="contact-info mt-4">
+          <div class="ci-item"><i class="fas fa-envelope text-orange"></i><span>support@fuelgo.co.tz</span></div>
+          <div class="ci-item"><i class="fas fa-phone text-orange"></i><span>+255 700 000 000</span></div>
+          <div class="ci-item"><i class="fas fa-location-dot text-orange"></i><span>Dar es Salaam, Tanzania</span></div>
+        </div>
+      </div>
+      <div class="col-lg-7 col-12">
+        <div class="contact-form-wrap">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <input type="text" class="form-control fg-input" placeholder="Your Name"/>
+            </div>
+            <div class="col-md-6">
+              <input type="email" class="form-control fg-input" placeholder="Email Address"/>
+            </div>
+            <div class="col-12">
+              <select class="form-select fg-input">
+                <option value="">I am a...</option>
+                <option>Customer</option>
+                <option>Fuel Station Owner</option>
+                <option>Driver</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <textarea class="form-control fg-input" rows="4" placeholder="Your message..."></textarea>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-hero-primary w-100"><i class="fas fa-paper-plane me-2"></i>Send Message</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="row g-4 footer-top">
+      <div class="col-lg-4 col-md-6 col-12">
+        <div class="footer-brand">
+          <i class="fas fa-gas-pump me-2 text-orange"></i>
+          <span class="brand-text-footer">Fuel<span class="text-orange">Go</span></span>
+        </div>
+        <p class="footer-tagline mt-3">Smart fuel delivery platform powered by AI demand prediction. Connecting stations, drivers, and customers in one seamless ecosystem.</p>
+        <div class="footer-socials mt-3">
+          <a href="#"><i class="fab fa-twitter"></i></a>
+          <a href="#"><i class="fab fa-linkedin"></i></a>
+          <a href="#"><i class="fab fa-facebook"></i></a>
+        </div>
+      </div>
+      <div class="col-lg-2 col-md-6 col-6">
+        <h6 class="footer-heading">Platform</h6>
+        <ul class="footer-links">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#how-it-works">How It Works</a></li>
+          <li><a href="#roles">Roles</a></li>
+          <li><a href="#stats">Impact</a></li>
+        </ul>
+      </div>
+      <div class="col-lg-2 col-md-6 col-6">
+        <h6 class="footer-heading">Access</h6>
+        <ul class="footer-links">
+          <li><a href="{% url 'customer_register' %}">Customer Sign Up</a></li>
+          <li><a href="{% url 'customer_login' %}">Customer Login</a></li>
+          <li><a href="{% url 'provider_login' %}">Station Owner</a></li>
+          <li><a href="{% url 'driver_login' %}">Driver Login</a></li>
+          <li><a href="{% url 'admin_login' %}">Admin Portal</a></li>
+        </ul>
+      </div>
+      <div class="col-lg-4 col-md-6 col-12">
+        <h6 class="footer-heading">Quick Access Portals</h6>
+        <div class="footer-portals">
+          <a href="{% url 'customer_login' %}" class="fp-btn customer"><i class="fas fa-user"></i> Customer</a>
+          <a href="{% url 'provider_login' %}" class="fp-btn provider"><i class="fas fa-gas-pump"></i> Station Owner</a>
+          <a href="{% url 'driver_login' %}" class="fp-btn driver"><i class="fas fa-id-badge"></i> Driver</a>
+          <a href="{% url 'admin_login' %}" class="fp-btn admin"><i class="fas fa-shield-halved"></i> Admin</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2025 FuelGo. All rights reserved.</span>
+      <span>Smart Fuel Delivery · Tanzania</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/landing.js' %}"></script>
+</body>
+</html>
