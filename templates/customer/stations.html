@@ -1,0 +1,308 @@
+{% extends 'customer/base.html' %}
+{% load static %}
+
+{% block title %}FuelGo – Find Stations{% endblock %}
+{% block page_title %}Find a Fuel Station{% endblock %}
+{% block nav_stations %}active{% endblock %}
+
+{% block content %}
+
+<!-- ===== SEARCH & FILTER BAR ===== -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <i class="fas fa-magnifying-glass sb-icon"></i>
+    <input type="text" class="search-input" id="stationSearch" placeholder="Search stations by name or area…"/>
+    <button class="search-clear" id="searchClear" style="display:none"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="filter-chips">
+    <button class="fchip active" data-filter="all">All</button>
+    <button class="fchip" data-filter="open">Open Now</button>
+    <button class="fchip" data-filter="petrol">Petrol</button>
+    <button class="fchip" data-filter="diesel">Diesel</button>
+    <button class="fchip" data-filter="nearest">Nearest</button>
+  </div>
+  <div class="view-toggle">
+    <button class="vt-btn active" id="gridView" title="Grid view"><i class="fas fa-grip"></i></button>
+    <button class="vt-btn" id="listView" title="List view"><i class="fas fa-list"></i></button>
+  </div>
+</div>
+
+<!-- ===== RESULTS META ===== -->
+<div class="results-meta">
+  <span id="resultsCount"><i class="fas fa-location-dot text-orange"></i> Showing <strong>{{ stations|length|default:'6' }}</strong> stations near you</span>
+  <span class="results-sort">
+    Sort by:
+    <select class="sort-select" id="stationSort">
+      <option value="distance">Nearest first</option>
+      <option value="rating">Highest rated</option>
+      <option value="price">Lowest price</option>
+    </select>
+  </span>
+</div>
+
+<!-- ===== STATIONS GRID ===== -->
+<div class="stations-grid" id="stationsGrid">
+
+  {% for station in stations %}
+  <div class="station-card" data-status="{{ station.is_open|yesno:'open,closed' }}" data-fuels="{{ station.fuel_types }}" data-distance="{{ station.distance }}" data-name="{{ station.name }}">
+    <div class="sc-top-bar">
+      <div class="sc-status-badge {% if station.is_open %}open{% else %}closed{% endif %}">
+        <span class="sdot"></span> {{ station.is_open|yesno:"Open,Closed" }}
+      </div>
+      <div class="sc-rating"><i class="fas fa-star"></i> {{ station.rating|default:'4.8' }} <span class="sc-reviews">({{ station.review_count|default:'124' }})</span></div>
+    </div>
+    <div class="sc-body-main">
+      <div class="sc-logo-circle">{{ station.name|slice:":1" }}</div>
+      <div class="sc-info">
+        <div class="sc-name">{{ station.name }}</div>
+        <div class="sc-addr"><i class="fas fa-location-dot"></i> {{ station.address }}</div>
+        <div class="sc-distance-eta">
+          <span><i class="fas fa-route"></i> {{ station.distance|default:'0.8' }} km away</span>
+          <span class="sep">·</span>
+          <span><i class="fas fa-clock"></i> ~{{ station.eta|default:'10' }} min delivery</span>
+        </div>
+      </div>
+    </div>
+    <div class="sc-divider"></div>
+    <div class="sc-fuels-row">
+      {% for fuel in station.fuels %}
+      <div class="sc-fuel-item">
+        <span class="sc-fuel-type">{{ fuel.type }}</span>
+        <span class="sc-fuel-price">TZS {{ fuel.price }}/L</span>
+        <span class="sc-fuel-stock {% if fuel.available %}in{% else %}out{% endif %}">
+          {{ fuel.available|yesno:"In Stock,Out" }}
+        </span>
+      </div>
+      {% empty %}
+      <div class="sc-fuel-item">
+        <span class="sc-fuel-type">Petrol</span>
+        <span class="sc-fuel-price">TZS 2,850/L</span>
+        <span class="sc-fuel-stock in">In Stock</span>
+      </div>
+      <div class="sc-fuel-item">
+        <span class="sc-fuel-type">Diesel</span>
+        <span class="sc-fuel-price">TZS 2,700/L</span>
+        <span class="sc-fuel-stock in">In Stock</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="sc-actions">
+      <a href="{% url 'customer_order' %}?station={{ station.id }}" class="btn-select-station">
+        <i class="fas fa-bolt"></i> Order from Here
+      </a>
+      <button class="btn-sc-detail" onclick="openStationModal({{ station.id }})">
+        <i class="fas fa-info-circle"></i>
+      </button>
+    </div>
+  </div>
+
+  {% empty %}
+
+  <!-- Demo station cards (shown when no DB data) -->
+  {% for i in "123456" %}
+  {% endfor %}
+
+  <!-- DEMO CARD 1 -->
+  <div class="station-card" data-status="open" data-fuels="petrol diesel" data-distance="0.8" data-name="total energies kariakoo">
+    <div class="sc-top-bar">
+      <div class="sc-status-badge open"><span class="sdot"></span> Open</div>
+      <div class="sc-rating"><i class="fas fa-star"></i> 4.9 <span class="sc-reviews">(238)</span></div>
+    </div>
+    <div class="sc-body-main">
+      <div class="sc-logo-circle">T</div>
+      <div class="sc-info">
+        <div class="sc-name">Total Energies – Kariakoo</div>
+        <div class="sc-addr"><i class="fas fa-location-dot"></i> Kariakoo St, Dar es Salaam</div>
+        <div class="sc-distance-eta">
+          <span><i class="fas fa-route"></i> 0.8 km away</span><span class="sep">·</span><span><i class="fas fa-clock"></i> ~8 min delivery</span>
+        </div>
+      </div>
+    </div>
+    <div class="sc-divider"></div>
+    <div class="sc-fuels-row">
+      <div class="sc-fuel-item"><span class="sc-fuel-type">Petrol</span><span class="sc-fuel-price">TZS 2,850/L</span><span class="sc-fuel-stock in">In Stock</span></div>
+      <div class="sc-fuel-item"><span class="sc-fuel-type">Diesel</span><span class="sc-fuel-price">TZS 2,700/L</span><span class="sc-fuel-stock in">In Stock</span></div>
+    </div>
+    <div class="sc-actions">
+      <a href="{% url 'customer_order' %}?station=1" class="btn-select-station"><i class="fas fa-bolt"></i> Order from Here</a>
+      <button class="btn-sc-detail" onclick="openStationModal(1)"><i class="fas fa-info-circle"></i></button>
+    </div>
+  </div>
+
+  <!-- DEMO CARD 2 -->
+  <div class="station-card" data-status="open" data-fuels="petrol diesel" data-distance="1.4" data-name="puma energy msimbazi">
+    <div class="sc-top-bar">
+      <div class="sc-status-badge open"><span class="sdot"></span> Open</div>
+      <div class="sc-rating"><i class="fas fa-star"></i> 4.7 <span class="sc-reviews">(184)</span></div>
+    </div>
+    <div class="sc-body-main">
+      <div class="sc-logo-circle">P</div>
+      <div class="sc-info">
+        <div class="sc-name">Puma Energy – Msimbazi</div>
+        <div class="sc-addr"><i class="fas fa-location-dot"></i> Msimbazi Centre, Dar es Salaam</div>
+        <div class="sc-distance-eta">
+          <span><i class="fas fa-route"></i> 1.4 km away</span><span class="sep">·</span><span><i class="fas fa-clock"></i> ~14 min delivery</span>
+        </div>
+      </div>
+    </div>
+    <div class="sc-divider"></div>
+    <div class="sc-fuels-row">
+      <div class="sc-fuel-item"><span class="sc-fuel-type">Petrol</span><span class="sc-fuel-price">TZS 2,830/L</span><span class="sc-fuel-stock in">In Stock</span></div>
+      <div class="sc-fuel-item"><span class="sc-fuel-type">Diesel</span><span class="sc-fuel-price">TZS 2,680/L</span><span class="sc-fuel-stock in">In Stock</span></div>
+    </div>
+    <div class="sc-actions">
+      <a href="{% url 'customer_order' %}?station=2" class="btn-select-station"><i class="fas fa-bolt"></i> Order from Here</a>
+      <button class="btn-sc-detail" onclick="openStationModal(2)"><i class="fas fa-info-circle"></i></button>
+    </div>
+  </div>
+
+  <!-- DEMO CARD 3 -->
+  <div class="station-card" data-status="open" data-fuels="petrol" data-distance="2.1" data-name="oryx petrol kinondoni">
+    <div class="sc-top-bar">
+      <div class="sc-status-badge open"><span class="sdot"></span> Open</div>
+      <div class="sc-rating"><i class="fas fa-star"></i> 4.6 <span class="sc-reviews">(97)</span></div>
+    </div>
+    <div class="sc-body-main">
+      <div class="sc-logo-circle">O</div>
+      <div class="sc-info">
+        <div class="sc-name">Oryx Petrol – Kinondoni</div>
+        <div class="sc-addr"><i class="fas fa-location-dot"></i> Kinondoni Rd, Dar es Salaam</div>
+        <div class="sc-distance-eta">
+          <span><i class="fas fa-route"></i> 2.1 km away</span><span class="sep">·</span><span><i class="fas fa-clock"></i> ~18 min delivery</span>
+        </div>
+      </div>
+    </div>
+    <div class="sc-divider"></div>
+    <div class="sc-fuels-row">
+      <div class="sc-fuel-item"><span class="sc-fuel-type">Petrol</span><span class="sc-fuel-price">TZS 2,860/L</span><span class="sc-fuel-stock in">In Stock</span></div>
+      <div class="sc-fuel-item"><span class="sc-fuel-type">Diesel</span><span class="sc-fuel-price">TZS 2,720/L</span><span class="sc-fuel-stock out">Out of Stock</span></div>
+    </div>
+    <div class="sc-actions">
+      <a href="{% url 'customer_order' %}?station=3" class="btn-select-station"><i class="fas fa-bolt"></i> Order from Here</a>
+      <button class="btn-sc-detail" onclick="openStationModal(3)"><i class="fas fa-info-circle"></i></button>
+    </div>
+  </div>
+
+  <!-- DEMO CARD 4 -->
+  <div class="station-card" data-status="open" data-fuels="petrol diesel" data-distance="2.8" data-name="engen petrol ilala">
+    <div class="sc-top-bar">
+      <div class="sc-status-badge open"><span class="sdot"></span> Open</div>
+      <div class="sc-rating"><i class="fas fa-star"></i> 4.5 <span class="sc-reviews">(63)</span></div>
+    </div>
+    <div class="sc-body-main">
+      <div class="sc-logo-circle">E</div>
+      <div class="sc-info">
+        <div class="sc-name">Engen – Ilala</div>
+        <div class="sc-addr"><i class="fas fa-location-dot"></i> Lumumba St, Ilala, Dar es Salaam</div>
+        <div class="sc-distance-eta">
+          <span><i class="fas fa-route"></i> 2.8 km away</span><span class="sep">·</span><span><i class="fas fa-clock"></i> ~22 min delivery</span>
+        </div>
+      </div>
+    </div>
+    <div class="sc-divider"></div>
+    <div class="sc-fuels-row">
+      <div class="sc-fuel-item"><span class="sc-fuel-type">Petrol</span><span class="sc-fuel-price">TZS 2,840/L</span><span class="sc-fuel-stock in">In Stock</span></div>
+      <div class="sc-fuel-item"><span class="sc-fuel-type">Diesel</span><span class="sc-fuel-price">TZS 2,690/L</span><span class="sc-fuel-stock in">In Stock</span></div>
+    </div>
+    <div class="sc-actions">
+      <a href="{% url 'customer_order' %}?station=4" class="btn-select-station"><i class="fas fa-bolt"></i> Order from Here</a>
+      <button class="btn-sc-detail" onclick="openStationModal(4)"><i class="fas fa-info-circle"></i></button>
+    </div>
+  </div>
+
+  <!-- DEMO CARD 5 -->
+  <div class="station-card" data-status="closed" data-fuels="petrol diesel" data-distance="3.2" data-name="shell temeke">
+    <div class="sc-top-bar">
+      <div class="sc-status-badge closed"><span class="sdot"></span> Closed</div>
+      <div class="sc-rating"><i class="fas fa-star"></i> 4.8 <span class="sc-reviews">(201)</span></div>
+    </div>
+    <div class="sc-body-main">
+      <div class="sc-logo-circle">S</div>
+      <div class="sc-info">
+        <div class="sc-name">Shell – Temeke</div>
+        <div class="sc-addr"><i class="fas fa-location-dot"></i> Chang'ombe Rd, Temeke</div>
+        <div class="sc-distance-eta">
+          <span><i class="fas fa-route"></i> 3.2 km away</span><span class="sep">·</span><span><i class="fas fa-clock"></i> ~28 min delivery</span>
+        </div>
+      </div>
+    </div>
+    <div class="sc-divider"></div>
+    <div class="sc-fuels-row">
+      <div class="sc-fuel-item"><span class="sc-fuel-type">Petrol</span><span class="sc-fuel-price">TZS 2,870/L</span><span class="sc-fuel-stock in">In Stock</span></div>
+      <div class="sc-fuel-item"><span class="sc-fuel-type">Diesel</span><span class="sc-fuel-price">TZS 2,710/L</span><span class="sc-fuel-stock in">In Stock</span></div>
+    </div>
+    <div class="sc-actions">
+      <a href="#" class="btn-select-station disabled"><i class="fas fa-moon"></i> Currently Closed</a>
+      <button class="btn-sc-detail" onclick="openStationModal(5)"><i class="fas fa-info-circle"></i></button>
+    </div>
+  </div>
+
+  <!-- DEMO CARD 6 -->
+  <div class="station-card" data-status="open" data-fuels="diesel" data-distance="3.9" data-name="gapco diesel ubungo">
+    <div class="sc-top-bar">
+      <div class="sc-status-badge open"><span class="sdot"></span> Open</div>
+      <div class="sc-rating"><i class="fas fa-star"></i> 4.4 <span class="sc-reviews">(52)</span></div>
+    </div>
+    <div class="sc-body-main">
+      <div class="sc-logo-circle">G</div>
+      <div class="sc-info">
+        <div class="sc-name">GAPCO – Ubungo</div>
+        <div class="sc-addr"><i class="fas fa-location-dot"></i> Morogoro Rd, Ubungo</div>
+        <div class="sc-distance-eta">
+          <span><i class="fas fa-route"></i> 3.9 km away</span><span class="sep">·</span><span><i class="fas fa-clock"></i> ~32 min delivery</span>
+        </div>
+      </div>
+    </div>
+    <div class="sc-divider"></div>
+    <div class="sc-fuels-row">
+      <div class="sc-fuel-item"><span class="sc-fuel-type">Diesel</span><span class="sc-fuel-price">TZS 2,660/L</span><span class="sc-fuel-stock in">In Stock</span></div>
+    </div>
+    <div class="sc-actions">
+      <a href="{% url 'customer_order' %}?station=6" class="btn-select-station"><i class="fas fa-bolt"></i> Order from Here</a>
+      <button class="btn-sc-detail" onclick="openStationModal(6)"><i class="fas fa-info-circle"></i></button>
+    </div>
+  </div>
+
+  {% endfor %}
+</div><!-- /stations-grid -->
+
+<!-- ===== STATION DETAIL MODAL ===== -->
+<div class="modal-overlay" id="stationModal" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeStationModal()"><i class="fas fa-times"></i></button>
+    <div class="modal-header">
+      <div class="modal-logo-circle" id="modalInitial">T</div>
+      <div>
+        <div class="modal-name" id="modalName">Total Energies – Kariakoo</div>
+        <div class="modal-addr" id="modalAddr"><i class="fas fa-location-dot"></i> Kariakoo St, Dar es Salaam</div>
+        <div class="sc-status-badge open d-inline-flex mt-1" id="modalStatus"><span class="sdot"></span> Open</div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-sec-title">Fuel Prices & Availability</div>
+        <div class="modal-fuel-table" id="modalFuelTable">
+          <div class="mft-row header"><span>Type</span><span>Price/L</span><span>Stock</span></div>
+          <div class="mft-row"><span>Petrol (RON 91)</span><span>TZS 2,850</span><span class="sc-fuel-stock in">Available</span></div>
+          <div class="mft-row"><span>Diesel</span><span>TZS 2,700</span><span class="sc-fuel-stock in">Available</span></div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-sec-title">Station Info</div>
+        <div class="modal-info-grid">
+          <div class="mig-item"><i class="fas fa-clock text-orange"></i><div><strong>Operating Hours</strong><span>Mon–Sun: 6:00 AM – 10:00 PM</span></div></div>
+          <div class="mig-item"><i class="fas fa-phone text-orange"></i><div><strong>Phone</strong><span>+255 712 000 001</span></div></div>
+          <div class="mig-item"><i class="fas fa-star text-orange"></i><div><strong>Rating</strong><span>4.9 / 5 (238 reviews)</span></div></div>
+          <div class="mig-item"><i class="fas fa-truck-fast text-orange"></i><div><strong>Avg. Delivery</strong><span>~10 minutes</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <a href="{% url 'customer_order' %}?station=1" class="btn-submit-order" id="modalOrderBtn">
+        <i class="fas fa-bolt"></i> Order from This Station
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends 'customer/base.html' %}
+{% load static %}
+
+{% block title %}FuelGo – Order History{% endblock %}
+{% block page_title %}Order History{% endblock %}
+{% block nav_history %}active{% endblock %}
+
+{% block content %}
+
+<!-- ===== FILTER BAR ===== -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <i class="fas fa-magnifying-glass sb-icon"></i>
+    <input type="text" class="search-input" id="orderSearch" placeholder="Search by order ID or station…"/>
+  </div>
+  <div class="filter-chips">
+    <button class="fchip active" data-filter="all">All</button>
+    <button class="fchip" data-filter="delivered">Delivered</button>
+    <button class="fchip" data-filter="pending">Pending</button>
+    <button class="fchip" data-filter="cancelled">Cancelled</button>
+  </div>
+</div>
+
+<!-- ===== HISTORY TABLE ===== -->
+<div class="history-wrap">
+  <div class="history-table">
+    <div class="ht-header">
+      <span>Order ID</span><span>Station</span><span>Fuel</span><span>Qty</span><span>Total</span><span>Status</span><span>Date</span><span>Action</span>
+    </div>
+
+    {% for order in orders %}
+    <div class="ht-row" data-status="{{ order.status }}">
+      <span class="ht-id">#{{ order.id }}</span>
+      <span class="ht-station">{{ order.station.name }}</span>
+      <span>{{ order.fuel_type }}</span>
+      <span>{{ order.quantity }}L</span>
+      <span class="ht-price">TZS {{ order.total_amount }}</span>
+      <span><div class="status-chip {{ order.status }}">{{ order.get_status_display }}</div></span>
+      <span class="ht-date">{{ order.created_at|date:"d M Y" }}</span>
+      <span>
+        <button class="ht-action-btn" onclick="openOrderDetail({{ order.id }})">
+          <i class="fas fa-eye"></i>
+        </button>
+        {% if order.status == 'delivered' %}
+        <a href="{% url 'customer_order' %}?reorder={{ order.id }}" class="ht-action-btn" title="Reorder">
+          <i class="fas fa-rotate-right"></i>
+        </a>
+        {% endif %}
+      </span>
+    </div>
+    {% empty %}
+    <!-- Demo rows -->
+    <div class="ht-row" data-status="delivered">
+      <span class="ht-id">#FG-2041</span><span class="ht-station">Total Energies – Kariakoo</span><span>Petrol</span><span>20L</span>
+      <span class="ht-price">TZS 59,000</span><span><div class="status-chip delivered">Delivered</div></span>
+      <span class="ht-date">21 Jun 2026</span>
+      <span>
+        <button class="ht-action-btn" onclick="openOrderDetail('FG-2041')"><i class="fas fa-eye"></i></button>
+        <button class="ht-action-btn" title="Reorder"><i class="fas fa-rotate-right"></i></button>
+      </span>
+    </div>
+    <div class="ht-row" data-status="delivered">
+      <span class="ht-id">#FG-2038</span><span class="ht-station">Puma Energy – Msimbazi</span><span>Diesel</span><span>30L</span>
+      <span class="ht-price">TZS 83,000</span><span><div class="status-chip delivered">Delivered</div></span>
+      <span class="ht-date">18 Jun 2026</span>
+      <span>
+        <button class="ht-action-btn" onclick="openOrderDetail('FG-2038')"><i class="fas fa-eye"></i></button>
+        <button class="ht-action-btn" title="Reorder"><i class="fas fa-rotate-right"></i></button>
+      </span>
+    </div>
+    <div class="ht-row" data-status="delivered">
+      <span class="ht-id">#FG-2030</span><span class="ht-station">Oryx Petrol – Kinondoni</span><span>Petrol</span><span>15L</span>
+      <span class="ht-price">TZS 44,750</span><span><div class="status-chip delivered">Delivered</div></span>
+      <span class="ht-date">12 Jun 2026</span>
+      <span>
+        <button class="ht-action-btn" onclick="openOrderDetail('FG-2030')"><i class="fas fa-eye"></i></button>
+        <button class="ht-action-btn" title="Reorder"><i class="fas fa-rotate-right"></i></button>
+      </span>
+    </div>
+    <div class="ht-row" data-status="cancelled">
+      <span class="ht-id">#FG-2021</span><span class="ht-station">Total Energies – Kariakoo</span><span>Petrol</span><span>20L</span>
+      <span class="ht-price">—</span><span><div class="status-chip cancelled">Cancelled</div></span>
+      <span class="ht-date">5 Jun 2026</span>
+      <span><button class="ht-action-btn" onclick="openOrderDetail('FG-2021')"><i class="fas fa-eye"></i></button></span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ===== ORDER DETAIL MODAL ===== -->
+<div class="modal-overlay" id="orderDetailModal" style="display:none">
+  <div class="modal-box wide">
+    <button class="modal-close" onclick="closeOrderDetail()"><i class="fas fa-times"></i></button>
+    <div class="modal-header">
+      <div class="modal-logo-circle orange"><i class="fas fa-receipt"></i></div>
+      <div>
+        <div class="modal-name">Order #FG-2041</div>
+        <div class="modal-addr"><span class="status-chip delivered">Delivered</span></div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-sec-title">Order Details</div>
+        <div class="modal-info-grid">
+          <div class="mig-item"><i class="fas fa-gas-pump text-orange"></i><div><strong>Station</strong><span>Total Energies – Kariakoo</span></div></div>
+          <div class="mig-item"><i class="fas fa-fire-flame-curved text-orange"></i><div><strong>Fuel Type</strong><span>Petrol (RON 91)</span></div></div>
+          <div class="mig-item"><i class="fas fa-droplet text-blue"></i><div><strong>Quantity</strong><span>20 Litres</span></div></div>
+          <div class="mig-item"><i class="fas fa-location-dot text-orange"></i><div><strong>Delivered To</strong><span>Kariakoo Market, Block C</span></div></div>
+          <div class="mig-item"><i class="fas fa-id-badge text-blue"></i><div><strong>Driver</strong><span>John Mwalimu · ⭐ 4.9</span></div></div>
+          <div class="mig-item"><i class="fas fa-clock text-orange"></i><div><strong>Delivered At</strong><span>21 Jun 2026, 14:52</span></div></div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-sec-title">Payment</div>
+        <div class="mft-row"><span>Fuel cost (20L × TZS 2,850)</span><span>TZS 57,000</span></div>
+        <div class="mft-row"><span>Delivery fee</span><span>TZS 2,000</span></div>
+        <div class="mft-row total"><span><strong>Total Paid</strong></span><span><strong>TZS 59,000</strong></span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-submit-order secondary" onclick="closeOrderDetail()">Close</button>
+      <button class="btn-submit-order" onclick="closeOrderDetail()">
+        <i class="fas fa-rotate-right"></i> Reorder
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openOrderDetail(id) {
+  document.getElementById('orderDetailModal').style.display = 'flex';
+}
+function closeOrderDetail() {
+  document.getElementById('orderDetailModal').style.display = 'none';
+}
+
+/* Filter chips */
+document.querySelectorAll('.fchip').forEach(chip => {
+  chip.addEventListener('click', function () {
+    document.querySelectorAll('.fchip').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+    const filter = this.dataset.filter;
+    document.querySelectorAll('.ht-row').forEach(row => {
+      row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
+    });
+  });
+});
+
+/* Search */
+document.getElementById('orderSearch').addEventListener('input', function () {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.ht-row').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}

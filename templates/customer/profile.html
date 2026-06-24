@@ -1,0 +1,229 @@
+{% extends 'customer/base.html' %}
+{% load static %}
+
+{% block title %}FuelGo – My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block nav_profile %}active{% endblock %}
+
+{% block content %}
+
+<div class="profile-layout">
+
+  <!-- ===== LEFT: PROFILE CARD ===== -->
+  <div class="profile-left">
+    <div class="profile-avatar-card">
+      <div class="pav-circle">
+        <i class="fas fa-user"></i>
+      </div>
+      <div class="pav-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+      <div class="pav-role"><i class="fas fa-circle text-green"></i> Customer Account</div>
+      <div class="pav-meta">
+        <span><i class="fas fa-calendar-check text-orange"></i> Member since {{ request.user.date_joined|date:"M Y"|default:"Jun 2026" }}</span>
+      </div>
+      <div class="pav-stats">
+        <div class="pav-stat"><div class="pvs-num">{{ total_orders|default:'12' }}</div><div class="pvs-label">Orders</div></div>
+        <div class="pav-stat-div"></div>
+        <div class="pav-stat"><div class="pvs-num">{{ delivered_orders|default:'11' }}</div><div class="pvs-label">Delivered</div></div>
+        <div class="pav-stat-div"></div>
+        <div class="pav-stat"><div class="pvs-num">{{ total_litres|default:'240' }}L</div><div class="pvs-label">Total Fuel</div></div>
+      </div>
+    </div>
+
+    <!-- Quick links -->
+    <div class="profile-quick-links">
+      <a href="{% url 'customer_history' %}" class="pql-item">
+        <i class="fas fa-clock-rotate-left text-orange"></i>
+        <span>Order History</span>
+        <i class="fas fa-chevron-right pql-arrow"></i>
+      </a>
+      <a href="{% url 'customer_notifications' %}" class="pql-item">
+        <i class="fas fa-bell text-blue"></i>
+        <span>Notifications</span>
+        <i class="fas fa-chevron-right pql-arrow"></i>
+      </a>
+      <a href="{% url 'logout' %}" class="pql-item logout">
+        <i class="fas fa-right-from-bracket"></i>
+        <span>Sign Out</span>
+        <i class="fas fa-chevron-right pql-arrow"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- ===== RIGHT: FORMS ===== -->
+  <div class="profile-right">
+
+    <!-- Personal Info -->
+    <div class="profile-section-card">
+      <div class="psc-header">
+        <div class="psc-title"><i class="fas fa-user-pen text-orange"></i> Personal Information</div>
+      </div>
+      <form method="POST" action="{% url 'customer_update_profile' %}" id="profileForm">
+        {% csrf_token %}
+        <div class="pf-grid">
+          <div class="fg-group">
+            <label class="fg-label">First Name</label>
+            <input type="text" name="first_name" class="fg-input-order" value="{{ request.user.first_name }}" required/>
+          </div>
+          <div class="fg-group">
+            <label class="fg-label">Last Name</label>
+            <input type="text" name="last_name" class="fg-input-order" value="{{ request.user.last_name }}" required/>
+          </div>
+          <div class="fg-group">
+            <label class="fg-label">Email Address</label>
+            <input type="email" name="email" class="fg-input-order" value="{{ request.user.email }}" required/>
+          </div>
+          <div class="fg-group">
+            <label class="fg-label">Phone Number</label>
+            <input type="tel" name="phone" class="fg-input-order" value="{{ request.user.profile.phone|default:'' }}" placeholder="+255 7XX XXX XXX"/>
+          </div>
+          <div class="fg-group full-width">
+            <label class="fg-label">Default Delivery Address</label>
+            <input type="text" name="default_address" class="fg-input-order" value="{{ request.user.profile.default_address|default:'' }}" placeholder="Your most-used delivery location"/>
+          </div>
+        </div>
+        <div class="pf-actions">
+          <button type="submit" class="btn-save-profile" id="saveProfileBtn">
+            <i class="fas fa-save"></i> Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Change Password -->
+    <div class="profile-section-card">
+      <div class="psc-header">
+        <div class="psc-title"><i class="fas fa-lock text-orange"></i> Change Password</div>
+      </div>
+      <form method="POST" action="{% url 'customer_change_password' %}" id="changePasswordForm">
+        {% csrf_token %}
+        <div class="pf-grid">
+          <div class="fg-group full-width">
+            <label class="fg-label">Current Password</label>
+            <div class="input-pw-wrap">
+              <input type="password" name="old_password" id="oldPassword" class="fg-input-order" placeholder="Enter current password" required/>
+              <button type="button" class="pw-eye-btn" onclick="toggleVisibility('oldPassword','oldPwEye')"><i class="fas fa-eye" id="oldPwEye"></i></button>
+            </div>
+          </div>
+          <div class="fg-group">
+            <label class="fg-label">New Password</label>
+            <div class="input-pw-wrap">
+              <input type="password" name="new_password1" id="newPassword" class="fg-input-order" placeholder="New password" required/>
+              <button type="button" class="pw-eye-btn" onclick="toggleVisibility('newPassword','newPwEye')"><i class="fas fa-eye" id="newPwEye"></i></button>
+            </div>
+            <div class="pw-strength-bar"><div class="strength-fill" id="pwStrengthFill"></div></div>
+            <div class="strength-label-sm" id="pwStrengthLabel"></div>
+          </div>
+          <div class="fg-group">
+            <label class="fg-label">Confirm New Password</label>
+            <div class="input-pw-wrap">
+              <input type="password" name="new_password2" id="confirmNewPassword" class="fg-input-order" placeholder="Confirm new password" required/>
+              <button type="button" class="pw-eye-btn" onclick="toggleVisibility('confirmNewPassword','cnPwEye')"><i class="fas fa-eye" id="cnPwEye"></i></button>
+            </div>
+            <div class="pw-match-msg" id="pwMatchMsg" style="display:none">Passwords do not match</div>
+          </div>
+        </div>
+        <div class="pf-actions">
+          <button type="submit" class="btn-save-profile">
+            <i class="fas fa-key"></i> Update Password
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Notification Preferences -->
+    <div class="profile-section-card">
+      <div class="psc-header">
+        <div class="psc-title"><i class="fas fa-bell text-orange"></i> Notification Preferences</div>
+      </div>
+      <form method="POST" action="{% url 'customer_update_profile' %}">
+        {% csrf_token %}
+        <div class="notif-prefs">
+          <div class="np-item">
+            <div class="np-info">
+              <strong>Order Status Updates</strong>
+              <span>Get notified when your order status changes</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="notif_order_status" checked/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="np-item">
+            <div class="np-info">
+              <strong>Driver Assigned</strong>
+              <span>Alert when a driver is assigned to your order</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="notif_driver_assigned" checked/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="np-item">
+            <div class="np-info">
+              <strong>Delivery Confirmation</strong>
+              <span>Notify me when fuel is delivered</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="notif_delivery" checked/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="np-item">
+            <div class="np-info">
+              <strong>Price Alerts</strong>
+              <span>Get updates on fuel price changes near you</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="notif_price_alerts"/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="np-item">
+            <div class="np-info">
+              <strong>Promotions & Offers</strong>
+              <span>Special deals from partner stations</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="notif_promo"/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="pf-actions">
+          <button type="submit" class="btn-save-profile">
+            <i class="fas fa-save"></i> Save Preferences
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="profile-section-card danger-zone">
+      <div class="psc-header">
+        <div class="psc-title"><i class="fas fa-triangle-exclamation text-red"></i> Danger Zone</div>
+      </div>
+      <div class="dz-content">
+        <div class="dz-info">
+          <strong>Delete Account</strong>
+          <span>Permanently delete your FuelGo account and all associated data. This cannot be undone.</span>
+        </div>
+        <button type="button" class="btn-danger" onclick="confirmDelete()">
+          <i class="fas fa-trash-can"></i> Delete Account
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete() {
+  if (confirm('Are you sure you want to permanently delete your account? This cannot be undone.')) {
+    window.location.href = '{% url "customer_delete_account" %}';
+  }
+}
+</script>
+{% endblock %}

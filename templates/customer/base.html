@@ -1,0 +1,117 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}FuelGo – Customer{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/customer.css' %}"/>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ========== SIDEBAR ========== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <span class="brand-icon"><i class="fas fa-gas-pump"></i></span>
+      <span class="brand-text">Fuel<span class="brand-accent">Go</span></span>
+    </div>
+    <button class="sidebar-close" id="sidebarClose"><i class="fas fa-times"></i></button>
+  </div>
+
+  <!-- User card -->
+  <div class="sidebar-user">
+    <div class="user-avatar">
+      <i class="fas fa-user"></i>
+    </div>
+    <div class="user-info">
+      <span class="user-name">{{ request.user.get_full_name|default:request.user.username }}</span>
+      <span class="user-role"><i class="fas fa-circle text-green"></i> Customer</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main Menu</div>
+    <a href="{% url 'customer_home' %}"      class="nav-item {% block nav_home %}{% endblock %}">
+      <i class="fas fa-house"></i><span>Home</span>
+    </a>
+    <a href="{% url 'customer_stations' %}"  class="nav-item {% block nav_stations %}{% endblock %}">
+      <i class="fas fa-gas-pump"></i><span>Find Stations</span>
+    </a>
+    <a href="{% url 'customer_order' %}"     class="nav-item {% block nav_order %}{% endblock %}">
+      <i class="fas fa-bolt"></i><span>Place Order</span>
+    </a>
+    <a href="{% url 'customer_tracking' %}"  class="nav-item {% block nav_tracking %}{% endblock %}">
+      <i class="fas fa-map-location-dot"></i><span>Track Delivery</span>
+      {% if active_order %}<span class="nav-badge pulse">Live</span>{% endif %}
+    </a>
+
+    <div class="nav-section-label">Account</div>
+    <a href="{% url 'customer_history' %}"   class="nav-item {% block nav_history %}{% endblock %}">
+      <i class="fas fa-clock-rotate-left"></i><span>Order History</span>
+    </a>
+    <a href="{% url 'customer_profile' %}"   class="nav-item {% block nav_profile %}{% endblock %}">
+      <i class="fas fa-user-circle"></i><span>My Profile</span>
+    </a>
+    <a href="{% url 'customer_notifications' %}" class="nav-item {% block nav_notif %}{% endblock %}">
+      <i class="fas fa-bell"></i><span>Notifications</span>
+      <span class="nav-badge">3</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="{% url 'logout' %}" class="logout-btn">
+      <i class="fas fa-right-from-bracket"></i> Sign Out
+    </a>
+    <div class="sidebar-version">FuelGo v1.0</div>
+  </div>
+</aside>
+
+<!-- ========== OVERLAY ========== -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ========== MAIN CONTENT ========== -->
+<div class="main-wrap" id="mainWrap">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <button class="topbar-toggle" id="sidebarToggle">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+    <div class="topbar-right">
+      <!-- Active order pill -->
+      {% if active_order %}
+      <a href="{% url 'customer_tracking' %}" class="active-order-pill">
+        <span class="aop-dot"></span>
+        Order #{{ active_order.id }} · Delivering
+      </a>
+      {% endif %}
+      <!-- Notifications -->
+      <button class="topbar-icon-btn" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="icon-badge">3</span>
+      </button>
+      <!-- Profile -->
+      <div class="topbar-avatar">
+        <i class="fas fa-user"></i>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page content injected here -->
+  <main class="page-content">
+    {% block content %}{% endblock %}
+  </main>
+
+</div><!-- /main-wrap -->
+
+<script src="{% static 'js/customer.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

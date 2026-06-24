@@ -127,3 +127,7 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
+LOGIN_URL = "/accounts/login/"
+LOGIN_REDIRECT_URL = "/customer/home/"
+LOGOUT_REDIRECT_URL = "/accounts/login/"
+
