@@ -1,0 +1,337 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FuelGo – Sign In / Sign Up</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/login_register.css' %}"/>
+</head>
+<body>
+
+<!-- ===================== BACKGROUND ===================== -->
+<div class="bg-scene">
+  <div class="bg-image"></div>
+  <div class="bg-overlay"></div>
+
+  <!-- Floating ambient particles -->
+  <div class="particles">
+    <span class="particle" style="--x:10%;--y:20%;--s:0.4;--d:3.2s"></span>
+    <span class="particle" style="--x:80%;--y:15%;--s:0.6;--d:4.1s"></span>
+    <span class="particle" style="--x:25%;--y:70%;--s:0.3;--d:2.8s"></span>
+    <span class="particle" style="--x:65%;--y:60%;--s:0.5;--d:5.0s"></span>
+    <span class="particle" style="--x:45%;--y:85%;--s:0.35;--d:3.7s"></span>
+    <span class="particle" style="--x:90%;--y:40%;--s:0.45;--d:4.5s"></span>
+    <span class="particle" style="--x:15%;--y:50%;--s:0.55;--d:2.5s"></span>
+    <span class="particle" style="--x:55%;--y:30%;--s:0.3;--d:6.0s"></span>
+  </div>
+
+  <!-- Ambient glow orbs -->
+  <div class="orb orb-orange"></div>
+  <div class="orb orb-blue"></div>
+  <div class="orb orb-purple"></div>
+</div>
+
+<!-- ===================== NAVBAR ===================== -->
+<nav class="auth-nav">
+  <a href="{% url 'home' %}" class="auth-brand">
+    <span class="brand-icon"><i class="fas fa-gas-pump"></i></span>
+    <span class="brand-text">Fuel<span class="brand-accent">Go</span></span>
+  </a>
+  <a href="{% url 'home' %}" class="back-home">
+    <i class="fas fa-arrow-left"></i> Back to Home
+  </a>
+</nav>
+
+<!-- ===================== ROLE SELECTOR ===================== -->
+<div class="role-selector-bar">
+  <span class="role-label">Sign in as:</span>
+  <div class="role-tabs">
+    <button class="role-tab active" data-role="customer" onclick="switchRole('customer')">
+      <i class="fas fa-user"></i> Customer
+    </button>
+    <button class="role-tab" data-role="provider" onclick="switchRole('provider')">
+      <i class="fas fa-gas-pump"></i> Station Owner
+    </button>
+    <button class="role-tab" data-role="driver" onclick="switchRole('driver')">
+      <i class="fas fa-id-badge"></i> Driver
+    </button>
+    <button class="role-tab" data-role="admin" onclick="switchRole('admin')">
+      <i class="fas fa-shield-halved"></i> Admin
+    </button>
+  </div>
+</div>
+
+<!-- ===================== MAIN AUTH WRAPPER ===================== -->
+<div class="auth-wrapper">
+  <div class="auth-container" id="authContainer">
+
+    <!-- ===== LEFT PANEL – SIGN IN ===== -->
+    <div class="panel panel-signin">
+      <div class="panel-inner">
+
+        <div class="panel-logo">
+          <span class="panel-logo-icon"><i class="fas fa-gas-pump"></i></span>
+        </div>
+
+        <div class="panel-header">
+          <h2 class="panel-title">Welcome Back</h2>
+          <p class="panel-subtitle" id="signinSubtitle">Sign in to your customer account</p>
+        </div>
+
+        <!-- Social Login -->
+        <div class="social-row">
+          <button class="social-btn google" type="button">
+            <i class="fab fa-google"></i> Google
+          </button>
+          <button class="social-btn facebook" type="button">
+            <i class="fab fa-facebook-f"></i> Facebook
+          </button>
+        </div>
+        <div class="divider"><span>or continue with email</span></div>
+
+        <!-- Role Badge -->
+        <div class="role-badge" id="signinRoleBadge">
+          <i class="fas fa-user"></i>
+          <span id="signinRoleText">Customer Portal</span>
+        </div>
+
+        <form method="POST" action="{% url 'login' %}" id="signinForm">
+          {% csrf_token %}
+          <input type="hidden" name="role" id="signinRoleInput" value="customer"/>
+
+          <div class="input-group-fg">
+            <span class="ig-icon"><i class="fas fa-envelope"></i></span>
+            <input type="email" name="email" class="fg-field" placeholder="Email Address" required/>
+          </div>
+
+          <div class="input-group-fg">
+            <span class="ig-icon"><i class="fas fa-lock"></i></span>
+            <input type="password" name="password" id="signinPass" class="fg-field" placeholder="Password" required/>
+            <button type="button" class="ig-eye" onclick="togglePass('signinPass','signinEye')">
+              <i class="fas fa-eye" id="signinEye"></i>
+            </button>
+          </div>
+
+          <!-- Remember + Forgot -->
+          <div class="form-options">
+            <label class="fg-check">
+              <input type="checkbox" name="remember"/>
+              <span class="checkmark"></span>
+              Remember me
+            </label>
+            <a href="{% url 'forgot_password' %}" class="forgot-link">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn-submit" id="signinBtn">
+            <span class="btn-text"><i class="fas fa-sign-in-alt me-2"></i>Sign In</span>
+            <span class="btn-loader" style="display:none"><i class="fas fa-circle-notch fa-spin"></i></span>
+          </button>
+
+          {% if messages %}
+          <div class="form-messages">
+            {% for message in messages %}
+            <div class="msg msg-{{ message.tags }}">
+              <i class="fas fa-circle-info"></i> {{ message }}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </form>
+
+        <p class="switch-prompt">
+          Don't have an account?
+          <button class="switch-link" onclick="switchToSignup()">Create one</button>
+        </p>
+
+        <!-- Admin / Driver note (no signup) -->
+        <p class="no-signup-note" id="noSignupNote" style="display:none">
+          <i class="fas fa-info-circle text-orange"></i>
+          Driver &amp; Admin accounts are created by the system administrator.
+        </p>
+
+      </div>
+    </div>
+
+    <!-- ===== SLIDING PANEL (center) ===== -->
+    <div class="sliding-panel" id="slidingPanel">
+      <div class="sliding-content">
+        <!-- State: showing signup prompt (default) -->
+        <div class="slide-state" id="slideStateA">
+          <div class="slide-brand">
+            <i class="fas fa-gas-pump slide-icon"></i>
+            <span class="slide-brand-text">Fuel<span>Go</span></span>
+          </div>
+          <h3 class="slide-title">New Here?</h3>
+          <p class="slide-desc">Create your FuelGo account and start ordering fuel on demand — fast, safe, and trackable.</p>
+          <button class="btn-slide" onclick="switchToSignup()">
+            <i class="fas fa-user-plus me-2"></i>Create Account
+          </button>
+          <div class="slide-features">
+            <div class="sf-item"><i class="fas fa-bolt"></i> Instant Delivery</div>
+            <div class="sf-item"><i class="fas fa-map-location-dot"></i> Live Tracking</div>
+            <div class="sf-item"><i class="fas fa-shield-check"></i> Secure &amp; Verified</div>
+          </div>
+        </div>
+        <!-- State: showing signin prompt -->
+        <div class="slide-state" id="slideStateB" style="display:none">
+          <div class="slide-brand">
+            <i class="fas fa-gas-pump slide-icon"></i>
+            <span class="slide-brand-text">Fuel<span>Go</span></span>
+          </div>
+          <h3 class="slide-title">Already a Member?</h3>
+          <p class="slide-desc">Welcome back! Sign in to manage your orders, track deliveries, and more.</p>
+          <button class="btn-slide" onclick="switchToSignin()">
+            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+          </button>
+          <div class="slide-features">
+            <div class="sf-item"><i class="fas fa-history"></i> Order History</div>
+            <div class="sf-item"><i class="fas fa-bell"></i> Live Updates</div>
+            <div class="sf-item"><i class="fas fa-star"></i> Trusted Platform</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== RIGHT PANEL – SIGN UP ===== -->
+    <div class="panel panel-signup">
+      <div class="panel-inner">
+
+        <div class="panel-logo">
+          <span class="panel-logo-icon"><i class="fas fa-gas-pump"></i></span>
+        </div>
+
+        <div class="panel-header">
+          <h2 class="panel-title">Create Account</h2>
+          <p class="panel-subtitle" id="signupSubtitle">Join FuelGo as a customer</p>
+        </div>
+
+        <!-- Social signup -->
+        <div class="social-row">
+          <button class="social-btn google" type="button">
+            <i class="fab fa-google"></i> Google
+          </button>
+          <button class="social-btn facebook" type="button">
+            <i class="fab fa-facebook-f"></i> Facebook
+          </button>
+        </div>
+        <div class="divider"><span>or register with email</span></div>
+
+        <!-- Role Badge -->
+        <div class="role-badge" id="signupRoleBadge">
+          <i class="fas fa-user"></i>
+          <span id="signupRoleText">Customer Account</span>
+        </div>
+
+        <form method="POST" action="{% url 'register' %}" id="signupForm">
+          {% csrf_token %}
+          <input type="hidden" name="role" id="signupRoleInput" value="customer"/>
+
+          <div class="two-col">
+            <div class="input-group-fg">
+              <span class="ig-icon"><i class="fas fa-user"></i></span>
+              <input type="text" name="first_name" class="fg-field" placeholder="First Name" required/>
+            </div>
+            <div class="input-group-fg">
+              <span class="ig-icon"><i class="fas fa-user"></i></span>
+              <input type="text" name="last_name" class="fg-field" placeholder="Last Name" required/>
+            </div>
+          </div>
+
+          <div class="input-group-fg">
+            <span class="ig-icon"><i class="fas fa-envelope"></i></span>
+            <input type="email" name="email" class="fg-field" placeholder="Email Address" required/>
+          </div>
+
+          <div class="input-group-fg">
+            <span class="ig-icon"><i class="fas fa-phone"></i></span>
+            <input type="tel" name="phone" id="phoneInput" class="fg-field phone-input" placeholder="712 345 678" maxlength="11"/>
+          </div>
+
+          <!-- Station Owner extra fields (hidden by default) -->
+          <div id="providerFields" style="display:none">
+            <div class="input-group-fg">
+              <span class="ig-icon"><i class="fas fa-gas-pump"></i></span>
+              <input type="text" name="station_name" class="fg-field" placeholder="Station Name"/>
+            </div>
+            <div class="input-group-fg">
+              <span class="ig-icon"><i class="fas fa-location-dot"></i></span>
+              <input type="text" name="station_address" class="fg-field" placeholder="Station Address / Location"/>
+            </div>
+            <div class="input-group-fg">
+              <span class="ig-icon"><i class="fas fa-id-card"></i></span>
+              <input type="text" name="license_no" class="fg-field" maxlength="12"  placeholder="Business License Number"/>
+            </div>
+          </div>
+
+          <!-- Driver extra fields (hidden by default) -->
+          <div id="driverFields" style="display:none">
+
+            <div class="input-group-fg">
+              <span class="ig-icon">
+                <i class="fas fa-id-card"></i>
+              </span>
+              <input
+                type="text"
+                name="license_number"
+                class="fg-field"
+                maxlength="11"
+                placeholder="Driving License Number"
+              />
+            </div>
+
+          </div>
+
+          <div class="input-group-fg">
+            <span class="ig-icon"><i class="fas fa-lock"></i></span>
+            <input type="password" name="password1" id="signupPass" class="fg-field" placeholder="Password" required oninput="checkStrength(this.value)"/>
+            <button type="button" class="ig-eye" onclick="togglePass('signupPass','signupEye')">
+              <i class="fas fa-eye" id="signupEye"></i>
+            </button>
+          </div>
+
+          <!-- Password strength -->
+          <div class="strength-bar">
+            <div class="strength-fill" id="strengthFill"></div>
+          </div>
+          <div class="strength-label" id="strengthLabel"></div>
+
+          <div class="input-group-fg">
+            <span class="ig-icon"><i class="fas fa-lock"></i></span>
+            <input type="password" name="password2" id="confirmPass" class="fg-field" placeholder="Confirm Password" required oninput="checkMatch()"/>
+            <button type="button" class="ig-eye" onclick="togglePass('confirmPass','confirmEye')">
+              <i class="fas fa-eye" id="confirmEye"></i>
+            </button>
+          </div>
+          <div class="match-msg" id="matchMsg"></div>
+
+          <label class="fg-check terms-check">
+            <input type="checkbox" name="terms" required/>
+            <span class="checkmark"></span>
+            I agree to the <a href="#" class="text-orange-link">Terms of Service</a> &amp; <a href="#" class="text-orange-link">Privacy Policy</a>
+          </label>
+
+          <button type="submit" class="btn-submit" id="signupBtn">
+            <span class="btn-text"><i class="fas fa-user-plus me-2"></i>Create Account</span>
+            <span class="btn-loader" style="display:none"><i class="fas fa-circle-notch fa-spin"></i></span>
+          </button>
+        </form>
+
+        <p class="switch-prompt">
+          Already have an account?
+          <button class="switch-link" onclick="switchToSignin()">Sign in</button>
+        </p>
+
+      </div>
+    </div>
+
+  </div><!-- /auth-container -->
+</div><!-- /auth-wrapper -->
+
+<script src="{% static 'js/login_register.js' %}"></script>
+</body>
+</html>
