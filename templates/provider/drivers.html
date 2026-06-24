@@ -1,0 +1,235 @@
+{% extends 'provider/base.html' %}
+{% load static %}
+{% block title %}FuelGo – Drivers{% endblock %}
+{% block page_title %}Driver Management{% endblock %}
+{% block nav_drivers %}active{% endblock %}
+
+{% block content %}
+
+<!-- ===== TOP BAR ===== -->
+<div class="page-action-bar">
+  <div class="search-wrap" style="max-width:320px">
+    <i class="fas fa-magnifying-glass sb-icon"></i>
+    <input type="text" class="search-input" id="driverSearch" placeholder="Search drivers…"/>
+  </div>
+  <div class="filter-chips">
+    <button class="fchip active" data-filter="all">All</button>
+    <button class="fchip" data-filter="available">Available</button>
+    <button class="fchip" data-filter="busy">On Delivery</button>
+    <button class="fchip" data-filter="offline">Off Duty</button>
+  </div>
+  <button class="btn-primary-sm" onclick="openModal('addDriverModal')">
+    <i class="fas fa-plus"></i> Add Driver
+  </button>
+</div>
+
+<!-- ===== DRIVERS GRID ===== -->
+<div class="drivers-grid" id="driversGrid">
+
+  {% for driver in drivers %}
+  <div class="driver-card-full" data-status="{{ driver.status }}" data-name="{{ driver.name|lower }}">
+    <div class="dcf-header">
+      <div class="dcf-avatar">{{ driver.name|slice:":1" }}</div>
+      <div class="dcf-status-badge {{ driver.status }}">
+        <span class="sdot"></span> {{ driver.get_status_display }}
+      </div>
+    </div>
+    <div class="dcf-name">{{ driver.name }}</div>
+    <div class="dcf-meta">
+      <span><i class="fas fa-phone text-orange"></i> {{ driver.phone }}</span>
+      <span><i class="fas fa-car text-blue"></i> {{ driver.plate }}</span>
+    </div>
+    <div class="dcf-stats">
+      <div class="dcf-stat"><div class="dcs-num">{{ driver.total_deliveries|default:"0" }}</div><div class="dcs-label">Deliveries</div></div>
+      <div class="dcf-stat-div"></div>
+      <div class="dcf-stat"><div class="dcs-num"><i class="fas fa-star text-orange"></i> {{ driver.rating|default:"0.0" }}</div><div class="dcs-label">Rating</div></div>
+      <div class="dcf-stat-div"></div>
+      <div class="dcf-stat"><div class="dcs-num">{{ driver.on_time_pct|default:"0" }}%</div><div class="dcs-label">On Time</div></div>
+    </div>
+    {% if driver.current_order %}
+    <div class="dcf-current-order">
+      <i class="fas fa-truck-fast text-orange"></i> Delivering <strong>#{{ driver.current_order.id }}</strong>
+    </div>
+    {% endif %}
+    <div class="dcf-actions">
+      <button class="dcf-btn edit" onclick="openEditDriver({{ driver.id }})"><i class="fas fa-pen"></i> Edit</button>
+      <button class="dcf-btn {% if driver.is_active %}deactivate{% else %}activate{% endif %}" onclick="toggleDriverStatus({{ driver.id }}, {{ driver.is_active|yesno:'true,false' }})">
+        {% if driver.is_active %}<i class="fas fa-ban"></i> Deactivate{% else %}<i class="fas fa-check"></i> Activate{% endif %}
+      </button>
+    </div>
+  </div>
+  {% empty %}
+  <!-- Demo drivers -->
+  <div class="driver-card-full" data-status="busy" data-name="john mwalimu">
+    <div class="dcf-header">
+      <div class="dcf-avatar">J</div>
+      <div class="dcf-status-badge busy"><span class="sdot"></span> On Delivery</div>
+    </div>
+    <div class="dcf-name">John Mwalimu</div>
+    <div class="dcf-meta">
+      <span><i class="fas fa-phone text-orange"></i> +255 712 000 101</span>
+      <span><i class="fas fa-car text-blue"></i> T 123 ABC</span>
+    </div>
+    <div class="dcf-stats">
+      <div class="dcf-stat"><div class="dcs-num">148</div><div class="dcs-label">Deliveries</div></div>
+      <div class="dcf-stat-div"></div>
+      <div class="dcf-stat"><div class="dcs-num"><i class="fas fa-star text-orange"></i> 4.8</div><div class="dcs-label">Rating</div></div>
+      <div class="dcf-stat-div"></div>
+      <div class="dcf-stat"><div class="dcs-num">96%</div><div class="dcs-label">On Time</div></div>
+    </div>
+    <div class="dcf-current-order"><i class="fas fa-truck-fast text-orange"></i> Delivering <strong>#FG-2045</strong></div>
+    <div class="dcf-actions">
+      <button class="dcf-btn edit" onclick="openEditDriver(1)"><i class="fas fa-pen"></i> Edit</button>
+      <button class="dcf-btn deactivate"><i class="fas fa-ban"></i> Deactivate</button>
+    </div>
+  </div>
+  <div class="driver-card-full" data-status="available" data-name="amina said">
+    <div class="dcf-header">
+      <div class="dcf-avatar">A</div>
+      <div class="dcf-status-badge available"><span class="sdot"></span> Available</div>
+    </div>
+    <div class="dcf-name">Amina Said</div>
+    <div class="dcf-meta">
+      <span><i class="fas fa-phone text-orange"></i> +255 712 000 102</span>
+      <span><i class="fas fa-car text-blue"></i> T 456 DEF</span>
+    </div>
+    <div class="dcf-stats">
+      <div class="dcf-stat"><div class="dcs-num">112</div><div class="dcs-label">Deliveries</div></div>
+      <div class="dcf-stat-div"></div>
+      <div class="dcf-stat"><div class="dcs-num"><i class="fas fa-star text-orange"></i> 4.7</div><div class="dcs-label">Rating</div></div>
+      <div class="dcf-stat-div"></div>
+      <div class="dcf-stat"><div class="dcs-num">94%</div><div class="dcs-label">On Time</div></div>
+    </div>
+    <div class="dcf-actions">
+      <button class="dcf-btn edit" onclick="openEditDriver(2)"><i class="fas fa-pen"></i> Edit</button>
+      <button class="dcf-btn deactivate"><i class="fas fa-ban"></i> Deactivate</button>
+    </div>
+  </div>
+  <div class="driver-card-full" data-status="available" data-name="peter mtui">
+    <div class="dcf-header">
+      <div class="dcf-avatar">P</div>
+      <div class="dcf-status-badge available"><span class="sdot"></span> Available</div>
+    </div>
+    <div class="dcf-name">Peter Mtui</div>
+    <div class="dcf-meta">
+      <span><i class="fas fa-phone text-orange"></i> +255 712 000 103</span>
+      <span><i class="fas fa-car text-blue"></i> T 789 GHI</span>
+    </div>
+    <div class="dcf-stats">
+      <div class="dcf-stat"><div class="dcs-num">88</div><div class="dcs-label">Deliveries</div></div>
+      <div class="dcf-stat-div"></div>
+      <div class="dcf-stat"><div class="dcs-num"><i class="fas fa-star text-orange"></i> 4.6</div><div class="dcs-label">Rating</div></div>
+      <div class="dcf-stat-div"></div>
+      <div class="dcf-stat"><div class="dcs-num">91%</div><div class="dcs-label">On Time</div></div>
+    </div>
+    <div class="dcf-actions">
+      <button class="dcf-btn edit" onclick="openEditDriver(3)"><i class="fas fa-pen"></i> Edit</button>
+      <button class="dcf-btn deactivate"><i class="fas fa-ban"></i> Deactivate</button>
+    </div>
+  </div>
+  <div class="driver-card-full" data-status="offline" data-name="fatuma ally">
+    <div class="dcf-header">
+      <div class="dcf-avatar">F</div>
+      <div class="dcf-status-badge offline"><span class="sdot"></span> Off Duty</div>
+    </div>
+    <div class="dcf-name">Fatuma Ally</div>
+    <div class="dcf-meta">
+      <span><i class="fas fa-phone text-orange"></i> +255 712 000 104</span>
+      <span><i class="fas fa-car text-blue"></i> T 321 JKL</span>
+    </div>
+    <div class="dcf-stats">
+      <div class="dcf-stat"><div class="dcs-num">74</div><div class="dcs-label">Deliveries</div></div>
+      <div class="dcf-stat-div"></div>
+      <div class="dcf-stat"><div class="dcs-num"><i class="fas fa-star text-orange"></i> 4.5</div><div class="dcs-label">Rating</div></div>
+      <div class="dcf-stat-div"></div>
+      <div class="dcf-stat"><div class="dcs-num">89%</div><div class="dcs-label">On Time</div></div>
+    </div>
+    <div class="dcf-actions">
+      <button class="dcf-btn edit" onclick="openEditDriver(4)"><i class="fas fa-pen"></i> Edit</button>
+      <button class="dcf-btn activate"><i class="fas fa-check"></i> Activate</button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ===== ADD DRIVER MODAL ===== -->
+<div class="modal-overlay" id="addDriverModal" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('addDriverModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-header-simple">
+      <div class="mhs-icon blue"><i class="fas fa-user-plus"></i></div>
+      <div><div class="mhs-title" id="driverModalTitle">Add New Driver</div><div class="mhs-sub">Driver will be assigned to your station</div></div>
+    </div>
+    <form method="POST" action="{% url 'provider_add_driver' %}">
+      {% csrf_token %}
+      <input type="hidden" name="driver_id" id="editDriverId"/>
+      <div class="form-grid-2">
+        <div class="fg-group">
+          <label class="fg-label">Full Name</label>
+          <input type="text" name="name" id="driverName" class="fg-input-p" placeholder="Driver's full name" required/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Phone Number</label>
+          <input type="tel" name="phone" id="driverPhone" class="fg-input-p" placeholder="+255 7XX XXX XXX" required/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Vehicle Plate Number</label>
+          <input type="text" name="plate" id="driverPlate" class="fg-input-p" placeholder="e.g. T 123 ABC" required/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Vehicle Type</label>
+          <select name="vehicle_type" class="fg-input-p">
+            <option value="motorcycle">Motorcycle</option>
+            <option value="pickup">Pickup Truck</option>
+            <option value="van">Van</option>
+            <option value="truck">Fuel Truck</option>
+          </select>
+        </div>
+        <div class="fg-group full-width-form">
+          <label class="fg-label">National ID / License No.</label>
+          <input type="text" name="license_no" class="fg-input-p" placeholder="Driver's license or national ID number" required/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-modal-cancel" onclick="closeModal('addDriverModal')">Cancel</button>
+        <button type="submit" class="btn-modal-confirm"><i class="fas fa-user-plus"></i> Add Driver</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Driver filter
+document.querySelectorAll('.fchip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    document.querySelectorAll('.fchip').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+    const f = this.dataset.filter;
+    document.querySelectorAll('.driver-card-full').forEach(card => {
+      card.style.display = (f === 'all' || card.dataset.status === f) ? '' : 'none';
+    });
+  });
+});
+
+// Driver search
+document.getElementById('driverSearch').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.driver-card-full').forEach(card => {
+    card.style.display = card.dataset.name.includes(q) ? '' : 'none';
+  });
+});
+
+function openEditDriver(id) {
+  document.getElementById('driverModalTitle').textContent = 'Edit Driver';
+  document.getElementById('editDriverId').value = id;
+  openModal('addDriverModal');
+}
+
+function toggleDriverStatus(id, isActive) {
+  showToast(isActive ? 'Driver deactivated.' : 'Driver activated.', isActive ? 'error' : 'success');
+}
+</script>
+{% endblock %}

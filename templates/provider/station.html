@@ -1,0 +1,116 @@
+{% extends 'provider/base.html' %}
+{% load static %}
+{% block title %}FuelGo – Station Settings{% endblock %}
+{% block page_title %}Station Settings{% endblock %}
+{% block nav_station %}active{% endblock %}
+
+{% block content %}
+
+<div class="settings-layout">
+
+  <!-- ===== STATION INFO ===== -->
+  <div class="settings-card">
+    <div class="sc-title"><i class="fas fa-gas-pump text-orange"></i> Station Information</div>
+    <form method="POST" action="{% url 'provider_update_station' %}">
+      {% csrf_token %}
+      <div class="form-grid-2">
+        <div class="fg-group full-width-form">
+          <label class="fg-label">Station Name</label>
+          <input type="text" name="station_name" class="fg-input-p" value="{{ request.user.station.name|default:'My Petrol Station' }}" required/>
+        </div>
+        <div class="fg-group full-width-form">
+          <label class="fg-label">Station Address</label>
+          <input type="text" name="address" class="fg-input-p" value="{{ request.user.station.address|default:'' }}" placeholder="Full physical address" required/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Phone Number</label>
+          <input type="tel" name="phone" class="fg-input-p" value="{{ request.user.station.phone|default:'' }}" placeholder="+255 7XX XXX XXX"/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Email Address</label>
+          <input type="email" name="email" class="fg-input-p" value="{{ request.user.station.email|default:'' }}" placeholder="station@example.com"/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Business License Number</label>
+          <input type="text" name="license_no" class="fg-input-p" value="{{ request.user.station.license_no|default:'' }}" placeholder="License / registration number"/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Delivery Radius (km)</label>
+          <input type="number" name="delivery_radius" class="fg-input-p" value="{{ request.user.station.delivery_radius|default:'5' }}" min="1" max="50"/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Opening Time</label>
+          <input type="time" name="opening_time" class="fg-input-p" value="{{ request.user.station.opening_time|default:'06:00' }}"/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Closing Time</label>
+          <input type="time" name="closing_time" class="fg-input-p" value="{{ request.user.station.closing_time|default:'22:00' }}"/>
+        </div>
+        <div class="fg-group full-width-form">
+          <label class="fg-label">Station Description (shown to customers)</label>
+          <textarea name="description" class="fg-input-p" rows="3" placeholder="Describe your station — services, location landmarks, etc.">{{ request.user.station.description|default:'' }}</textarea>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button type="submit" class="btn-save-settings"><i class="fas fa-save"></i> Save Station Info</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===== OPERATING PREFERENCES ===== -->
+  <div class="settings-card">
+    <div class="sc-title"><i class="fas fa-sliders text-blue"></i> Operating Preferences</div>
+    <form method="POST" action="{% url 'provider_update_station' %}">
+      {% csrf_token %}
+      <div class="pref-list">
+        <div class="pref-item">
+          <div class="pref-info"><strong>Auto-accept Orders</strong><span>Automatically accept incoming orders without manual review</span></div>
+          <label class="toggle-switch"><input type="checkbox" name="auto_accept"/><span class="toggle-slider"></span></label>
+        </div>
+        <div class="pref-item">
+          <div class="pref-info"><strong>Low Stock Alerts</strong><span>Receive alerts when fuel drops below 25% capacity</span></div>
+          <label class="toggle-switch"><input type="checkbox" name="low_stock_alerts" checked/><span class="toggle-slider"></span></label>
+        </div>
+        <div class="pref-item">
+          <div class="pref-info"><strong>Demand Forecast Notifications</strong><span>Get weekly AI demand predictions delivered to your email</span></div>
+          <label class="toggle-switch"><input type="checkbox" name="forecast_notifs" checked/><span class="toggle-slider"></span></label>
+        </div>
+        <div class="pref-item">
+          <div class="pref-info"><strong>New Order Sound Alert</strong><span>Play a sound when a new order comes in</span></div>
+          <label class="toggle-switch"><input type="checkbox" name="sound_alert" checked/><span class="toggle-slider"></span></label>
+        </div>
+        <div class="pref-item">
+          <div class="pref-info"><strong>Station Visible to Customers</strong><span>Show your station in the customer search results</span></div>
+          <label class="toggle-switch"><input type="checkbox" name="is_visible" checked/><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button type="submit" class="btn-save-settings"><i class="fas fa-save"></i> Save Preferences</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===== APPROVAL STATUS ===== -->
+  <div class="settings-card status-card">
+    <div class="sc-title"><i class="fas fa-shield-check text-orange"></i> Approval Status</div>
+    <div class="approval-status-display">
+      <div class="asd-icon {% if request.user.station.is_approved %}approved{% else %}pending{% endif %}">
+        <i class="fas {% if request.user.station.is_approved %}fa-circle-check{% else %}fa-clock{% endif %}"></i>
+      </div>
+      <div class="asd-info">
+        <strong>{% if request.user.station.is_approved %}Station Approved{% else %}Awaiting Approval{% endif %}</strong>
+        <span>{% if request.user.station.is_approved %}Your station is verified and visible to customers on the FuelGo platform.{% else %}Your station registration is under review by the FuelGo admin team. This typically takes 1–2 business days.{% endif %}</span>
+      </div>
+    </div>
+    {% if not request.user.station.is_approved %}
+    <div class="asd-checklist">
+      <div class="asd-check done"><i class="fas fa-check-circle"></i> Station details submitted</div>
+      <div class="asd-check done"><i class="fas fa-check-circle"></i> Business license provided</div>
+      <div class="asd-check pending"><i class="fas fa-clock"></i> Admin verification in progress</div>
+      <div class="asd-check pending"><i class="fas fa-clock"></i> Final approval pending</div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

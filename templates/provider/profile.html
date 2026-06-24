@@ -1,0 +1,69 @@
+{% extends 'provider/base.html' %}
+{% load static %}
+{% block title %}FuelGo – My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block nav_profile %}active{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+
+  <div class="settings-card">
+    <div class="sc-title"><i class="fas fa-user-pen text-orange"></i> Personal Information</div>
+    <div class="profile-avatar-row">
+      <div class="par-circle">{{ request.user.first_name|slice:":1"|default:"S" }}</div>
+      <div><div class="par-name">{{ request.user.get_full_name|default:request.user.username }}</div><div class="par-role"><i class="fas fa-gas-pump text-orange"></i> Station Owner · {{ request.user.station.name|default:"My Station" }}</div></div>
+    </div>
+    <form method="POST" action="{% url 'provider_update_profile' %}">
+      {% csrf_token %}
+      <div class="form-grid-2">
+        <div class="fg-group"><label class="fg-label">First Name</label><input type="text" name="first_name" class="fg-input-p" value="{{ request.user.first_name }}"/></div>
+        <div class="fg-group"><label class="fg-label">Last Name</label><input type="text" name="last_name" class="fg-input-p" value="{{ request.user.last_name }}"/></div>
+        <div class="fg-group"><label class="fg-label">Email</label><input type="email" name="email" class="fg-input-p" value="{{ request.user.email }}"/></div>
+        <div class="fg-group"><label class="fg-label">Phone</label><input type="tel" name="phone" class="fg-input-p" value="{{ request.user.profile.phone|default:'' }}" placeholder="+255 7XX XXX XXX"/></div>
+      </div>
+      <div class="settings-actions"><button type="submit" class="btn-save-settings"><i class="fas fa-save"></i> Save Changes</button></div>
+    </form>
+  </div>
+
+  <div class="settings-card">
+    <div class="sc-title"><i class="fas fa-lock text-orange"></i> Change Password</div>
+    <form method="POST" action="{% url 'provider_change_password' %}">
+      {% csrf_token %}
+      <div class="form-grid-2">
+        <div class="fg-group full-width-form"><label class="fg-label">Current Password</label>
+          <div class="input-pw-wrap"><input type="password" name="old_password" class="fg-input-p" placeholder="Current password"/><button type="button" class="pw-eye-btn" onclick="toggleVis(this)"><i class="fas fa-eye"></i></button></div>
+        </div>
+        <div class="fg-group"><label class="fg-label">New Password</label>
+          <div class="input-pw-wrap"><input type="password" name="new_password1" class="fg-input-p" placeholder="New password" oninput="checkStr(this.value)"/><button type="button" class="pw-eye-btn" onclick="toggleVis(this)"><i class="fas fa-eye"></i></button></div>
+          <div class="pw-strength-bar"><div class="strength-fill" id="strFill"></div></div>
+          <div class="strength-label-sm" id="strLabel"></div>
+        </div>
+        <div class="fg-group"><label class="fg-label">Confirm New Password</label>
+          <div class="input-pw-wrap"><input type="password" name="new_password2" class="fg-input-p" placeholder="Confirm new password"/><button type="button" class="pw-eye-btn" onclick="toggleVis(this)"><i class="fas fa-eye"></i></button></div>
+        </div>
+      </div>
+      <div class="settings-actions"><button type="submit" class="btn-save-settings"><i class="fas fa-key"></i> Update Password</button></div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleVis(btn) {
+  const inp = btn.previousElementSibling;
+  const ico = btn.querySelector('i');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  ico.classList.toggle('fa-eye'); ico.classList.toggle('fa-eye-slash');
+}
+function checkStr(v) {
+  let s = 0;
+  if (v.length >= 8) s++; if (/[A-Z]/.test(v)) s++; if (/[0-9]/.test(v)) s++; if (/[^A-Za-z0-9]/.test(v)) s++;
+  const lvl = [['0%','transparent',''],['25%','#ef4444','Weak'],['50%','#f97316','Fair'],['75%','#eab308','Good'],['100%','#22c55e','Strong']][Math.min(s,4)];
+  const f = document.getElementById('strFill'); const l = document.getElementById('strLabel');
+  if(f){f.style.width=lvl[0];f.style.background=lvl[1];}
+  if(l){l.textContent=lvl[2]?`Strength: ${lvl[2]}`:'';l.style.color=lvl[1];}
+}
+</script>
+{% endblock %}

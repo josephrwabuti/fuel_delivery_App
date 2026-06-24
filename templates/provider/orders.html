@@ -1,0 +1,361 @@
+{% extends 'provider/base.html' %}
+{% load static %}
+{% block title %}FuelGo – Orders{% endblock %}
+{% block page_title %}Order Management{% endblock %}
+{% block nav_orders %}active{% endblock %}
+
+{% block content %}
+
+<!-- ===== FILTER BAR ===== -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <i class="fas fa-magnifying-glass sb-icon"></i>
+    <input type="text" class="search-input" id="orderSearch" placeholder="Search by order ID or customer name…"/>
+  </div>
+  <div class="filter-chips">
+    <button class="fchip active" data-filter="all">All</button>
+    <button class="fchip" data-filter="pending">Pending <span class="fc-count">2</span></button>
+    <button class="fchip" data-filter="confirmed">Confirmed</button>
+    <button class="fchip" data-filter="delivering">Delivering</button>
+    <button class="fchip" data-filter="delivered">Delivered</button>
+    <button class="fchip" data-filter="rejected">Rejected</button>
+    <button class="fchip" data-filter="cancelled">Cancelled</button>
+  </div>
+</div>
+
+<!-- ===== ORDERS TABLE ===== -->
+<div class="data-table-wrap">
+  <div class="data-table">
+    <div class="dt-header">
+      <span>Order ID</span>
+      <span>Customer</span>
+      <span>Fuel</span>
+      <span>Qty</span>
+      <span>Total</span>
+      <span>Address</span>
+      <span>Payment</span>
+      <span>Status</span>
+      <span>Time</span>
+      <span>Actions</span>
+    </div>
+
+    {% for order in orders %}
+    <div class="dt-row" data-status="{{ order.status }}" data-search="{{ order.id }} {{ order.customer.get_full_name|lower }}">
+      <span class="dt-id">#{{ order.id }}</span>
+      <span class="dt-customer">
+        <div class="cust-mini">
+          <div class="cust-init">{{ order.customer.first_name|slice:":1" }}</div>
+          <span>{{ order.customer.get_full_name }}</span>
+        </div>
+      </span>
+      <span><span class="fuel-badge {{ order.fuel_type|lower }}">{{ order.fuel_type }}</span></span>
+      <span class="dt-qty">{{ order.quantity }}L</span>
+      <span class="dt-total">TZS {{ order.total_amount|floatformat:0 }}</span>
+      <span class="dt-addr" title="{{ order.delivery_address }}">{{ order.delivery_address|truncatechars:24 }}</span>
+      <span><span class="pay-badge">{{ order.payment_method }}</span></span>
+      <span><div class="status-chip {{ order.status }}">{{ order.get_status_display }}</div></span>
+      <span class="dt-time">{{ order.created_at|timesince }} ago</span>
+      <span class="dt-actions">
+        {% if order.status == 'pending' %}
+        <form method="POST" action="{% url 'provider_accept_order' order.id %}" style="display:inline">
+          {% csrf_token %}
+          <button class="btn-accept-sm" title="Accept"><i class="fas fa-check"></i></button>
+        </form>
+        <form method="POST" action="{% url 'provider_reject_order' order.id %}" style="display:inline">
+          {% csrf_token %}
+          <button class="btn-reject-sm" title="Reject"><i class="fas fa-times"></i></button>
+        </form>
+        {% elif order.status == 'confirmed' %}
+        <button class="btn-assign-sm" onclick="openAssignModal('{{ order.id }}')" title="Assign Driver">
+          <i class="fas fa-id-badge"></i>
+        </button>
+        {% endif %}
+        <button class="btn-view-sm" onclick="openOrderDetail('{{ order.id }}')" title="View Details">
+          <i class="fas fa-eye"></i>
+        </button>
+      </span>
+    </div>
+    {% empty %}
+    <!-- Demo rows -->
+    <div class="dt-row" data-status="pending" data-search="fg-2047 asha mwangi">
+      <span class="dt-id">#FG-2047</span>
+      <span><div class="cust-mini"><div class="cust-init">A</div><span>Asha Mwangi</span></div></span>
+      <span><span class="fuel-badge petrol">Petrol</span></span>
+      <span class="dt-qty">20L</span>
+      <span class="dt-total">TZS 59,000</span>
+      <span class="dt-addr" title="Kariakoo Market, Block C">Kariakoo Market…</span>
+      <span><span class="pay-badge">Cash</span></span>
+      <span><div class="status-chip pending">Pending</div></span>
+      <span class="dt-time">3 min ago</span>
+      <span class="dt-actions">
+        <button class="btn-accept-sm" onclick="quickAction('accept','FG-2047')" title="Accept"><i class="fas fa-check"></i></button>
+        <button class="btn-reject-sm" onclick="openRejectModal('FG-2047')" title="Reject"><i class="fas fa-times"></i></button>
+        <button class="btn-view-sm" onclick="openOrderDetail('FG-2047')" title="View"><i class="fas fa-eye"></i></button>
+      </span>
+    </div>
+    <div class="dt-row" data-status="pending" data-search="fg-2046 john kimaro">
+      <span class="dt-id">#FG-2046</span>
+      <span><div class="cust-mini"><div class="cust-init">J</div><span>John Kimaro</span></div></span>
+      <span><span class="fuel-badge diesel">Diesel</span></span>
+      <span class="dt-qty">30L</span>
+      <span class="dt-total">TZS 83,000</span>
+      <span class="dt-addr" title="Msimbazi Centre">Msimbazi Centre…</span>
+      <span><span class="pay-badge">M-Pesa</span></span>
+      <span><div class="status-chip pending">Pending</div></span>
+      <span class="dt-time">8 min ago</span>
+      <span class="dt-actions">
+        <button class="btn-accept-sm" onclick="quickAction('accept','FG-2046')" title="Accept"><i class="fas fa-check"></i></button>
+        <button class="btn-reject-sm" onclick="openRejectModal('FG-2046')" title="Reject"><i class="fas fa-times"></i></button>
+        <button class="btn-view-sm" onclick="openOrderDetail('FG-2046')" title="View"><i class="fas fa-eye"></i></button>
+      </span>
+    </div>
+    <div class="dt-row" data-status="delivering" data-search="fg-2045 grace ntare">
+      <span class="dt-id">#FG-2045</span>
+      <span><div class="cust-mini"><div class="cust-init">G</div><span>Grace Ntare</span></div></span>
+      <span><span class="fuel-badge petrol">Petrol</span></span>
+      <span class="dt-qty">15L</span>
+      <span class="dt-total">TZS 44,750</span>
+      <span class="dt-addr" title="Kinondoni, Block 4">Kinondoni, Block 4…</span>
+      <span><span class="pay-badge">Cash</span></span>
+      <span><div class="status-chip delivering">Delivering</div></span>
+      <span class="dt-time">22 min ago</span>
+      <span class="dt-actions">
+        <button class="btn-view-sm" onclick="openOrderDetail('FG-2045')" title="View"><i class="fas fa-eye"></i></button>
+      </span>
+    </div>
+    <div class="dt-row" data-status="confirmed" data-search="fg-2044 baraka juma">
+      <span class="dt-id">#FG-2044</span>
+      <span><div class="cust-mini"><div class="cust-init">B</div><span>Baraka Juma</span></div></span>
+      <span><span class="fuel-badge petrol">Petrol</span></span>
+      <span class="dt-qty">25L</span>
+      <span class="dt-total">TZS 73,250</span>
+      <span class="dt-addr" title="Ilala, Lumumba St">Ilala, Lumumba St…</span>
+      <span><span class="pay-badge">Tigo Pesa</span></span>
+      <span><div class="status-chip confirmed">Confirmed</div></span>
+      <span class="dt-time">35 min ago</span>
+      <span class="dt-actions">
+        <button class="btn-assign-sm" onclick="openAssignModal('FG-2044')" title="Assign Driver"><i class="fas fa-id-badge"></i></button>
+        <button class="btn-view-sm" onclick="openOrderDetail('FG-2044')" title="View"><i class="fas fa-eye"></i></button>
+      </span>
+    </div>
+    <div class="dt-row" data-status="delivered" data-search="fg-2043 mary thomas">
+      <span class="dt-id">#FG-2043</span>
+      <span><div class="cust-mini"><div class="cust-init">M</div><span>Mary Thomas</span></div></span>
+      <span><span class="fuel-badge diesel">Diesel</span></span>
+      <span class="dt-qty">40L</span>
+      <span class="dt-total">TZS 110,000</span>
+      <span class="dt-addr" title="Ubungo, Main Rd">Ubungo, Main Rd…</span>
+      <span><span class="pay-badge">Cash</span></span>
+      <span><div class="status-chip delivered">Delivered</div></span>
+      <span class="dt-time">1 hr ago</span>
+      <span class="dt-actions">
+        <button class="btn-view-sm" onclick="openOrderDetail('FG-2043')" title="View"><i class="fas fa-eye"></i></button>
+      </span>
+    </div>
+    <div class="dt-row" data-status="rejected" data-search="fg-2040 david mushi">
+      <span class="dt-id">#FG-2040</span>
+      <span><div class="cust-mini"><div class="cust-init">D</div><span>David Mushi</span></div></span>
+      <span><span class="fuel-badge petrol">Petrol</span></span>
+      <span class="dt-qty">10L</span>
+      <span class="dt-total">TZS 30,500</span>
+      <span class="dt-addr" title="Temeke, Chang'ombe">Temeke, Chang'ombe</span>
+      <span><span class="pay-badge">Cash</span></span>
+      <span><div class="status-chip rejected">Rejected</div></span>
+      <span class="dt-time">3 hr ago</span>
+      <span class="dt-actions">
+        <button class="btn-view-sm" onclick="openOrderDetail('FG-2040')" title="View"><i class="fas fa-eye"></i></button>
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ===== ASSIGN DRIVER MODAL ===== -->
+<div class="modal-overlay" id="assignModal" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('assignModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-header-simple">
+      <div class="mhs-icon blue"><i class="fas fa-id-badge"></i></div>
+      <div>
+        <div class="mhs-title">Assign Driver</div>
+        <div class="mhs-sub">Order <strong id="assignOrderId">#FG-2044</strong></div>
+      </div>
+    </div>
+    <div class="driver-select-list" id="driverSelectList">
+      <div class="dsl-item selected" data-driver="1" onclick="selectDriver(this,1,'John Mwalimu')">
+        <div class="dsl-avatar">J</div>
+        <div class="dsl-info">
+          <strong>John Mwalimu</strong>
+          <span><i class="fas fa-star text-orange"></i> 4.8 · <span class="dml-status available">Available</span></span>
+        </div>
+        <div class="dsl-check"><i class="fas fa-circle-check"></i></div>
+      </div>
+      <div class="dsl-item" data-driver="2" onclick="selectDriver(this,2,'Amina Said')">
+        <div class="dsl-avatar">A</div>
+        <div class="dsl-info">
+          <strong>Amina Said</strong>
+          <span><i class="fas fa-star text-orange"></i> 4.7 · <span class="dml-status available">Available</span></span>
+        </div>
+        <div class="dsl-check"><i class="fas fa-circle-check"></i></div>
+      </div>
+      <div class="dsl-item disabled" data-driver="3">
+        <div class="dsl-avatar">P</div>
+        <div class="dsl-info">
+          <strong>Peter Mtui</strong>
+          <span><i class="fas fa-star text-orange"></i> 4.6 · <span class="dml-status busy">On Delivery</span></span>
+        </div>
+        <div class="dsl-check" style="color:var(--text-m)"><i class="fas fa-circle-xmark"></i></div>
+      </div>
+    </div>
+    <input type="hidden" id="selectedDriverId" value="1"/>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeModal('assignModal')">Cancel</button>
+      <button class="btn-modal-confirm" onclick="confirmAssign()">
+        <i class="fas fa-id-badge"></i> Assign Driver
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REJECT REASON MODAL ===== -->
+<div class="modal-overlay" id="rejectModal" style="display:none">
+  <div class="modal-box narrow">
+    <button class="modal-close" onclick="closeModal('rejectModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-header-simple">
+      <div class="mhs-icon red"><i class="fas fa-circle-xmark"></i></div>
+      <div>
+        <div class="mhs-title">Reject Order</div>
+        <div class="mhs-sub">Order <strong id="rejectOrderId">#FG-2047</strong></div>
+      </div>
+    </div>
+    <div class="fg-group" style="margin-bottom:16px">
+      <label class="fg-label">Reason for Rejection</label>
+      <select class="fg-input-p" id="rejectReason">
+        <option value="">Select a reason…</option>
+        <option value="out_of_stock">Fuel out of stock</option>
+        <option value="no_driver">No driver available</option>
+        <option value="delivery_area">Outside delivery area</option>
+        <option value="station_closed">Station temporarily closed</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="fg-group" style="margin-bottom:16px">
+      <label class="fg-label">Additional Note (optional)</label>
+      <textarea class="fg-input-p" rows="3" placeholder="Add a note for the customer…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeModal('rejectModal')">Cancel</button>
+      <button class="btn-modal-danger" onclick="confirmReject()">
+        <i class="fas fa-times-circle"></i> Reject Order
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ORDER DETAIL MODAL ===== -->
+<div class="modal-overlay" id="orderDetailModal" style="display:none">
+  <div class="modal-box wide">
+    <button class="modal-close" onclick="closeModal('orderDetailModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-header-simple">
+      <div class="mhs-icon orange"><i class="fas fa-receipt"></i></div>
+      <div>
+        <div class="mhs-title" id="detailOrderId">Order #FG-2047</div>
+        <div class="mhs-sub"><div class="status-chip pending" id="detailStatus">Pending</div></div>
+      </div>
+    </div>
+    <div class="order-detail-grid">
+      <div class="odg-section">
+        <div class="odg-title">Customer</div>
+        <div class="odg-val"><i class="fas fa-user text-orange"></i> Asha Mwangi</div>
+        <div class="odg-val"><i class="fas fa-phone text-orange"></i> +255 712 000 010</div>
+        <div class="odg-val"><i class="fas fa-location-dot text-orange"></i> Kariakoo Market, Block C</div>
+      </div>
+      <div class="odg-section">
+        <div class="odg-title">Order Details</div>
+        <div class="odg-val"><i class="fas fa-fire-flame-curved text-orange"></i> Petrol (RON 91)</div>
+        <div class="odg-val"><i class="fas fa-droplet text-blue"></i> 20 Litres</div>
+        <div class="odg-val"><i class="fas fa-wallet text-orange"></i> Cash on Delivery</div>
+        <div class="odg-val"><i class="fas fa-clock text-orange"></i> As soon as possible</div>
+      </div>
+      <div class="odg-section">
+        <div class="odg-title">Payment</div>
+        <div class="omt-row flat"><span>Fuel (20L × TZS 2,850)</span><span>TZS 57,000</span></div>
+        <div class="omt-row flat"><span>Delivery fee</span><span>TZS 2,000</span></div>
+        <div class="omt-row flat total"><span><strong>Total</strong></span><span><strong>TZS 59,000</strong></span></div>
+      </div>
+      <div class="odg-section">
+        <div class="odg-title">Timeline</div>
+        <div class="odg-timeline">
+          <div class="odt-item done"><i class="fas fa-circle-check"></i> Order placed · 14:18</div>
+          <div class="odt-item pending-t"><i class="fas fa-clock"></i> Awaiting station response</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeModal('orderDetailModal')">Close</button>
+      <button class="btn-modal-confirm" onclick="closeModal('orderDetailModal');openAssignModal('FG-2047')">
+        <i class="fas fa-id-badge"></i> Assign Driver
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentOrderId = null;
+
+function quickAction(action, orderId) {
+  currentOrderId = orderId;
+  if (action === 'accept') {
+    const row = document.querySelector(`[data-search*="${orderId.toLowerCase()}"]`);
+    if (row) {
+      row.querySelector('.status-chip').className = 'status-chip confirmed';
+      row.querySelector('.status-chip').textContent = 'Confirmed';
+      const actions = row.querySelector('.dt-actions');
+      actions.innerHTML = `<button class="btn-assign-sm" onclick="openAssignModal('${orderId}')" title="Assign Driver"><i class="fas fa-id-badge"></i></button>
+        <button class="btn-view-sm" onclick="openOrderDetail('${orderId}')" title="View"><i class="fas fa-eye"></i></button>`;
+    }
+    showToast('Order accepted. Assign a driver to proceed.', 'success');
+  }
+}
+
+function openAssignModal(orderId) {
+  currentOrderId = orderId;
+  document.getElementById('assignOrderId').textContent = '#' + orderId;
+  document.getElementById('assignModal').style.display = 'flex';
+}
+
+function openRejectModal(orderId) {
+  currentOrderId = orderId;
+  document.getElementById('rejectOrderId').textContent = '#' + orderId;
+  document.getElementById('rejectModal').style.display = 'flex';
+}
+
+function openOrderDetail(orderId) {
+  document.getElementById('detailOrderId').textContent = 'Order #' + orderId;
+  document.getElementById('orderDetailModal').style.display = 'flex';
+}
+
+function selectDriver(el, id, name) {
+  if (el.classList.contains('disabled')) return;
+  document.querySelectorAll('.dsl-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('selectedDriverId').value = id;
+}
+
+function confirmAssign() {
+  const driverId = document.getElementById('selectedDriverId').value;
+  closeModal('assignModal');
+  showToast('Driver assigned successfully! Order is now delivering.', 'success');
+}
+
+function confirmReject() {
+  const reason = document.getElementById('rejectReason').value;
+  if (!reason) { showToast('Please select a rejection reason.', 'error'); return; }
+  closeModal('rejectModal');
+  showToast('Order rejected. Customer has been notified.', 'error');
+}
+</script>
+{% endblock %}

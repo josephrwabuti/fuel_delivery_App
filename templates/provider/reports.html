@@ -1,0 +1,168 @@
+{% extends 'provider/base.html' %}
+{% load static %}
+{% block title %}FuelGo – Reports{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+{% block nav_reports %}active{% endblock %}
+
+{% block content %}
+
+<!-- ===== DATE RANGE FILTER ===== -->
+<div class="report-filter-bar">
+  <div class="rfb-periods">
+    <button class="period-btn active" data-period="7">Last 7 Days</button>
+    <button class="period-btn" data-period="30">Last 30 Days</button>
+    <button class="period-btn" data-period="90">Last 3 Months</button>
+    <button class="period-btn" data-period="custom">Custom Range</button>
+  </div>
+  <div class="rfb-custom" id="customRange" style="display:none">
+    <input type="date" class="fg-input-p compact" name="date_from"/>
+    <span class="text-s">to</span>
+    <input type="date" class="fg-input-p compact" name="date_to"/>
+    <button class="btn-primary-sm"><i class="fas fa-filter"></i> Apply</button>
+  </div>
+  <button class="btn-export"><i class="fas fa-file-arrow-down"></i> Export CSV</button>
+</div>
+
+<!-- ===== SUMMARY KPI CARDS ===== -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-icon orange"><i class="fas fa-receipt"></i></div>
+    <div class="kpi-body"><div class="kpi-num" id="totalOrdersKpi">{{ total_orders|default:"82" }}</div><div class="kpi-label">Total Orders</div></div>
+    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +18% vs prev period</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon blue"><i class="fas fa-droplet"></i></div>
+    <div class="kpi-body"><div class="kpi-num" id="totalLitresKpi">{{ total_litres|default:"2,140" }}L</div><div class="kpi-label">Litres Sold</div></div>
+    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +12% vs prev period</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon purple"><i class="fas fa-coins"></i></div>
+    <div class="kpi-body"><div class="kpi-num" id="revenueKpi">TZS {{ revenue|default:"6.1M" }}</div><div class="kpi-label">Revenue</div></div>
+    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +21% vs prev period</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon orange"><i class="fas fa-clock"></i></div>
+    <div class="kpi-body"><div class="kpi-num">{{ avg_delivery_time|default:"14" }} min</div><div class="kpi-label">Avg. Delivery Time</div></div>
+    <div class="kpi-trend up"><i class="fas fa-arrow-trend-down"></i> 2 min faster</div>
+  </div>
+</div>
+
+<div class="reports-grid">
+
+  <!-- ===== ORDERS OVER TIME CHART ===== -->
+  <div class="report-card large">
+    <div class="rc-header">
+      <div class="rc-title"><i class="fas fa-chart-line text-orange"></i> Orders Over Time</div>
+    </div>
+    <div class="chart-container" id="ordersChart">
+      <div class="chart-bars-wrap">
+        <div class="cbw-bars">
+          {% for day in orders_by_day %}
+          <div class="cbw-col">
+            <div class="cbw-bar" style="height:{{ day.pct }}%" title="{{ day.count }} orders">
+              <span class="cbw-val">{{ day.count }}</span>
+            </div>
+            <span class="cbw-label">{{ day.label }}</span>
+          </div>
+          {% empty %}
+          <div class="cbw-col"><div class="cbw-bar" style="height:45%"><span class="cbw-val">8</span></div><span class="cbw-label">Mon</span></div>
+          <div class="cbw-col"><div class="cbw-bar" style="height:60%"><span class="cbw-val">11</span></div><span class="cbw-label">Tue</span></div>
+          <div class="cbw-col"><div class="cbw-bar" style="height:50%"><span class="cbw-val">9</span></div><span class="cbw-label">Wed</span></div>
+          <div class="cbw-col"><div class="cbw-bar highlight" style="height:88%"><span class="cbw-val">16</span></div><span class="cbw-label">Thu</span></div>
+          <div class="cbw-col"><div class="cbw-bar highlight" style="height:100%"><span class="cbw-val">18</span></div><span class="cbw-label">Fri</span></div>
+          <div class="cbw-col"><div class="cbw-bar" style="height:72%"><span class="cbw-val">13</span></div><span class="cbw-label">Sat</span></div>
+          <div class="cbw-col"><div class="cbw-bar today" style="height:38%"><span class="cbw-val">7</span></div><span class="cbw-label">Today</span></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FUEL MIX DONUT ===== -->
+  <div class="report-card">
+    <div class="rc-header"><div class="rc-title"><i class="fas fa-chart-pie text-blue"></i> Fuel Type Mix</div></div>
+    <div class="fuel-mix-visual">
+      <div class="fmv-donut">
+        <svg viewBox="0 0 120 120" class="donut-svg">
+          <circle class="donut-track" cx="60" cy="60" r="48" fill="none" stroke-width="16"/>
+          <circle class="donut-seg petrol-seg" cx="60" cy="60" r="48" fill="none" stroke-width="16"
+            stroke-dasharray="180 301" stroke-dashoffset="0"/>
+          <circle class="donut-seg diesel-seg" cx="60" cy="60" r="48" fill="none" stroke-width="16"
+            stroke-dasharray="90 301" stroke-dashoffset="-180"/>
+          <circle class="donut-seg premium-seg" cx="60" cy="60" r="48" fill="none" stroke-width="16"
+            stroke-dasharray="31 301" stroke-dashoffset="-270"/>
+          <text x="60" y="56" class="donut-centre-num">82</text>
+          <text x="60" y="68" class="donut-centre-label">orders</text>
+        </svg>
+      </div>
+      <div class="fmv-legend">
+        <div class="fmvl-item"><span class="fmvl-dot orange"></span><span>Petrol</span><strong>60%</strong></div>
+        <div class="fmvl-item"><span class="fmvl-dot blue"></span><span>Diesel</span><strong>30%</strong></div>
+        <div class="fmvl-item"><span class="fmvl-dot purple"></span><span>Premium</span><strong>10%</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DRIVER PERFORMANCE ===== -->
+  <div class="report-card">
+    <div class="rc-header"><div class="rc-title"><i class="fas fa-id-badge text-purple"></i> Driver Performance</div></div>
+    <div class="driver-perf-list">
+      <div class="dpl-item">
+        <div class="dpl-rank">1</div>
+        <div class="dpl-avatar">J</div>
+        <div class="dpl-info"><span>John Mwalimu</span><span class="dpl-stat">148 deliveries · 96% on-time</span></div>
+        <div class="dpl-rating"><i class="fas fa-star text-orange"></i> 4.8</div>
+      </div>
+      <div class="dpl-item">
+        <div class="dpl-rank">2</div>
+        <div class="dpl-avatar">A</div>
+        <div class="dpl-info"><span>Amina Said</span><span class="dpl-stat">112 deliveries · 94% on-time</span></div>
+        <div class="dpl-rating"><i class="fas fa-star text-orange"></i> 4.7</div>
+      </div>
+      <div class="dpl-item">
+        <div class="dpl-rank">3</div>
+        <div class="dpl-avatar">P</div>
+        <div class="dpl-info"><span>Peter Mtui</span><span class="dpl-stat">88 deliveries · 91% on-time</span></div>
+        <div class="dpl-rating"><i class="fas fa-star text-orange"></i> 4.6</div>
+      </div>
+      <div class="dpl-item">
+        <div class="dpl-rank">4</div>
+        <div class="dpl-avatar">F</div>
+        <div class="dpl-info"><span>Fatuma Ally</span><span class="dpl-stat">74 deliveries · 89% on-time</span></div>
+        <div class="dpl-rating"><i class="fas fa-star text-orange"></i> 4.5</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOP CUSTOMERS ===== -->
+  <div class="report-card">
+    <div class="rc-header"><div class="rc-title"><i class="fas fa-users text-orange"></i> Top Customers</div></div>
+    <div class="top-customers-list">
+      <div class="tcl-header"><span>Customer</span><span>Orders</span><span>Litres</span><span>Revenue</span></div>
+      <div class="tcl-row"><div class="cust-mini"><div class="cust-init">A</div><span>Asha Mwangi</span></div><span>12</span><span>240L</span><span class="fw-600 text-orange">TZS 690k</span></div>
+      <div class="tcl-row"><div class="cust-mini"><div class="cust-init">J</div><span>John Kimaro</span></div><span>9</span><span>270L</span><span class="fw-600 text-orange">TZS 737k</span></div>
+      <div class="tcl-row"><div class="cust-mini"><div class="cust-init">G</div><span>Grace Ntare</span></div><span>7</span><span>140L</span><span class="fw-600 text-orange">TZS 402k</span></div>
+      <div class="tcl-row"><div class="cust-mini"><div class="cust-init">B</div><span>Baraka Juma</span></div><span>6</span><span>180L</span><span class="fw-600 text-orange">TZS 519k</span></div>
+    </div>
+  </div>
+
+</div><!-- /reports-grid -->
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    const custom = document.getElementById('customRange');
+    if (this.dataset.period === 'custom') {
+      custom.style.display = 'flex';
+    } else {
+      custom.style.display = 'none';
+    }
+  });
+});
+</script>
+{% endblock %}

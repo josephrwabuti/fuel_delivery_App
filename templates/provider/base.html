@@ -1,0 +1,127 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}FuelGo – Station Owner{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/provider.css' %}"/>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ========== SIDEBAR ========== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <span class="brand-icon"><i class="fas fa-gas-pump"></i></span>
+      <span class="brand-text">Fuel<span class="brand-accent">Go</span></span>
+    </div>
+    <button class="sidebar-close" id="sidebarClose"><i class="fas fa-times"></i></button>
+  </div>
+
+  <!-- Station card -->
+  <div class="sidebar-station">
+    <div class="station-avatar">{{ request.user.station.name|slice:":1"|default:"S" }}</div>
+    <div class="station-info">
+      <span class="station-name">{{ request.user.station.name|default:"My Station" }}</span>
+      <span class="station-status {% if request.user.station.is_approved %}approved{% else %}pending{% endif %}">
+        <i class="fas fa-circle"></i>
+        {{ request.user.station.is_approved|yesno:"Approved,Pending Approval" }}
+      </span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Dashboard</div>
+    <a href="{% url 'provider_home' %}"     class="nav-item {% block nav_home %}{% endblock %}">
+      <i class="fas fa-house-chimney"></i><span>Overview</span>
+    </a>
+    <a href="{% url 'provider_orders' %}"   class="nav-item {% block nav_orders %}{% endblock %}">
+      <i class="fas fa-receipt"></i><span>Orders</span>
+      {% if pending_count %}<span class="nav-badge pulse">{{ pending_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'provider_stock' %}"    class="nav-item {% block nav_stock %}{% endblock %}">
+      <i class="fas fa-boxes-stacked"></i><span>Fuel Stock</span>
+    </a>
+    <a href="{% url 'provider_drivers' %}"  class="nav-item {% block nav_drivers %}{% endblock %}">
+      <i class="fas fa-id-badge"></i><span>Drivers</span>
+    </a>
+
+    <div class="nav-section-label">Insights</div>
+    <a href="{% url 'provider_reports' %}"  class="nav-item {% block nav_reports %}{% endblock %}">
+      <i class="fas fa-chart-line"></i><span>Reports</span>
+    </a>
+    <a href="{% url 'provider_demand' %}"   class="nav-item {% block nav_demand %}{% endblock %}">
+      <i class="fas fa-brain"></i><span>Demand Forecast</span>
+    </a>
+
+    <div class="nav-section-label">Settings</div>
+    <a href="{% url 'provider_station' %}"  class="nav-item {% block nav_station %}{% endblock %}">
+      <i class="fas fa-sliders"></i><span>Station Settings</span>
+    </a>
+    <a href="{% url 'provider_profile' %}"  class="nav-item {% block nav_profile %}{% endblock %}">
+      <i class="fas fa-user-circle"></i><span>My Profile</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sf-open-toggle">
+      <span class="sf-label">Station Status</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="stationOpenToggle" {% if request.user.station.is_open %}checked{% endif %} onchange="toggleStationOpen(this)"/>
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="sf-open-label" id="openLabel">{{ request.user.station.is_open|yesno:"Open,Closed" }}</span>
+    </div>
+    <a href="{% url 'logout' %}" class="logout-btn">
+      <i class="fas fa-right-from-bracket"></i> Sign Out
+    </a>
+    <div class="sidebar-version">FuelGo v1.0 · Provider</div>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ========== MAIN WRAP ========== -->
+<div class="main-wrap" id="mainWrap">
+  <header class="topbar">
+    <button class="topbar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+    <div class="topbar-title">{% block page_title %}Overview{% endblock %}</div>
+    <div class="topbar-right">
+      {% if pending_count %}
+      <div class="topbar-alert">
+        <i class="fas fa-bell-ring"></i>
+        <span>{{ pending_count }} order{{ pending_count|pluralize }} waiting</span>
+      </div>
+      {% endif %}
+      <button class="topbar-icon-btn" id="notifBell" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="icon-badge">{{ notif_count|default:"2" }}</span>
+      </button>
+      <div class="topbar-avatar">{{ request.user.station.name|slice:":1"|default:"S" }}</div>
+    </div>
+  </header>
+
+  <main class="page-content">
+    {% if not request.user.station.is_approved %}
+    <div class="approval-banner">
+      <i class="fas fa-clock-rotate-left"></i>
+      <div>
+        <strong>Station Pending Approval</strong>
+        <span>Your station is under review by the FuelGo admin team. You'll be notified once approved.</span>
+      </div>
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script src="{% static 'js/provider.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

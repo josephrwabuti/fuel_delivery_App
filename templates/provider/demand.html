@@ -1,0 +1,88 @@
+{% extends 'provider/base.html' %}
+{% load static %}
+{% block title %}FuelGo – Demand Forecast{% endblock %}
+{% block page_title %}AI Demand Forecast{% endblock %}
+{% block nav_demand %}active{% endblock %}
+
+{% block content %}
+
+<div class="forecast-intro">
+  <div class="fi-icon"><i class="fas fa-brain"></i></div>
+  <div class="fi-body">
+    <div class="fi-title">AI-Powered Demand Prediction</div>
+    <div class="fi-sub">Based on your historical orders, time patterns, and local demand trends, FuelGo predicts upcoming fuel demand to help you stay stocked and staffed.</div>
+  </div>
+  <div class="fi-badge"><span class="live-dot"></span> Updated hourly</div>
+</div>
+
+<!-- ===== FORECAST ALERT ===== -->
+<div class="forecast-alert">
+  <i class="fas fa-triangle-exclamation text-orange"></i>
+  <div>
+    <strong>High demand predicted Friday & Saturday</strong>
+    <span>Orders expected to spike 40% above average. Consider restocking Diesel and scheduling extra drivers.</span>
+  </div>
+  <button class="btn-primary-sm" onclick="openModal('restockModal')"><i class="fas fa-plus"></i> Update Stock</button>
+</div>
+
+<!-- ===== WEEKLY FORECAST CHART ===== -->
+<div class="forecast-card">
+  <div class="fc-header">
+    <div class="fc-title"><i class="fas fa-chart-bar text-orange"></i> 7-Day Order Forecast</div>
+    <div class="fc-legend">
+      <span><span class="leg-dot orange"></span> Predicted</span>
+      <span><span class="leg-dot navy"></span> Actual (past)</span>
+    </div>
+  </div>
+  <div class="forecast-chart">
+    <div class="fch-bars">
+      <div class="fch-col past"><div class="fch-bar actual" style="height:45%"><span class="fch-val">8</span></div><div class="fch-day">Mon</div><div class="fch-type">actual</div></div>
+      <div class="fch-col past"><div class="fch-bar actual" style="height:60%"><span class="fch-val">11</span></div><div class="fch-day">Tue</div><div class="fch-type">actual</div></div>
+      <div class="fch-col past"><div class="fch-bar actual" style="height:50%"><span class="fch-val">9</span></div><div class="fch-day">Wed</div><div class="fch-type">actual</div></div>
+      <div class="fch-col past"><div class="fch-bar actual high" style="height:88%"><span class="fch-val">16</span></div><div class="fch-day">Thu</div><div class="fch-type">actual</div></div>
+      <div class="fch-col today-col"><div class="fch-bar actual today" style="height:38%"><span class="fch-val">7</span></div><div class="fch-day">Today</div><div class="fch-type">in progress</div></div>
+      <div class="fch-col"><div class="fch-bar predicted high" style="height:95%"><span class="fch-val">~17</span></div><div class="fch-day">Sat</div><div class="fch-type">predicted</div></div>
+      <div class="fch-col"><div class="fch-bar predicted" style="height:75%"><span class="fch-val">~14</span></div><div class="fch-day">Sun</div><div class="fch-type">predicted</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FORECAST INSIGHTS ===== -->
+<div class="insights-grid">
+  <div class="insight-card">
+    <div class="ic-icon orange"><i class="fas fa-fire"></i></div>
+    <div class="ic-title">Peak Time</div>
+    <div class="ic-val">6–9 PM Daily</div>
+    <div class="ic-desc">Ensure drivers are available during evening rush hours</div>
+  </div>
+  <div class="insight-card">
+    <div class="ic-icon blue"><i class="fas fa-droplet"></i></div>
+    <div class="ic-title">Highest Demand Fuel</div>
+    <div class="ic-val">Petrol (RON 91)</div>
+    <div class="ic-desc">60% of orders are for petrol — maintain adequate stock</div>
+  </div>
+  <div class="insight-card">
+    <div class="ic-icon purple"><i class="fas fa-calendar-week"></i></div>
+    <div class="ic-title">Busiest Day</div>
+    <div class="ic-val">Friday</div>
+    <div class="ic-desc">Schedule maximum driver availability on Fridays</div>
+  </div>
+  <div class="insight-card">
+    <div class="ic-icon orange"><i class="fas fa-triangle-exclamation"></i></div>
+    <div class="ic-title">Stock Alert</div>
+    <div class="ic-val">Diesel — 3 days left</div>
+    <div class="ic-desc">At current consumption, diesel will run out in ~3 days</div>
+  </div>
+</div>
+
+<!-- ===== RECOMMENDATIONS ===== -->
+<div class="recommendations-card">
+  <div class="rec-title"><i class="fas fa-lightbulb text-orange"></i> AI Recommendations</div>
+  <div class="rec-list">
+    <div class="rec-item"><div class="rec-icon green"><i class="fas fa-check"></i></div><div class="rec-body"><strong>Restock Diesel by Thursday</strong><span>Predicted demand will exhaust current 800L stock before the weekend. Order at least 2,000L.</span></div></div>
+    <div class="rec-item"><div class="rec-icon orange"><i class="fas fa-id-badge"></i></div><div class="rec-body"><strong>Schedule 3+ drivers on Friday & Saturday</strong><span>Demand forecast shows 40% spike. Having all 4 drivers available is recommended.</span></div></div>
+    <div class="rec-item"><div class="rec-icon blue"><i class="fas fa-clock"></i></div><div class="rec-body"><strong>Extend station hours on weekends</strong><span>18% of missed orders occur after 9PM on weekends. Consider operating until 11PM.</span></div></div>
+  </div>
+</div>
+
+{% endblock %}
