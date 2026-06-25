@@ -1,0 +1,150 @@
+{% extends 'driver/base.html' %}
+{% load static %}
+{% block title %}FuelGo – Assigned Orders{% endblock %}
+{% block page_title %}Assigned Orders{% endblock %}
+{% block nav_orders %}active{% endblock %}
+
+{% block content %}
+
+<div class="filter-bar">
+  <div class="search-wrap">
+    <i class="fas fa-magnifying-glass sb-icon"></i>
+    <input type="text" class="search-input" id="orderSearch" placeholder="Search by order ID or address…"/>
+  </div>
+  <div class="filter-chips">
+    <button class="fchip active" data-filter="all">All</button>
+    <button class="fchip" data-filter="assigned">Assigned</button>
+    <button class="fchip" data-filter="picked_up">Picked Up</button>
+    <button class="fchip" data-filter="delivering">Delivering</button>
+  </div>
+</div>
+
+<div class="assigned-orders-grid" id="ordersGrid">
+
+  {% for order in assigned_orders %}
+  <div class="order-card" data-status="{{ order.status }}" data-search="{{ order.id|lower }} {{ order.delivery_address|lower }}">
+    <div class="oc-header">
+      <div class="oc-id">#{{ order.id }}</div>
+      <div class="status-chip {{ order.status }}">{{ order.get_status_display }}</div>
+    </div>
+    <div class="oc-station">
+      <i class="fas fa-gas-pump text-orange"></i>
+      <div><strong>{{ order.station.name }}</strong><span>Pick up from here</span></div>
+    </div>
+    <div class="oc-fuel-row">
+      <div class="oc-fuel-item"><i class="fas fa-fire-flame-curved text-orange"></i><span>{{ order.fuel_type }}</span></div>
+      <div class="oc-fuel-item"><i class="fas fa-droplet text-blue"></i><span>{{ order.quantity }} Litres</span></div>
+      <div class="oc-fuel-item"><i class="fas fa-wallet text-purple"></i><span>{{ order.payment_method }}</span></div>
+    </div>
+    <div class="oc-delivery-addr">
+      <i class="fas fa-location-dot text-orange"></i>
+      <div>
+        <strong>Delivery Address</strong>
+        <span>{{ order.delivery_address }}</span>
+        {% if order.landmark %}<span class="oc-landmark">📍 {{ order.landmark }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="oc-customer">
+      <i class="fas fa-user text-blue"></i>
+      <span>{{ order.customer.get_full_name }}</span>
+      <a href="tel:{{ order.customer.phone }}" class="oc-call-btn"><i class="fas fa-phone"></i></a>
+    </div>
+    <div class="oc-meta">
+      <span><i class="fas fa-clock text-orange"></i> Assigned {{ order.assigned_at|timesince }} ago</span>
+      <span><i class="fas fa-route text-blue"></i> {{ order.distance|default:"2.4" }} km</span>
+    </div>
+    <div class="oc-actions">
+      <a href="{% url 'driver_active' %}?order={{ order.id }}" class="btn-start-del">
+        <i class="fas fa-play-circle"></i> Start Delivery
+      </a>
+      <button class="btn-view-map" onclick="openMapModal('{{ order.delivery_address }}')">
+        <i class="fas fa-map"></i>
+      </button>
+    </div>
+  </div>
+  {% empty %}
+  <!-- Demo order cards -->
+  <div class="order-card" data-status="assigned" data-search="fg-2044 ilala lumumba">
+    <div class="oc-header"><div class="oc-id">#FG-2044</div><div class="status-chip assigned">Assigned</div></div>
+    <div class="oc-station"><i class="fas fa-gas-pump text-orange"></i><div><strong>Total Energies – Kariakoo</strong><span>Pick up from here</span></div></div>
+    <div class="oc-fuel-row">
+      <div class="oc-fuel-item"><i class="fas fa-fire-flame-curved text-orange"></i><span>Petrol</span></div>
+      <div class="oc-fuel-item"><i class="fas fa-droplet text-blue"></i><span>25 Litres</span></div>
+      <div class="oc-fuel-item"><i class="fas fa-wallet text-purple"></i><span>Tigo Pesa</span></div>
+    </div>
+    <div class="oc-delivery-addr">
+      <i class="fas fa-location-dot text-orange"></i>
+      <div><strong>Delivery Address</strong><span>Ilala, Lumumba St, Block 4</span><span class="oc-landmark">📍 Near Ilala Municipal Council</span></div>
+    </div>
+    <div class="oc-customer">
+      <i class="fas fa-user text-blue"></i><span>Baraka Juma</span>
+      <a href="tel:+255712000020" class="oc-call-btn"><i class="fas fa-phone"></i></a>
+    </div>
+    <div class="oc-meta">
+      <span><i class="fas fa-clock text-orange"></i> Assigned 8 min ago</span>
+      <span><i class="fas fa-route text-blue"></i> 2.4 km</span>
+    </div>
+    <div class="oc-actions">
+      <a href="{% url 'driver_active' %}" class="btn-start-del"><i class="fas fa-play-circle"></i> Start Delivery</a>
+      <button class="btn-view-map" onclick="openMapModal('Ilala, Lumumba St, Block 4')"><i class="fas fa-map"></i></button>
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- Empty state -->
+  {% if not assigned_orders %}
+  <div class="empty-state-card">
+    <i class="fas fa-clipboard-check"></i>
+    <h4>No Assigned Orders</h4>
+    <p>You have no pending orders. Make sure you're <strong>On Duty</strong> to receive new assignments.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Map Modal -->
+<div class="modal-overlay" id="mapModal" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('mapModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-hdr"><i class="fas fa-map-location-dot text-orange"></i> Delivery Location</div>
+    <div class="map-mock-modal">
+      <div class="mmm-grid"></div>
+      <div class="mmm-dest"><i class="fas fa-location-dot"></i><span id="mapAddr">—</span></div>
+      <div class="mmm-label"><i class="fas fa-satellite-dish text-orange"></i> Map view</div>
+    </div>
+    <div class="modal-footer-simple">
+      <button class="btn-modal-cancel" onclick="closeModal('mapModal')">Close</button>
+      <a href="#" class="btn-modal-confirm" id="openMapsBtn" target="_blank">
+        <i class="fas fa-diamond-turn-right"></i> Open in Maps
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.fchip').forEach(c => {
+  c.addEventListener('click', function() {
+    document.querySelectorAll('.fchip').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+    const f = this.dataset.filter;
+    document.querySelectorAll('.order-card').forEach(card => {
+      card.style.display = (f === 'all' || card.dataset.status === f) ? '' : 'none';
+    });
+  });
+});
+document.getElementById('orderSearch')?.addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.order-card').forEach(card => {
+    card.style.display = (card.dataset.search || '').includes(q) ? '' : 'none';
+  });
+});
+function openMapModal(addr) {
+  document.getElementById('mapAddr').textContent = addr;
+  document.getElementById('openMapsBtn').href = 'https://maps.google.com/?q=' + encodeURIComponent(addr);
+  openModal('mapModal');
+}
+</script>
+{% endblock %}

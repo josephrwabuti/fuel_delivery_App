@@ -1,0 +1,258 @@
+{% extends 'driver/base.html' %}
+{% load static %}
+{% block title %}FuelGo – Active Delivery{% endblock %}
+{% block page_title %}Active Delivery{% endblock %}
+{% block nav_active %}active{% endblock %}
+
+{% block content %}
+
+{% if not active_order %}
+<div class="empty-full">
+  <div class="ef-icon"><i class="fas fa-truck-fast"></i></div>
+  <h3>No Active Delivery</h3>
+  <p>You have no delivery in progress. Check your assigned orders to start one.</p>
+  <a href="{% url 'driver_orders' %}" class="btn-ef"><i class="fas fa-clipboard-list"></i> View Assigned Orders</a>
+</div>
+{% else %}
+
+<!-- ===== STATUS STEPPER ===== -->
+<div class="delivery-stepper">
+  <div class="ds-step {% if active_order.status in 'assigned,picked_up,delivering,delivered' %}done{% endif %}" id="ds1">
+    <div class="ds-icon"><i class="fas fa-check"></i></div>
+    <div class="ds-body"><div class="ds-title">Order Accepted</div><div class="ds-time">{{ active_order.assigned_at|time:"H:i"|default:"14:27" }}</div></div>
+  </div>
+  <div class="ds-line {% if active_order.status in 'picked_up,delivering,delivered' %}done{% endif %}"></div>
+  <div class="ds-step {% if active_order.status == 'picked_up' %}active{% elif active_order.status in 'delivering,delivered' %}done{% endif %}" id="ds2">
+    <div class="ds-icon"><i class="fas fa-gas-pump"></i></div>
+    <div class="ds-body"><div class="ds-title">Fuel Picked Up</div><div class="ds-time" id="pickupTime">—</div></div>
+  </div>
+  <div class="ds-line {% if active_order.status in 'delivering,delivered' %}done{% endif %}"></div>
+  <div class="ds-step {% if active_order.status == 'delivering' %}active{% elif active_order.status == 'delivered' %}done{% endif %}" id="ds3">
+    <div class="ds-icon"><i class="fas fa-truck-fast"></i></div>
+    <div class="ds-body"><div class="ds-title">En Route</div><div class="ds-time" id="enrouteTime">—</div></div>
+  </div>
+  <div class="ds-line {% if active_order.status == 'delivered' %}done{% endif %}"></div>
+  <div class="ds-step {% if active_order.status == 'delivered' %}done{% endif %}" id="ds4">
+    <div class="ds-icon"><i class="fas fa-circle-check"></i></div>
+    <div class="ds-body"><div class="ds-title">Delivered</div><div class="ds-time" id="deliveredTime">—</div></div>
+  </div>
+</div>
+
+<div class="active-del-layout">
+
+  <!-- LEFT: Map + Controls -->
+  <div class="adl-main">
+
+    <!-- Order summary strip -->
+    <div class="order-strip">
+      <div class="os-item"><span>Order</span><strong class="text-orange">#{{ active_order.id|default:"FG-2044" }}</strong></div>
+      <div class="os-item"><span>Fuel</span><strong>{{ active_order.fuel_type|default:"Petrol" }} · {{ active_order.quantity|default:"25" }}L</strong></div>
+      <div class="os-item"><span>Customer</span><strong>{{ active_order.customer.get_full_name|default:"Baraka Juma" }}</strong></div>
+      <div class="os-item"><span>Payment</span><strong>{{ active_order.payment_method|default:"Tigo Pesa" }}</strong></div>
+    </div>
+
+    <!-- Live map -->
+    <div class="live-map-container">
+      <div class="lmc-topbar">
+        <span class="lmc-live"><span class="live-dot"></span> Live Location</span>
+        <span class="lmc-eta"><i class="fas fa-clock text-orange"></i> ETA: <strong id="etaDisplay">12 min</strong></span>
+      </div>
+      <div class="lmc-map">
+        <div class="lmc-grid"></div>
+        <!-- Station marker -->
+        <div class="map-station-marker">
+          <i class="fas fa-gas-pump"></i>
+          <span>Pickup</span>
+        </div>
+        <!-- Driver marker (animated) -->
+        <div class="map-driver-marker" id="driverMarker">
+          <div class="dmm-pulse"></div>
+          <div class="dmm-icon"><i class="fas fa-motorcycle"></i></div>
+          <div class="dmm-label">You</div>
+        </div>
+        <!-- Destination marker -->
+        <div class="map-dest-marker">
+          <i class="fas fa-location-dot"></i>
+          <span>Delivery</span>
+        </div>
+        <!-- Route line -->
+        <div class="map-route"></div>
+      </div>
+    </div>
+
+    <!-- Delivery address card -->
+    <div class="delivery-addr-card">
+      <div class="dac-icon"><i class="fas fa-location-dot"></i></div>
+      <div class="dac-body">
+        <div class="dac-title">Delivery Address</div>
+        <div class="dac-addr">{{ active_order.delivery_address|default:"Ilala, Lumumba St, Block 4" }}</div>
+        {% if active_order.landmark %}
+        <div class="dac-landmark">📍 {{ active_order.landmark|default:"Near Ilala Municipal Council" }}</div>
+        {% endif %}
+        <div class="dac-landmark">📍 Near Ilala Municipal Council</div>
+      </div>
+      <a href="https://maps.google.com/?q={{ active_order.delivery_address|urlencode }}" target="_blank" class="btn-open-maps">
+        <i class="fas fa-diamond-turn-right"></i>
+      </a>
+    </div>
+
+    <!-- Status update buttons -->
+    <div class="status-update-panel" id="statusPanel">
+
+      {% if active_order.status == 'assigned' %}
+      <div class="sup-info">Confirm you have picked up the fuel from the station</div>
+      <form method="POST" action="{% url 'driver_update_status' active_order.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="picked_up"/>
+        <button type="submit" class="btn-status-update pickup">
+          <i class="fas fa-gas-pump"></i> Confirm Fuel Picked Up
+        </button>
+      </form>
+
+      {% elif active_order.status == 'picked_up' %}
+      <div class="sup-info">Confirm you are now heading to the customer</div>
+      <form method="POST" action="{% url 'driver_update_status' active_order.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="delivering"/>
+        <button type="submit" class="btn-status-update enroute">
+          <i class="fas fa-truck-fast"></i> I'm En Route to Customer
+        </button>
+      </form>
+
+      {% elif active_order.status == 'delivering' %}
+      <div class="sup-info">Confirm delivery after handing over the fuel to the customer</div>
+      <form method="POST" action="{% url 'driver_update_status' active_order.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="delivered"/>
+        <button type="submit" class="btn-status-update delivered">
+          <i class="fas fa-circle-check"></i> Mark as Delivered
+        </button>
+      </form>
+
+      {% else %}
+      <!-- Demo buttons -->
+      <div class="sup-info">Update the delivery status as you progress</div>
+      <button class="btn-status-update pickup" onclick="demoUpdateStatus('pickup')">
+        <i class="fas fa-gas-pump"></i> Confirm Fuel Picked Up
+      </button>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- RIGHT: Customer + order info panel -->
+  <div class="adl-side">
+
+    <!-- Customer card -->
+    <div class="customer-card">
+      <div class="cc-header">
+        <div class="cc-avatar">{{ active_order.customer.first_name|slice:":1"|default:"B" }}</div>
+        <div class="cc-info">
+          <div class="cc-name">{{ active_order.customer.get_full_name|default:"Baraka Juma" }}</div>
+          <div class="cc-sub">Customer</div>
+        </div>
+      </div>
+      <div class="cc-contact">
+        <a href="tel:{{ active_order.customer.phone|default:'+255712000020' }}" class="cc-btn call">
+          <i class="fas fa-phone"></i> Call Customer
+        </a>
+        <a href="sms:{{ active_order.customer.phone|default:'+255712000020' }}" class="cc-btn sms">
+          <i class="fas fa-comment-sms"></i> SMS
+        </a>
+      </div>
+    </div>
+
+    <!-- Order details -->
+    <div class="side-order-detail">
+      <div class="sod-title">Order Details</div>
+      <div class="sod-row"><span>Order ID</span><strong>#{{ active_order.id|default:"FG-2044" }}</strong></div>
+      <div class="sod-row"><span>Fuel Type</span><strong>{{ active_order.fuel_type|default:"Petrol" }}</strong></div>
+      <div class="sod-row"><span>Quantity</span><strong>{{ active_order.quantity|default:"25" }} Litres</strong></div>
+      <div class="sod-row"><span>Station</span><strong>{{ active_order.station.name|default:"Total Energies" }}</strong></div>
+      <div class="sod-row"><span>Payment</span><strong>{{ active_order.payment_method|default:"Tigo Pesa" }}</strong></div>
+      <div class="sod-divider"></div>
+      <div class="sod-row total"><span>Total Value</span><strong class="text-orange">TZS {{ active_order.total_amount|default:"73,250" }}</strong></div>
+      <div class="sod-row"><span>Your Earnings</span><strong class="text-green">TZS {{ active_order.driver_earning|default:"7,325" }}</strong></div>
+    </div>
+
+    <!-- Report issue -->
+    <button class="btn-report-issue" onclick="openModal('issueModal')">
+      <i class="fas fa-triangle-exclamation"></i> Report an Issue
+    </button>
+
+  </div>
+</div>
+
+<!-- Report Issue Modal -->
+<div class="modal-overlay" id="issueModal" style="display:none">
+  <div class="modal-box narrow">
+    <button class="modal-close" onclick="closeModal('issueModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-hdr"><i class="fas fa-triangle-exclamation text-orange"></i> Report an Issue</div>
+    <form method="POST" action="{% url 'driver_report_issue' active_order.id|default:1 %}">
+      {% csrf_token %}
+      <div class="fg-group" style="margin-bottom:12px">
+        <label class="fg-label">Issue Type</label>
+        <select name="issue_type" class="fg-input-d">
+          <option value="customer_unavailable">Customer not available</option>
+          <option value="wrong_address">Wrong delivery address</option>
+          <option value="vehicle_problem">Vehicle breakdown</option>
+          <option value="fuel_spill">Fuel spill / accident</option>
+          <option value="payment_issue">Payment problem</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="fg-group" style="margin-bottom:16px">
+        <label class="fg-label">Description</label>
+        <textarea name="description" class="fg-input-d" rows="3" placeholder="Describe the issue…"></textarea>
+      </div>
+      <div class="modal-footer-simple">
+        <button type="button" class="btn-modal-cancel" onclick="closeModal('issueModal')">Cancel</button>
+        <button type="submit" class="btn-modal-confirm"><i class="fas fa-paper-plane"></i> Submit Report</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* Animate driver marker */
+(function(){
+  const m = document.getElementById('driverMarker');
+  if (!m) return;
+  let t = 0;
+  setInterval(() => {
+    t += 0.5;
+    m.style.left = (22 + t * 0.35) + '%';
+    m.style.top  = (35 + Math.sin(t * 0.18) * 10) + '%';
+  }, 700);
+})();
+
+/* Demo status update */
+function demoUpdateStatus(step) {
+  const now = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+  if (step === 'pickup') {
+    document.getElementById('ds2')?.classList.replace('','done');
+    document.getElementById('pickupTime').textContent = now;
+    document.querySelector('.btn-status-update.pickup').outerHTML =
+      `<div class="sup-info">Confirm you are now heading to the customer</div>
+       <button class="btn-status-update enroute" onclick="demoUpdateStatus('enroute')">
+         <i class="fas fa-truck-fast"></i> I'm En Route to Customer</button>`;
+  } else if (step === 'enroute') {
+    document.getElementById('ds3')?.classList.add('active');
+    document.getElementById('enrouteTime').textContent = now;
+    document.querySelector('.btn-status-update.enroute').outerHTML =
+      `<div class="sup-info">Confirm delivery after handing over fuel</div>
+       <button class="btn-status-update delivered" onclick="demoUpdateStatus('delivered')">
+         <i class="fas fa-circle-check"></i> Mark as Delivered</button>`;
+  } else if (step === 'delivered') {
+    document.getElementById('deliveredTime').textContent = now;
+    document.querySelector('.btn-status-update.delivered').outerHTML =
+      `<div class="delivery-complete-msg"><i class="fas fa-party-horn"></i> Delivery Complete! Great job.</div>`;
+    setTimeout(() => { window.location.href = '{% url "driver_history" %}'; }, 2000);
+  }
+}
+</script>
+{% endblock %}

@@ -18,21 +18,20 @@ def register(request):
         email = request.POST.get("email")
         password1 = request.POST.get("password1")
         password2 = request.POST.get("password2")
+        role = request.POST.get("role")
+
         phone = request.POST.get("phone")
         license_number = request.POST.get("license_number")
         license_no = request.POST.get("license_no")
 
-        # password check
         if password1 != password2:
             messages.error(request, "Passwords do not match")
             return redirect("register")
 
-        # check EMAIL FIRST
         if User.objects.filter(username=email).exists():
             messages.error(request, "Email already exists")
             return redirect("register")
 
-        # create user
         user = User.objects.create_user(
             username=email,
             email=email,
@@ -41,9 +40,9 @@ def register(request):
             last_name=last_name
         )
 
-        # create profile
         Profile.objects.create(
             user=user,
+            role=role,
             phone=phone,
             license_number=license_number,
             license_no=license_no
@@ -64,7 +63,24 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
-            return redirect("customer_home")
+
+            profile = Profile.objects.get(user=user)
+
+            if profile.role == "customer":
+                return redirect("customer_home")
+
+            elif profile.role == "provider":
+                return redirect("provider_home")
+
+            elif profile.role == "driver":
+                return redirect("driver_home")
+
+            elif profile.role == "admin":
+                return redirect("/admin/")
+
+            else:
+                return redirect("home")
+
         else:
             messages.error(request, "Invalid email or password")
             return redirect("login")
