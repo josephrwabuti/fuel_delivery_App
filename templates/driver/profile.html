@@ -1,0 +1,85 @@
+{% extends 'driver/base.html' %}
+{% load static %}
+{% block title %}FuelGo – My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block nav_profile %}active{% endblock %}
+
+{% block content %}
+<div class="profile-layout">
+
+  <!-- LEFT -->
+  <div class="profile-left">
+    <div class="profile-card">
+      <div class="pc-avatar">{{ request.user.first_name|slice:":1"|default:"D" }}</div>
+      <div class="pc-name">{{ request.user.get_full_name|default:"Driver Name" }}</div>
+      <div class="pc-role"><i class="fas fa-id-badge text-orange"></i> Verified Driver</div>
+      <div class="pc-licence"><i class="fas fa-id-card text-blue"></i> Licence: <strong>{{ request.user.driver.licence_number|default:"12345678901" }}</strong></div>
+      <div class="pc-stats">
+        <div class="pcs-item"><div class="pcs-num">{{ total_deliveries|default:"148" }}</div><div class="pcs-lbl">Deliveries</div></div>
+        <div class="pcs-div"></div>
+        <div class="pcs-item"><div class="pcs-num"><i class="fas fa-star text-orange"></i> {{ rating|default:"4.8" }}</div><div class="pcs-lbl">Rating</div></div>
+        <div class="pcs-div"></div>
+        <div class="pcs-item"><div class="pcs-num">{{ on_time_pct|default:"96" }}%</div><div class="pcs-lbl">On Time</div></div>
+      </div>
+    </div>
+    <div class="profile-quick-links">
+      <a href="{% url 'driver_history' %}" class="pql-item"><i class="fas fa-clock-rotate-left text-orange"></i><span>Delivery History</span><i class="fas fa-chevron-right pql-arr"></i></a>
+      <a href="{% url 'driver_earnings' %}" class="pql-item"><i class="fas fa-coins text-blue"></i><span>Earnings</span><i class="fas fa-chevron-right pql-arr"></i></a>
+      <a href="{% url 'logout' %}" class="pql-item logout"><i class="fas fa-right-from-bracket"></i><span>Sign Out</span><i class="fas fa-chevron-right pql-arr"></i></a>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="profile-right">
+
+    <div class="settings-card">
+      <div class="sc-title"><i class="fas fa-user-pen text-orange"></i> Personal Information</div>
+      <form method="POST" action="{% url 'driver_update_profile' %}">
+        {% csrf_token %}
+        <div class="form-grid-2">
+          <div class="fg-group"><label class="fg-label">First Name</label><input type="text" name="first_name" class="fg-input-d" value="{{ request.user.first_name }}"/></div>
+          <div class="fg-group"><label class="fg-label">Last Name</label><input type="text" name="last_name" class="fg-input-d" value="{{ request.user.last_name }}"/></div>
+          <div class="fg-group"><label class="fg-label">Email Address</label><input type="email" name="email" class="fg-input-d" value="{{ request.user.email }}"/></div>
+          <div class="fg-group"><label class="fg-label">Phone Number</label><input type="tel" name="phone" class="fg-input-d" value="{{ request.user.driver.phone|default:'' }}" placeholder="+255 7XX XXX XXX"/></div>
+          <div class="fg-group"><label class="fg-label">Driver Licence No. <span class="lbl-hint">(11 digits — read only)</span></label><input type="text" class="fg-input-d" value="{{ request.user.driver.licence_number|default:'12345678901' }}" readonly style="opacity:0.6;cursor:not-allowed"/></div>
+          <div class="fg-group"><label class="fg-label">Vehicle Plate</label><input type="text" name="plate_number" class="fg-input-d" value="{{ request.user.driver.plate_number|default:'' }}" placeholder="T 123 ABC"/></div>
+        </div>
+        <div class="settings-actions"><button type="submit" class="btn-save"><i class="fas fa-save"></i> Save Changes</button></div>
+      </form>
+    </div>
+
+    <div class="settings-card">
+      <div class="sc-title"><i class="fas fa-lock text-orange"></i> Change Password</div>
+      <form method="POST" action="{% url 'driver_change_password' %}">
+        {% csrf_token %}
+        <div class="form-grid-2">
+          <div class="fg-group full-fw"><label class="fg-label">Current Password</label>
+            <div class="pw-wrap"><input type="password" name="old_password" class="fg-input-d" placeholder="Current password"/><button type="button" class="pw-eye" onclick="tv(this)"><i class="fas fa-eye"></i></button></div>
+          </div>
+          <div class="fg-group"><label class="fg-label">New Password</label>
+            <div class="pw-wrap"><input type="password" name="password1" class="fg-input-d" placeholder="New password"/><button type="button" class="pw-eye" onclick="tv(this)"><i class="fas fa-eye"></i></button></div>
+          </div>
+          <div class="fg-group"><label class="fg-label">Confirm New Password</label>
+            <div class="pw-wrap"><input type="password" name="password2" class="fg-input-d" placeholder="Confirm new password"/><button type="button" class="pw-eye" onclick="tv(this)"><i class="fas fa-eye"></i></button></div>
+          </div>
+        </div>
+        <div class="settings-actions"><button type="submit" class="btn-save"><i class="fas fa-key"></i> Update Password</button></div>
+      </form>
+    </div>
+
+    <div class="settings-card">
+      <div class="sc-title"><i class="fas fa-bell text-blue"></i> Notification Preferences</div>
+      <div class="pref-list">
+        <div class="pref-item"><div class="pref-info"><strong>New Order Assigned</strong><span>Alert when a delivery is assigned to you</span></div><label class="toggle-switch"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+        <div class="pref-item"><div class="pref-info"><strong>Order Status Updates</strong><span>Notify when order status changes</span></div><label class="toggle-switch"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+        <div class="pref-item"><div class="pref-info"><strong>Earnings Credited</strong><span>Notify when earnings are added</span></div><label class="toggle-switch"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+        <div class="pref-item"><div class="pref-info"><strong>Rating Received</strong><span>Alert when a customer rates your delivery</span></div><label class="toggle-switch"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>function tv(btn){const i=btn.previousElementSibling;const ic=btn.querySelector('i');i.type=i.type==='password'?'text':'password';ic.classList.toggle('fa-eye');ic.classList.toggle('fa-eye-slash');}</script>
+{% endblock %}

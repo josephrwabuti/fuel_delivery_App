@@ -1,0 +1,61 @@
+{% extends 'driver/base.html' %}
+{% load static %}
+{% block title %}FuelGo – Notifications{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block nav_notif %}active{% endblock %}
+
+{% block content %}
+<div class="notif-page-header">
+  <span class="nc-unread"><i class="fas fa-circle text-orange"></i> 2 unread</span>
+  <button class="btn-mark-all" onclick="markAllRead()"><i class="fas fa-check-double"></i> Mark all read</button>
+</div>
+<div class="notif-list" id="notifList">
+  <div class="notif-group-label">New</div>
+  <div class="notif-item unread">
+    <div class="ni-icon orange"><i class="fas fa-clipboard-list"></i></div>
+    <div class="ni-body">
+      <div class="ni-title">New order assigned — <strong>#FG-2044</strong></div>
+      <div class="ni-desc">You have been assigned to deliver 25L of Petrol to Ilala, Lumumba St from Total Energies – Kariakoo.</div>
+      <div class="ni-meta"><span class="ni-time"><i class="fas fa-clock"></i> 8 minutes ago</span><a href="{% url 'driver_orders' %}" class="ni-action">View Order <i class="fas fa-arrow-right"></i></a></div>
+    </div>
+    <button class="ni-dismiss" onclick="dismissNotif(this)"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="notif-item unread">
+    <div class="ni-icon green"><i class="fas fa-star"></i></div>
+    <div class="ni-body">
+      <div class="ni-title">New rating received for <strong>#FG-2045</strong></div>
+      <div class="ni-desc">Grace Ntare gave you a 5-star rating. "Very fast and professional driver!"</div>
+      <div class="ni-meta"><span class="ni-time"><i class="fas fa-clock"></i> 1 hour ago</span></div>
+    </div>
+    <button class="ni-dismiss" onclick="dismissNotif(this)"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="notif-group-label">Earlier</div>
+  <div class="notif-item">
+    <div class="ni-icon blue"><i class="fas fa-coins"></i></div>
+    <div class="ni-body">
+      <div class="ni-title">Earnings credited — TZS 5,200</div>
+      <div class="ni-desc">Your earnings for order #FG-2045 have been credited to your account.</div>
+      <div class="ni-meta"><span class="ni-time"><i class="fas fa-clock"></i> 2 hours ago</span><a href="{% url 'driver_earnings' %}" class="ni-action">View Earnings <i class="fas fa-arrow-right"></i></a></div>
+    </div>
+    <button class="ni-dismiss" onclick="dismissNotif(this)"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="notif-item">
+    <div class="ni-icon orange"><i class="fas fa-shield-check"></i></div>
+    <div class="ni-body">
+      <div class="ni-title">Your account has been approved!</div>
+      <div class="ni-desc">Welcome to FuelGo, John! Your driver account has been verified. You can now go On Duty and start receiving delivery assignments.</div>
+      <div class="ni-meta"><span class="ni-time"><i class="fas fa-clock"></i> 2 days ago</span></div>
+    </div>
+    <button class="ni-dismiss" onclick="dismissNotif(this)"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="notif-empty" id="notifEmpty" style="display:none">
+    <i class="fas fa-bell-slash"></i><p>You're all caught up!</p>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function dismissNotif(btn){const i=btn.closest('.notif-item');i.style.opacity='0';i.style.transform='translateX(30px)';i.style.transition='all 0.3s';setTimeout(()=>{i.remove();if(!document.querySelectorAll('.notif-item').length)document.getElementById('notifEmpty').style.display='flex';},300);}
+function markAllRead(){document.querySelectorAll('.notif-item.unread').forEach(i=>i.classList.remove('unread'));document.querySelector('.nc-unread').innerHTML='<i class="fas fa-circle text-green"></i> All read';}
+</script>
+{% endblock %}

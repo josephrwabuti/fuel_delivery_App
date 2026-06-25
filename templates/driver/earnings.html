@@ -1,0 +1,78 @@
+{% extends 'driver/base.html' %}
+{% load static %}
+{% block title %}FuelGo – Earnings{% endblock %}
+{% block page_title %}My Earnings{% endblock %}
+{% block nav_earnings %}active{% endblock %}
+
+{% block content %}
+
+<!-- ===== EARNINGS KPI ===== -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-icon orange"><i class="fas fa-coins"></i></div>
+    <div class="kpi-body"><div class="kpi-num">TZS {{ today_earnings|default:"18,400" }}</div><div class="kpi-label">Today</div></div>
+    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +12% vs yesterday</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon blue"><i class="fas fa-calendar-week"></i></div>
+    <div class="kpi-body"><div class="kpi-num">TZS {{ weekly_earnings|default:"112,400" }}</div><div class="kpi-label">This Week</div></div>
+    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +8% vs last week</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon purple"><i class="fas fa-calendar-days"></i></div>
+    <div class="kpi-body"><div class="kpi-num">TZS {{ monthly_earnings|default:"438,200" }}</div><div class="kpi-label">This Month</div></div>
+    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> On track</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon orange"><i class="fas fa-truck-fast"></i></div>
+    <div class="kpi-body"><div class="kpi-num">{{ total_deliveries|default:"148" }}</div><div class="kpi-label">Total Deliveries</div></div>
+    <div class="kpi-trend"><i class="fas fa-star text-orange"></i> Avg TZS 2,960/delivery</div>
+  </div>
+</div>
+
+<div class="earnings-layout">
+
+  <!-- ===== WEEKLY CHART ===== -->
+  <div class="earn-card large">
+    <div class="ec-header"><div class="ec-title"><i class="fas fa-chart-bar text-orange"></i> Daily Earnings This Week</div></div>
+    <div class="earn-chart">
+      <div class="ech-bars">
+        <div class="ech-col"><div class="ech-bar" style="height:42%"><span class="ech-val">Mon<br/>TZS 14k</span></div><span class="ech-day">Mon</span></div>
+        <div class="ech-col"><div class="ech-bar" style="height:58%"><span class="ech-val">Tue<br/>TZS 19k</span></div><span class="ech-day">Tue</span></div>
+        <div class="ech-col"><div class="ech-bar" style="height:48%"><span class="ech-val">Wed<br/>TZS 16k</span></div><span class="ech-day">Wed</span></div>
+        <div class="ech-col"><div class="ech-bar high" style="height:88%"><span class="ech-val">Thu<br/>TZS 29k</span></div><span class="ech-day">Thu</span></div>
+        <div class="ech-col"><div class="ech-bar high" style="height:100%"><span class="ech-val">Fri<br/>TZS 33k</span></div><span class="ech-day">Fri</span></div>
+        <div class="ech-col"><div class="ech-bar" style="height:63%"><span class="ech-val">Sat<br/>TZS 21k</span></div><span class="ech-day">Sat</span></div>
+        <div class="ech-col"><div class="ech-bar today" style="height:28%"><span class="ech-val">Today<br/>TZS 18k</span></div><span class="ech-day">Today</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BREAKDOWN ===== -->
+  <div class="earn-card">
+    <div class="ec-header"><div class="ec-title"><i class="fas fa-chart-pie text-purple"></i> Earnings Breakdown</div></div>
+    <div class="earn-breakdown">
+      <div class="eb-item"><div class="eb-label"><span class="eb-dot orange"></span>Base delivery fee</div><div class="eb-val">TZS 82,000</div><div class="eb-pct">73%</div></div>
+      <div class="eb-bar-row"><div class="eb-bar-fill orange" style="width:73%"></div></div>
+      <div class="eb-item"><div class="eb-label"><span class="eb-dot blue"></span>Distance bonus</div><div class="eb-val">TZS 18,400</div><div class="eb-pct">16%</div></div>
+      <div class="eb-bar-row"><div class="eb-bar-fill blue" style="width:16%"></div></div>
+      <div class="eb-item"><div class="eb-label"><span class="eb-dot green"></span>On-time bonus</div><div class="eb-val">TZS 12,000</div><div class="eb-pct">11%</div></div>
+      <div class="eb-bar-row"><div class="eb-bar-fill green" style="width:11%"></div></div>
+      <div class="eb-total"><span>Total This Week</span><strong>TZS 112,400</strong></div>
+    </div>
+  </div>
+
+  <!-- ===== RECENT TRANSACTIONS ===== -->
+  <div class="earn-card large">
+    <div class="ec-header"><div class="ec-title"><i class="fas fa-receipt text-blue"></i> Recent Transactions</div></div>
+    <div class="transactions-list">
+      <div class="txn-item"><div class="txn-icon"><i class="fas fa-truck-fast"></i></div><div class="txn-body"><strong>#FG-2045 · Petrol 15L</strong><span>Kinondoni, Block 4 · 25 Jun 2026</span></div><div class="txn-amount">+TZS 5,200</div></div>
+      <div class="txn-item"><div class="txn-icon"><i class="fas fa-truck-fast"></i></div><div class="txn-body"><strong>#FG-2041 · Petrol 20L</strong><span>Kariakoo Market · 25 Jun 2026</span></div><div class="txn-amount">+TZS 6,800</div></div>
+      <div class="txn-item"><div class="txn-icon"><i class="fas fa-truck-fast"></i></div><div class="txn-body"><strong>#FG-2038 · Diesel 30L</strong><span>Msimbazi Centre · 24 Jun 2026</span></div><div class="txn-amount">+TZS 6,400</div></div>
+      <div class="txn-item star"><div class="txn-icon"><i class="fas fa-star"></i></div><div class="txn-body"><strong>On-Time Bonus</strong><span>Perfect delivery week · 22 Jun 2026</span></div><div class="txn-amount">+TZS 5,000</div></div>
+      <div class="txn-item"><div class="txn-icon"><i class="fas fa-truck-fast"></i></div><div class="txn-body"><strong>#FG-2035 · Diesel 40L</strong><span>Ubungo, Main Rd · 23 Jun 2026</span></div><div class="txn-amount">+TZS 8,000</div></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

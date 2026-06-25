@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}FuelGo – Driver{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/driver.css' %}"/>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ========== SIDEBAR ========== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <span class="brand-icon"><i class="fas fa-gas-pump"></i></span>
+      <span class="brand-text">Fuel<span class="brand-accent">Go</span></span>
+    </div>
+    <button class="sidebar-close" id="sidebarClose"><i class="fas fa-times"></i></button>
+  </div>
+
+  <!-- Driver card -->
+  <div class="sidebar-driver">
+    <div class="driver-avatar">{{ request.user.first_name|slice:":1"|default:"D" }}</div>
+    <div class="driver-info">
+      <span class="driver-name">{{ request.user.get_full_name|default:"Driver" }}</span>
+      <span class="driver-status {% if request.user.driver.is_approved %}approved{% else %}pending{% endif %}">
+        <i class="fas fa-circle"></i>
+        {{ request.user.driver.is_approved|yesno:"Verified Driver,Pending Approval" }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Duty toggle -->
+  <div class="duty-toggle-wrap">
+    <span class="dt-label">Duty Status</span>
+    <label class="duty-toggle">
+      <input type="checkbox" id="dutyToggle"
+        {% if request.user.driver.on_duty %}checked{% endif %}
+        onchange="toggleDuty(this)"/>
+      <span class="duty-slider"></span>
+    </label>
+    <span class="dt-status-label" id="dutyLabel">
+      {{ request.user.driver.on_duty|yesno:"On Duty,Off Duty" }}
+    </span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Deliveries</div>
+    <a href="{% url 'driver_home' %}"      class="nav-item {% block nav_home %}{% endblock %}">
+      <i class="fas fa-house"></i><span>Overview</span>
+    </a>
+    <a href="{% url 'driver_orders' %}"    class="nav-item {% block nav_orders %}{% endblock %}">
+      <i class="fas fa-clipboard-list"></i><span>Assigned Orders</span>
+      {% if new_orders_count %}<span class="nav-badge pulse">{{ new_orders_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'driver_active' %}"    class="nav-item {% block nav_active %}{% endblock %}">
+      <i class="fas fa-truck-fast"></i><span>Active Delivery</span>
+      {% if active_order %}<span class="nav-badge live">Live</span>{% endif %}
+    </a>
+
+    <div class="nav-section-label">Records</div>
+    <a href="{% url 'driver_history' %}"   class="nav-item {% block nav_history %}{% endblock %}">
+      <i class="fas fa-clock-rotate-left"></i><span>Delivery History</span>
+    </a>
+    <a href="{% url 'driver_earnings' %}"  class="nav-item {% block nav_earnings %}{% endblock %}">
+      <i class="fas fa-coins"></i><span>Earnings</span>
+    </a>
+
+    <div class="nav-section-label">Account</div>
+    <a href="{% url 'driver_profile' %}"   class="nav-item {% block nav_profile %}{% endblock %}">
+      <i class="fas fa-user-circle"></i><span>My Profile</span>
+    </a>
+    <a href="{% url 'driver_notifications' %}" class="nav-item {% block nav_notif %}{% endblock %}">
+      <i class="fas fa-bell"></i><span>Notifications</span>
+      <span class="nav-badge">{{ notif_count|default:"2" }}</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="{% url 'logout' %}" class="logout-btn">
+      <i class="fas fa-right-from-bracket"></i> Sign Out
+    </a>
+    <div class="sidebar-version">FuelGo v1.0 · Driver App</div>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ========== MAIN WRAP ========== -->
+<div class="main-wrap" id="mainWrap">
+  <header class="topbar">
+    <button class="topbar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+    <div class="topbar-title">{% block page_title %}Overview{% endblock %}</div>
+    <div class="topbar-right">
+      {% if active_order %}
+      <a href="{% url 'driver_active' %}" class="active-delivery-pill">
+        <span class="adp-dot"></span> Delivery in Progress
+      </a>
+      {% endif %}
+      <button class="topbar-icon-btn" id="notifBell">
+        <i class="fas fa-bell"></i>
+        <span class="icon-badge">{{ notif_count|default:"2" }}</span>
+      </button>
+      <div class="topbar-avatar">{{ request.user.first_name|slice:":1"|default:"D" }}</div>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <!-- Pending approval banner -->
+    {% if not request.user.driver.is_approved %}
+    <div class="approval-banner">
+      <i class="fas fa-clock text-yellow"></i>
+      <div>
+        <strong>Account Pending Approval</strong>
+        <span>Your driver account is under review by the FuelGo admin team. You'll receive a notification once approved — typically within 1–2 business days.</span>
+      </div>
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script src="{% static 'js/driver.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

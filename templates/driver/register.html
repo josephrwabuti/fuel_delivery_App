@@ -1,0 +1,286 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FuelGo – Driver Registration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/driver.css' %}"/>
+</head>
+<body class="auth-body">
+
+<!-- Background scene -->
+<div class="auth-bg">
+  <div class="auth-bg-image"></div>
+  <div class="auth-bg-overlay"></div>
+  <div class="auth-orb orb-orange"></div>
+  <div class="auth-orb orb-blue"></div>
+</div>
+
+<!-- Navbar -->
+<nav class="auth-nav">
+  <a href="{% url 'landing' %}" class="auth-brand">
+    <span class="brand-icon"><i class="fas fa-gas-pump"></i></span>
+    <span class="brand-text">Fuel<span class="brand-accent">Go</span></span>
+  </a>
+  <a href="{% url 'driver_login' %}" class="back-home">
+    <i class="fas fa-sign-in-alt"></i> Already registered? Sign In
+  </a>
+</nav>
+
+<div class="auth-page-wrap">
+  <div class="register-card">
+
+    <!-- Header -->
+    <div class="reg-header">
+      <div class="reg-icon"><i class="fas fa-id-badge"></i></div>
+      <h2 class="reg-title">Driver Registration</h2>
+      <p class="reg-sub">Create your FuelGo driver account. Admin will verify and approve your details before you can start delivering.</p>
+    </div>
+
+    <!-- Steps indicator -->
+    <div class="reg-steps">
+      <div class="rs-step active" id="rs1"><div class="rs-circle">1</div><span>Personal Info</span></div>
+      <div class="rs-line"></div>
+      <div class="rs-step" id="rs2"><div class="rs-circle">2</div><span>Credentials</span></div>
+      <div class="rs-line"></div>
+      <div class="rs-step" id="rs3"><div class="rs-circle">3</div><span>Confirm</span></div>
+    </div>
+
+    <form method="POST" action="{% url 'driver_register' %}" id="driverRegForm">
+      {% csrf_token %}
+
+      <!-- STEP 1 — Personal Info -->
+      <div class="reg-step-panel active" id="regStep1">
+        <div class="form-grid-2">
+          <div class="fg-group">
+            <label class="fg-label"><i class="fas fa-user text-orange"></i> First Name</label>
+            <input type="text" name="first_name" class="fg-input" placeholder="e.g. John" required/>
+          </div>
+          <div class="fg-group">
+            <label class="fg-label"><i class="fas fa-user text-orange"></i> Last Name</label>
+            <input type="text" name="last_name" class="fg-input" placeholder="e.g. Mwalimu" required/>
+          </div>
+          <div class="fg-group">
+            <label class="fg-label"><i class="fas fa-envelope text-orange"></i> Email Address</label>
+            <input type="email" name="email" id="reg_email" class="fg-input" placeholder="you@example.com" required/>
+          </div>
+          <div class="fg-group">
+            <label class="fg-label"><i class="fas fa-phone text-orange"></i> Phone Number</label>
+            <input type="tel" name="phone" class="fg-input" placeholder="+255 7XX XXX XXX" required/>
+          </div>
+          <div class="fg-group fw">
+            <label class="fg-label"><i class="fas fa-id-card text-orange"></i> Driver Licence Number <span class="lbl-hint">(11 digits)</span></label>
+            <input type="text" name="licence_number" id="licenceInput" class="fg-input" placeholder="e.g. 12345678901" maxlength="11" minlength="11" pattern="\d{11}" required oninput="validateLicence(this)"/>
+            <div class="licence-hint" id="licenceHint"></div>
+          </div>
+          <div class="fg-group">
+            <label class="fg-label"><i class="fas fa-car text-blue"></i> Vehicle Type</label>
+            <select name="vehicle_type" class="fg-input">
+              <option value="motorcycle">Motorcycle</option>
+              <option value="pickup">Pickup Truck</option>
+              <option value="van">Van</option>
+              <option value="truck">Fuel Truck</option>
+            </select>
+          </div>
+          <div class="fg-group">
+            <label class="fg-label"><i class="fas fa-car-side text-blue"></i> Vehicle Plate Number</label>
+            <input type="text" name="plate_number" class="fg-input" placeholder="e.g. T 123 ABC" required/>
+          </div>
+        </div>
+        <div class="reg-actions">
+          <button type="button" class="btn-reg-next" onclick="goRegStep(2)">
+            Next: Set Password <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2 — Credentials -->
+      <div class="reg-step-panel" id="regStep2">
+        <div class="form-grid-2">
+          <div class="fg-group fw">
+            <label class="fg-label"><i class="fas fa-lock text-orange"></i> Password</label>
+            <div class="pw-wrap">
+              <input type="password" name="password1" id="driverPw" class="fg-input" placeholder="Create a strong password" required oninput="checkStrength(this.value)"/>
+              <button type="button" class="pw-eye" onclick="togglePw('driverPw','eyeIcon1')"><i class="fas fa-eye" id="eyeIcon1"></i></button>
+            </div>
+            <div class="strength-bar"><div class="strength-fill" id="strFill"></div></div>
+            <div class="strength-lbl" id="strLbl"></div>
+          </div>
+          <div class="fg-group fw">
+            <label class="fg-label"><i class="fas fa-lock text-orange"></i> Confirm Password</label>
+            <div class="pw-wrap">
+              <input type="password" name="password2" id="driverPwConfirm" class="fg-input" placeholder="Repeat your password" required oninput="checkMatch()"/>
+              <button type="button" class="pw-eye" onclick="togglePw('driverPwConfirm','eyeIcon2')"><i class="fas fa-eye" id="eyeIcon2"></i></button>
+            </div>
+            <div class="match-msg" id="matchMsg"></div>
+          </div>
+        </div>
+
+        <!-- Password requirements checklist -->
+        <div class="pw-checklist">
+          <div class="pwc-item" id="pwc-len"><i class="fas fa-circle-check"></i> At least 8 characters</div>
+          <div class="pwc-item" id="pwc-upper"><i class="fas fa-circle-check"></i> One uppercase letter</div>
+          <div class="pwc-item" id="pwc-num"><i class="fas fa-circle-check"></i> One number</div>
+          <div class="pwc-item" id="pwc-special"><i class="fas fa-circle-check"></i> One special character</div>
+        </div>
+
+        <div class="fg-group fw" style="margin-top:14px">
+          <label class="fg-check-inline">
+            <input type="checkbox" name="terms" id="termsCheck" required/>
+            <span class="checkmark-sm"></span>
+            I agree to the <a href="#" class="text-orange-link">Terms of Service</a> and <a href="#" class="text-orange-link">Privacy Policy</a>
+          </label>
+        </div>
+
+        <div class="reg-actions">
+          <button type="button" class="btn-reg-back" onclick="goRegStep(1)"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="button" class="btn-reg-next" onclick="goRegStep(3)">Review Registration <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- STEP 3 — Confirm -->
+      <div class="reg-step-panel" id="regStep3">
+        <div class="confirm-summary">
+          <div class="cs-title"><i class="fas fa-clipboard-check text-orange"></i> Review Your Details</div>
+          <div class="cs-grid">
+            <div class="cs-item"><span>Full Name</span><strong id="cs_name">—</strong></div>
+            <div class="cs-item"><span>Email</span><strong id="cs_email">—</strong></div>
+            <div class="cs-item"><span>Phone</span><strong id="cs_phone">—</strong></div>
+            <div class="cs-item"><span>Licence No.</span><strong id="cs_licence">—</strong></div>
+            <div class="cs-item"><span>Vehicle Type</span><strong id="cs_vehicle">—</strong></div>
+            <div class="cs-item"><span>Plate Number</span><strong id="cs_plate">—</strong></div>
+          </div>
+          <div class="cs-note">
+            <i class="fas fa-info-circle text-orange"></i>
+            After submitting, the FuelGo admin will review your details and licence number. You'll be notified by email once your account is approved.
+          </div>
+        </div>
+
+        {% if form.errors %}
+        <div class="form-error-msg">
+          <i class="fas fa-circle-xmark"></i>
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}{{ error }}{% endfor %}
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="reg-actions">
+          <button type="button" class="btn-reg-back" onclick="goRegStep(2)"><i class="fas fa-arrow-left"></i> Back</button>
+          <button type="submit" class="btn-reg-submit" id="submitBtn">
+            <span class="btn-text"><i class="fas fa-paper-plane"></i> Submit Registration</span>
+            <span class="btn-loader" style="display:none"><i class="fas fa-circle-notch fa-spin"></i> Submitting…</span>
+          </button>
+        </div>
+      </div>
+
+    </form>
+
+    <p class="reg-signin-prompt">Already have an account? <a href="{% url 'driver_login' %}">Sign In</a></p>
+  </div>
+</div>
+
+<script src="{% static 'js/driver.js' %}"></script>
+<script>
+/* ---- Registration multi-step ---- */
+function goRegStep(step) {
+  if (step === 2) {
+    /* Validate step 1 fields */
+    const required = document.querySelectorAll('#regStep1 [required]');
+    for (const f of required) {
+      if (!f.value.trim()) { f.focus(); showRegError('Please fill in all fields before continuing.'); return; }
+    }
+    const lic = document.getElementById('licenceInput');
+    if (!/^\d{11}$/.test(lic.value)) { lic.focus(); showRegError('Licence number must be exactly 11 digits.'); return; }
+  }
+  if (step === 3) {
+    const pw1 = document.getElementById('driverPw').value;
+    const pw2 = document.getElementById('driverPwConfirm').value;
+    if (pw1 !== pw2) { showRegError('Passwords do not match.'); return; }
+    if (pw1.length < 8) { showRegError('Password must be at least 8 characters.'); return; }
+    if (!document.getElementById('termsCheck').checked) { showRegError('Please accept the Terms of Service.'); return; }
+    populateConfirm();
+  }
+  document.querySelectorAll('.reg-step-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('regStep' + step).classList.add('active');
+  document.querySelectorAll('.rs-step').forEach((s, i) => {
+    s.classList.remove('active', 'done');
+    if (i + 1 < step) s.classList.add('done');
+    if (i + 1 === step) s.classList.add('active');
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showRegError(msg) {
+  let err = document.getElementById('regError');
+  if (!err) { err = document.createElement('div'); err.id = 'regError'; err.className = 'form-error-msg'; document.querySelector('.reg-step-panel.active').prepend(err); }
+  err.innerHTML = '<i class="fas fa-circle-xmark"></i> ' + msg;
+  err.style.display = 'flex';
+  setTimeout(() => { if(err) err.style.display = 'none'; }, 4000);
+}
+
+function populateConfirm() {
+  const form = document.getElementById('driverRegForm');
+  const g = name => form.querySelector('[name="' + name + '"]')?.value || '—';
+  document.getElementById('cs_name').textContent    = g('first_name') + ' ' + g('last_name');
+  document.getElementById('cs_email').textContent   = g('email');
+  document.getElementById('cs_phone').textContent   = g('phone');
+  document.getElementById('cs_licence').textContent = g('licence_number');
+  document.getElementById('cs_vehicle').textContent = g('vehicle_type');
+  document.getElementById('cs_plate').textContent   = g('plate_number');
+}
+
+function validateLicence(inp) {
+  const hint = document.getElementById('licenceHint');
+  const val  = inp.value.replace(/\D/g, '');
+  inp.value  = val;
+  if (val.length === 11) { hint.textContent = '✓ Valid licence number'; hint.style.color = 'var(--green)'; }
+  else { hint.textContent = val.length + ' / 11 digits'; hint.style.color = val.length > 0 ? 'var(--yellow)' : 'var(--text-m)'; }
+}
+
+function checkStrength(v) {
+  const fill = document.getElementById('strFill');
+  const lbl  = document.getElementById('strLbl');
+  const checks = { len: v.length >= 8, upper: /[A-Z]/.test(v), num: /[0-9]/.test(v), special: /[^A-Za-z0-9]/.test(v) };
+  ['len','upper','num','special'].forEach(k => {
+    document.getElementById('pwc-' + k)?.classList.toggle('met', checks[k]);
+  });
+  const score = Object.values(checks).filter(Boolean).length;
+  const lvls  = [['0%','transparent',''],['25%','#ef4444','Weak'],['50%','#f97316','Fair'],['75%','#eab308','Good'],['100%','#22c55e','Strong']];
+  const lvl   = lvls[score];
+  fill.style.width = lvl[0]; fill.style.background = lvl[1];
+  lbl.textContent  = lvl[2] ? 'Strength: ' + lvl[2] : '';
+  lbl.style.color  = lvl[1];
+}
+
+function checkMatch() {
+  const p1  = document.getElementById('driverPw').value;
+  const p2  = document.getElementById('driverPwConfirm').value;
+  const msg = document.getElementById('matchMsg');
+  const inp = document.getElementById('driverPwConfirm');
+  if (!p2) { msg.textContent = ''; return; }
+  if (p1 === p2) { msg.textContent = '✓ Passwords match'; msg.style.color = 'var(--green)'; inp.style.borderColor = 'var(--green)'; }
+  else           { msg.textContent = '✗ Passwords do not match'; msg.style.color = '#ef4444'; inp.style.borderColor = '#ef4444'; }
+}
+
+function togglePw(id, iconId) {
+  const inp = document.getElementById(id);
+  const ico = document.getElementById(iconId);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  ico.classList.toggle('fa-eye'); ico.classList.toggle('fa-eye-slash');
+}
+
+document.getElementById('driverRegForm').addEventListener('submit', function() {
+  const btn  = document.getElementById('submitBtn');
+  btn.querySelector('.btn-text').style.display  = 'none';
+  btn.querySelector('.btn-loader').style.display = 'inline-flex';
+  btn.disabled = true;
+});
+</script>
+</body>
+</html>

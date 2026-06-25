@@ -1,0 +1,56 @@
+{% extends 'driver/base.html' %}
+{% load static %}
+{% block title %}FuelGo – Delivery History{% endblock %}
+{% block page_title %}Delivery History{% endblock %}
+{% block nav_history %}active{% endblock %}
+
+{% block content %}
+<div class="filter-bar">
+  <div class="search-wrap">
+    <i class="fas fa-magnifying-glass sb-icon"></i>
+    <input type="text" class="search-input" id="histSearch" placeholder="Search by order ID or address…"/>
+  </div>
+  <div class="filter-chips">
+    <button class="fchip active" data-filter="all">All</button>
+    <button class="fchip" data-filter="delivered">Delivered</button>
+    <button class="fchip" data-filter="failed">Failed</button>
+  </div>
+  <button class="btn-export"><i class="fas fa-file-arrow-down"></i> Export</button>
+</div>
+
+<div class="data-table-wrap">
+  <div class="data-table">
+    <div class="dt-header hist">
+      <span>Order ID</span><span>Customer</span><span>Fuel</span><span>Address</span><span>Status</span><span>Completed</span><span>Earnings</span><span>Rating</span>
+    </div>
+    {% for d in deliveries %}
+    <div class="dt-row hist" data-status="{{ d.status }}" data-search="{{ d.order.id }} {{ d.order.delivery_address|lower }}">
+      <span class="dt-id">#{{ d.order.id }}</span>
+      <span>{{ d.order.customer.get_full_name }}</span>
+      <span>{{ d.order.fuel_type }} {{ d.order.quantity }}L</span>
+      <span class="dt-addr">{{ d.order.delivery_address|truncatechars:26 }}</span>
+      <span><div class="status-chip {{ d.status }}">{{ d.get_status_display }}</div></span>
+      <span class="dt-time">{{ d.completed_at|date:"d M Y, H:i" }}</span>
+      <span class="dt-earn fw-600 text-green">TZS {{ d.driver_earning }}</span>
+      <span class="dt-rating"><i class="fas fa-star text-orange"></i> {{ d.rating|default:"—" }}</span>
+    </div>
+    {% empty %}
+    <div class="dt-row hist" data-status="delivered" data-search="fg-2045 kinondoni"><span class="dt-id">#FG-2045</span><span>Grace Ntare</span><span>Petrol 15L</span><span class="dt-addr">Kinondoni, Block 4</span><span><div class="status-chip delivered">Delivered</div></span><span class="dt-time">25 Jun 2026, 14:52</span><span class="dt-earn fw-600 text-green">TZS 5,200</span><span class="dt-rating"><i class="fas fa-star text-orange"></i> 5.0</span></div>
+    <div class="dt-row hist" data-status="delivered" data-search="fg-2041 kariakoo"><span class="dt-id">#FG-2041</span><span>Asha Mwangi</span><span>Petrol 20L</span><span class="dt-addr">Kariakoo Market</span><span><div class="status-chip delivered">Delivered</div></span><span class="dt-time">25 Jun 2026, 12:30</span><span class="dt-earn fw-600 text-green">TZS 6,800</span><span class="dt-rating"><i class="fas fa-star text-orange"></i> 4.8</span></div>
+    <div class="dt-row hist" data-status="delivered" data-search="fg-2038 msimbazi"><span class="dt-id">#FG-2038</span><span>John Kimaro</span><span>Diesel 30L</span><span class="dt-addr">Msimbazi Centre</span><span><div class="status-chip delivered">Delivered</div></span><span class="dt-time">24 Jun 2026, 16:10</span><span class="dt-earn fw-600 text-green">TZS 6,400</span><span class="dt-rating"><i class="fas fa-star text-orange"></i> 4.9</span></div>
+    <div class="dt-row hist" data-status="delivered" data-search="fg-2035 ubungo"><span class="dt-id">#FG-2035</span><span>Mary Thomas</span><span>Diesel 40L</span><span class="dt-addr">Ubungo, Main Rd</span><span><div class="status-chip delivered">Delivered</div></span><span class="dt-time">23 Jun 2026, 10:05</span><span class="dt-earn fw-600 text-green">TZS 8,000</span><span class="dt-rating"><i class="fas fa-star text-orange"></i> 4.7</span></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('.fchip').forEach(c=>{c.addEventListener('click',function(){document.querySelectorAll('.fchip').forEach(x=>x.classList.remove('active'));this.classList.add('active');const f=this.dataset.filter;document.querySelectorAll('.dt-row.hist').forEach(r=>{r.style.display=(f==='all'||r.dataset.status===f)?'':'none';});});});
+document.getElementById('histSearch')?.addEventListener('input',function(){const q=this.value.toLowerCase();document.querySelectorAll('.dt-row.hist').forEach(r=>{r.style.display=(r.dataset.search||'').includes(q)?'':'none';});});
+</script>
+{% endblock %}
+
+
+{# ============================================================ #}
+{# EARNINGS PAGE — saved as earnings.html separately below      #}
+{# ============================================================ #}
