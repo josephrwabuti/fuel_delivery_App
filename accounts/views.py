@@ -7,10 +7,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
 
-@login_required
-def customer_home(request):
-    return render(request, "customer/home.html")
-
 def register(request):
     if request.method == "POST":
         first_name = request.POST.get("first_name")
@@ -18,11 +14,7 @@ def register(request):
         email = request.POST.get("email")
         password1 = request.POST.get("password1")
         password2 = request.POST.get("password2")
-        role = request.POST.get("role")
-
-        phone = request.POST.get("phone")
-        license_number = request.POST.get("license_number")
-        license_no = request.POST.get("license_no")
+        role = request.POST.get("role")  # important
 
         if password1 != password2:
             messages.error(request, "Passwords do not match")
@@ -42,16 +34,19 @@ def register(request):
 
         Profile.objects.create(
             user=user,
-            role=role,
-            phone=phone,
-            license_number=license_number,
-            license_no=license_no
+            role=role
         )
 
         messages.success(request, "Account created successfully")
         return redirect("login")
 
     return render(request, "accounts/login_register.html")
+
+
+@login_required
+def customer_home(request):
+    return render(request, "customer/home.html")
+
 
 
 def login_view(request):
@@ -64,26 +59,20 @@ def login_view(request):
         if user is not None:
             login(request, user)
 
-            profile = Profile.objects.get(user=user)
+            # SAFE PROFILE FETCH
+            profile, created = Profile.objects.get_or_create(user=user)
 
             if profile.role == "customer":
                 return redirect("customer_home")
-
             elif profile.role == "provider":
                 return redirect("provider_home")
-
             elif profile.role == "driver":
                 return redirect("driver_home")
-
-            elif profile.role == "admin":
-                return redirect("/admin/")
-
             else:
-                return redirect("home")
+                return redirect("admin_home")
 
-        else:
-            messages.error(request, "Invalid email or password")
-            return redirect("login")
+        messages.error(request, "Invalid login details")
+        return redirect("login")
 
     return render(request, "accounts/login_register.html")
 

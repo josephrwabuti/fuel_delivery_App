@@ -30,10 +30,7 @@ class Profile(models.Model):
         ("admin", "Admin"),
     ]
 
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE
-    )
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     role = models.CharField(
         max_length=20,
@@ -41,13 +38,14 @@ class Profile(models.Model):
         default="customer"
     )
 
-    role = models.CharField(
-        max_length=20,
-        choices=ROLE_CHOICES,
-        default="customer"
+    phone = models.CharField(
+        max_length=9,
+        validators=[phone_validator],
+        blank=True,
+        null=True
     )
 
-    # Driver License (Driver only)
+    # Driver License (only for driver)
     license_number = models.CharField(
         max_length=11,
         validators=[driver_license_validator],
@@ -55,7 +53,7 @@ class Profile(models.Model):
         null=True
     )
 
-    # Business License (Provider only)
+    # Business License (only for provider)
     license_no = models.CharField(
         max_length=12,
         validators=[business_license_validator],
