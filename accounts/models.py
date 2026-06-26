@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 
 # ================= VALIDATORS =================
 
-phone_validator = RegexValidator(
+phone_validator = RegexValidator( 
     regex=r'^\d{9}$',
     message="Phone number must be exactly 9 digits."
 )
