@@ -1,51 +1,72 @@
 {% extends 'customer/base.html' %}
 {% load static %}
-
 {% block title %}FuelGo – Place Order{% endblock %}
 {% block page_title %}Place a Fuel Order{% endblock %}
 {% block nav_order %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+/* ---- Delivery map ---- */
+#deliveryMap{height:260px;width:100%;border-radius:var(--radius-sm);overflow:hidden;z-index:1;border:1px solid var(--border-m)}
+.leaflet-popup-content-wrapper{background:var(--navy-800);border:1px solid var(--border-m);border-radius:10px;color:var(--text-p)}
+.leaflet-popup-tip{background:var(--navy-800)}
+.del-marker-pin{width:22px;height:22px;background:var(--orange);border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 4px rgba(232,93,4,0.3);cursor:grab}
+.user-dot-order{width:14px;height:14px;background:var(--blue);border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 3px rgba(59,130,246,0.3)}
+
+/* ---- Location capture box ---- */
+.loc-capture-box{background:var(--glass-l);border:1.5px solid var(--border-m);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;transition:border-color var(--tr)}
+.loc-capture-box.captured{border-color:var(--green)}
+.lcb-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.lcb-icon{width:36px;height:36px;border-radius:9px;background:var(--orange-dim);border:1px solid var(--orange-bdr);color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+.lcb-title{font-size:.82rem;font-weight:700;color:var(--text-p)}
+.lcb-sub{font-size:.74rem;color:var(--text-s)}
+.lcb-addr{font-size:.87rem;font-weight:600;color:var(--text-p);margin-bottom:4px;display:none}
+.lcb-coords{font-size:.72rem;color:var(--text-m);display:none}
+.lcb-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-capture-loc{display:flex;align-items:center;gap:7px;background:var(--orange);color:#fff;border:none;padding:8px 14px;border-radius:var(--radius-sm);font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all var(--tr);white-space:nowrap}
+.btn-capture-loc:hover{background:var(--orange-light)}
+.btn-capture-loc:disabled{background:var(--navy-600);cursor:wait}
+.btn-pin-map{display:flex;align-items:center;gap:7px;background:var(--glass-l);border:1.5px solid var(--border-m);color:var(--text-s);padding:8px 14px;border-radius:var(--radius-sm);font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all var(--tr);white-space:nowrap}
+.btn-pin-map:hover{border-color:var(--blue-bdr);color:var(--blue)}
+.btn-pin-map.active{border-color:var(--blue);background:var(--blue-dim);color:var(--blue)}
+.loc-loading{display:flex;align-items:center;gap:7px;font-size:.82rem;color:var(--text-s)}
+.loc-loading i{color:var(--orange);animation:spin 1s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.map-panel{display:none;margin-top:12px}
+.map-hint{font-size:.75rem;color:var(--text-m);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.map-hint i{color:var(--orange)}
+.captured-badge{display:none;align-items:center;gap:6px;font-size:.74rem;font-weight:700;color:var(--green);background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);padding:4px 10px;border-radius:100px}
+</style>
+{% endblock %}
 
 {% block content %}
 
 <!-- ===== ORDER PROGRESS STEPS ===== -->
 <div class="order-steps">
-  <div class="os-step active" id="step-ind-1">
-    <div class="os-circle">1</div>
-    <span>Select Station</span>
-  </div>
+  <div class="os-step active" id="os1"><div class="os-circle">1</div><span>Select Station</span></div>
   <div class="os-line"></div>
-  <div class="os-step" id="step-ind-2">
-    <div class="os-circle">2</div>
-    <span>Fuel Details</span>
-  </div>
+  <div class="os-step" id="os2"><div class="os-circle">2</div><span>Fuel Details</span></div>
   <div class="os-line"></div>
-  <div class="os-step" id="step-ind-3">
-    <div class="os-circle">3</div>
-    <span>Delivery Info</span>
-  </div>
+  <div class="os-step" id="os3"><div class="os-circle">3</div><span>Delivery Location</span></div>
   <div class="os-line"></div>
-  <div class="os-step" id="step-ind-4">
-    <div class="os-circle">4</div>
-    <span>Confirm</span>
-  </div>
+  <div class="os-step" id="os4"><div class="os-circle">4</div><span>Confirm</span></div>
 </div>
 
 <div class="order-layout">
-
-  <!-- ===== FORM STEPS ===== -->
   <div class="order-form-wrap">
     <form method="POST" action="{% url 'customer_place_order' %}" id="orderForm">
       {% csrf_token %}
 
-      <!-- STEP 1: SELECT STATION -->
+      <!-- hidden fields for location -->
+      <input type="hidden" name="delivery_lat"     id="deliveryLat"/>
+      <input type="hidden" name="delivery_lng"     id="deliveryLng"/>
+      <input type="hidden" name="delivery_address" id="deliveryAddressHidden"/>
+      <input type="hidden" name="station_id"       id="selectedStationId" value="{{ preselected_station.id|default:'' }}"/>
+
+      <!-- ====== STEP 1 – STATION ====== -->
       <div class="order-step-panel active" id="step1">
-        <div class="osp-header">
-          <div class="osp-num">01</div>
-          <div>
-            <div class="osp-title">Choose a Fuel Station</div>
-            <div class="osp-sub">Pick the station you want to order from</div>
-          </div>
-        </div>
+        <div class="osp-header"><div class="osp-num">01</div><div><div class="osp-title">Choose a Fuel Station</div><div class="osp-sub">Pick the station to order from</div></div></div>
 
         {% if preselected_station %}
         <div class="preselected-station">
@@ -53,79 +74,47 @@
           <div class="ps-info">
             <strong>{{ preselected_station.name }}</strong>
             <span><i class="fas fa-location-dot"></i> {{ preselected_station.address }}</span>
-            <span><i class="fas fa-route"></i> {{ preselected_station.distance|default:'0.8' }} km · ~{{ preselected_station.eta|default:'10' }} min</span>
+            <span><i class="fas fa-route"></i> {{ preselected_station.distance|default:'—' }} km · ~{{ preselected_station.eta|default:'—' }} min</span>
           </div>
           <button type="button" class="ps-change" onclick="goStep(1)">Change</button>
         </div>
-        <input type="hidden" name="station_id" id="selectedStationId" value="{{ preselected_station.id }}"/>
         {% else %}
         <div class="station-select-list" id="stationSelectList">
-          <div class="ssl-item selected" data-id="1" onclick="selectStation(this, 1, 'Total Energies – Kariakoo', '0.8 km', '~8 min')">
+          <div class="ssl-item selected" data-id="1" onclick="selectStation(this,1,'Total Energies – Kariakoo','0.8 km','~8 min')">
             <div class="ssl-initial">T</div>
-            <div class="ssl-info">
-              <strong>Total Energies – Kariakoo</strong>
-              <span><i class="fas fa-location-dot"></i> Kariakoo St · <i class="fas fa-route"></i> 0.8 km · <i class="fas fa-clock"></i> ~8 min</span>
-              <div class="ssl-prices"><span>Petrol: TZS 2,850/L</span><span>Diesel: TZS 2,700/L</span></div>
-            </div>
+            <div class="ssl-info"><strong>Total Energies – Kariakoo</strong><span><i class="fas fa-route"></i> 0.8 km · <i class="fas fa-clock"></i> ~8 min</span><div class="ssl-prices"><span>Petrol: TZS 2,850/L</span><span>Diesel: TZS 2,700/L</span></div></div>
             <div class="ssl-check"><i class="fas fa-circle-check"></i></div>
           </div>
-          <div class="ssl-item" data-id="2" onclick="selectStation(this, 2, 'Puma Energy – Msimbazi', '1.4 km', '~14 min')">
+          <div class="ssl-item" data-id="2" onclick="selectStation(this,2,'Puma Energy – Msimbazi','1.4 km','~14 min')">
             <div class="ssl-initial">P</div>
-            <div class="ssl-info">
-              <strong>Puma Energy – Msimbazi</strong>
-              <span><i class="fas fa-location-dot"></i> Msimbazi Centre · <i class="fas fa-route"></i> 1.4 km · <i class="fas fa-clock"></i> ~14 min</span>
-              <div class="ssl-prices"><span>Petrol: TZS 2,830/L</span><span>Diesel: TZS 2,680/L</span></div>
-            </div>
+            <div class="ssl-info"><strong>Puma Energy – Msimbazi</strong><span><i class="fas fa-route"></i> 1.4 km · <i class="fas fa-clock"></i> ~14 min</span><div class="ssl-prices"><span>Petrol: TZS 2,830/L</span><span>Diesel: TZS 2,680/L</span></div></div>
             <div class="ssl-check"><i class="fas fa-circle-check"></i></div>
           </div>
-          <div class="ssl-item" data-id="3" onclick="selectStation(this, 3, 'Oryx Petrol – Kinondoni', '2.1 km', '~18 min')">
+          <div class="ssl-item" data-id="3" onclick="selectStation(this,3,'Oryx Petrol – Kinondoni','2.1 km','~18 min')">
             <div class="ssl-initial">O</div>
-            <div class="ssl-info">
-              <strong>Oryx Petrol – Kinondoni</strong>
-              <span><i class="fas fa-location-dot"></i> Kinondoni Rd · <i class="fas fa-route"></i> 2.1 km · <i class="fas fa-clock"></i> ~18 min</span>
-              <div class="ssl-prices"><span>Petrol: TZS 2,860/L</span></div>
-            </div>
+            <div class="ssl-info"><strong>Oryx Petrol – Kinondoni</strong><span><i class="fas fa-route"></i> 2.1 km · <i class="fas fa-clock"></i> ~18 min</span><div class="ssl-prices"><span>Petrol: TZS 2,860/L</span></div></div>
             <div class="ssl-check"><i class="fas fa-circle-check"></i></div>
           </div>
         </div>
-        <input type="hidden" name="station_id" id="selectedStationId" value="1"/>
         {% endif %}
 
         <div class="step-actions">
-          <button type="button" class="btn-next" onclick="goStep(2)">
-            Next: Fuel Details <i class="fas fa-arrow-right"></i>
-          </button>
+          <button type="button" class="btn-next" onclick="goStep(2)">Next: Fuel Details <i class="fas fa-arrow-right"></i></button>
         </div>
       </div>
 
-      <!-- STEP 2: FUEL DETAILS -->
+      <!-- ====== STEP 2 – FUEL ====== -->
       <div class="order-step-panel" id="step2">
-        <div class="osp-header">
-          <div class="osp-num">02</div>
-          <div>
-            <div class="osp-title">Fuel Details</div>
-            <div class="osp-sub">Choose fuel type and quantity</div>
-          </div>
-        </div>
+        <div class="osp-header"><div class="osp-num">02</div><div><div class="osp-title">Fuel Details</div><div class="osp-sub">Choose fuel type and quantity</div></div></div>
 
         <div class="fuel-type-selector">
           <div class="fts-label">Fuel Type</div>
           <div class="fts-options">
-            <label class="fts-option selected">
-              <input type="radio" name="fuel_type" value="Petrol" checked/>
-              <div class="fts-card">
-                <i class="fas fa-fire-flame-curved"></i>
-                <strong>Petrol</strong>
-                <span class="fts-price" id="petrolPrice">TZS 2,850/L</span>
-              </div>
+            <label class="fts-option selected"><input type="radio" name="fuel_type" value="Petrol" checked/>
+              <div class="fts-card"><i class="fas fa-fire-flame-curved"></i><strong>Petrol</strong><span class="fts-price" id="petrolPrice">TZS 2,850/L</span></div>
             </label>
-            <label class="fts-option">
-              <input type="radio" name="fuel_type" value="Diesel"/>
-              <div class="fts-card">
-                <i class="fas fa-droplet"></i>
-                <strong>Diesel</strong>
-                <span class="fts-price" id="dieselPrice">TZS 2,700/L</span>
-              </div>
+            <label class="fts-option"><input type="radio" name="fuel_type" value="Diesel"/>
+              <div class="fts-card"><i class="fas fa-droplet"></i><strong>Diesel</strong><span class="fts-price" id="dieselPrice">TZS 2,700/L</span></div>
             </label>
           </div>
         </div>
@@ -135,7 +124,7 @@
           <div class="qs-row">
             <button type="button" class="qs-btn minus" onclick="adjustQty(-5)"><i class="fas fa-minus"></i></button>
             <input type="number" name="quantity" id="quantityInput" class="qs-input" value="20" min="5" max="200" step="5" oninput="updateTotal()"/>
-            <button type="button" class="qs-btn plus" onclick="adjustQty(5)"><i class="fas fa-plus"></i></button>
+            <button type="button" class="qs-btn plus"  onclick="adjustQty(5)"><i class="fas fa-plus"></i></button>
           </div>
           <div class="qs-presets">
             <button type="button" class="qs-preset" onclick="setQty(10)">10L</button>
@@ -146,7 +135,7 @@
           </div>
         </div>
 
-        <div class="order-cost-preview" id="costPreview">
+        <div class="order-cost-preview">
           <div class="ocp-row"><span>Price per litre</span><span id="pricePerL">TZS 2,850</span></div>
           <div class="ocp-row"><span>Quantity</span><span id="qtyDisplay">20 L</span></div>
           <div class="ocp-row"><span>Delivery fee</span><span>TZS 2,000</span></div>
@@ -156,33 +145,52 @@
 
         <div class="step-actions">
           <button type="button" class="btn-back" onclick="goStep(1)"><i class="fas fa-arrow-left"></i> Back</button>
-          <button type="button" class="btn-next" onclick="goStep(3)">Next: Delivery Info <i class="fas fa-arrow-right"></i></button>
+          <button type="button" class="btn-next" onclick="goStep(3)">Next: Delivery Location <i class="fas fa-arrow-right"></i></button>
         </div>
       </div>
 
-      <!-- STEP 3: DELIVERY DETAILS -->
+      <!-- ====== STEP 3 – DELIVERY LOCATION ====== -->
       <div class="order-step-panel" id="step3">
-        <div class="osp-header">
-          <div class="osp-num">03</div>
-          <div>
-            <div class="osp-title">Delivery Information</div>
-            <div class="osp-sub">Where should we deliver your fuel?</div>
+        <div class="osp-header"><div class="osp-num">03</div><div><div class="osp-title">Delivery Location</div><div class="osp-sub">We'll deliver fuel to your current location or pin a custom spot</div></div></div>
+
+        <!-- Location capture box -->
+        <div class="loc-capture-box" id="lcBox">
+          <div class="lcb-header">
+            <div class="lcb-icon"><i class="fas fa-location-crosshairs"></i></div>
+            <div>
+              <div class="lcb-title">Your Delivery Location</div>
+              <div class="lcb-sub" id="lcbSub">Tap "Use My Location" to auto-detect, or pin it on the map</div>
+            </div>
+            <div class="captured-badge" id="capturedBadge"><i class="fas fa-circle-check"></i> Location Set</div>
+          </div>
+          <div class="lcb-addr" id="lcbAddr"></div>
+          <div class="lcb-coords" id="lcbCoords"></div>
+          <div class="lcb-actions">
+            <button type="button" class="btn-capture-loc" id="btnUseLoc" onclick="captureLocation()">
+              <i class="fas fa-location-dot"></i> Use My Location
+            </button>
+            <button type="button" class="btn-pin-map" id="btnPinMap" onclick="toggleMapPanel()">
+              <i class="fas fa-map-pin"></i> Pin on Map
+            </button>
+          </div>
+          <!-- Map panel (toggleable) -->
+          <div class="map-panel" id="mapPanel">
+            <div class="map-hint"><i class="fas fa-hand-pointer"></i> Click or drag the pin on the map to set your exact delivery point</div>
+            <div id="deliveryMap"></div>
           </div>
         </div>
 
+        <!-- Manual address override -->
+        <div class="fg-group" style="margin-bottom:14px">
+          <label class="fg-label"><i class="fas fa-pen text-orange"></i> Address / Landmark <span style="font-size:.72rem;color:var(--text-m);font-weight:400">(auto-filled or type manually)</span></label>
+          <input type="text" id="manualAddress" class="fg-input-order" placeholder="e.g. Kariakoo Market, Block C" oninput="syncAddress(this.value)"/>
+        </div>
+
         <div class="delivery-form">
-          <div class="fg-group">
-            <label class="fg-label"><i class="fas fa-location-dot text-orange"></i> Delivery Address</label>
-            <input type="text" name="delivery_address" class="fg-input-order" placeholder="Enter your delivery address" required/>
-          </div>
-          <div class="fg-group">
-            <label class="fg-label"><i class="fas fa-map-pin text-orange"></i> Landmark / Directions</label>
-            <input type="text" name="landmark" class="fg-input-order" placeholder="e.g. Near Makumbusho building, Blue gate"/>
-          </div>
           <div class="fg-row-2">
             <div class="fg-group">
               <label class="fg-label"><i class="fas fa-phone text-orange"></i> Contact Phone</label>
-              <input type="tel" name="contact_phone" class="fg-input-order" placeholder="+255 7XX XXX XXX" value="{{ request.user.phone|default:'' }}"/>
+              <input type="tel" name="contact_phone" class="fg-input-order" placeholder="+255 7XX XXX XXX" value="{{ request.user.profile.phone|default:'' }}"/>
             </div>
             <div class="fg-group">
               <label class="fg-label"><i class="fas fa-clock text-orange"></i> Preferred Time</label>
@@ -190,32 +198,26 @@
                 <option value="now">As soon as possible</option>
                 <option value="30min">Within 30 minutes</option>
                 <option value="1hr">Within 1 hour</option>
-                <option value="schedule">Schedule for later</option>
               </select>
             </div>
           </div>
           <div class="fg-group">
-            <label class="fg-label"><i class="fas fa-note-sticky text-orange"></i> Special Instructions (optional)</label>
-            <textarea name="notes" class="fg-input-order" rows="2" placeholder="Any special delivery instructions for the driver…"></textarea>
-          </div>
-
-          <!-- Payment method -->
-          <div class="fg-group">
             <label class="fg-label"><i class="fas fa-wallet text-orange"></i> Payment Method</label>
             <div class="payment-options">
-              <label class="pay-option selected">
-                <input type="radio" name="payment_method" value="cash" checked/>
+              <label class="pay-option selected"><input type="radio" name="payment_method" value="cash" checked/>
                 <div class="pay-card"><i class="fas fa-money-bill-wave"></i><span>Cash on Delivery</span></div>
               </label>
-              <label class="pay-option">
-                <input type="radio" name="payment_method" value="mpesa"/>
+              <label class="pay-option"><input type="radio" name="payment_method" value="mpesa"/>
                 <div class="pay-card"><i class="fas fa-mobile-screen-button"></i><span>M-Pesa</span></div>
               </label>
-              <label class="pay-option">
-                <input type="radio" name="payment_method" value="tigopesa"/>
+              <label class="pay-option"><input type="radio" name="payment_method" value="tigopesa"/>
                 <div class="pay-card"><i class="fas fa-mobile-screen-button"></i><span>Tigo Pesa</span></div>
               </label>
             </div>
+          </div>
+          <div class="fg-group">
+            <label class="fg-label"><i class="fas fa-note-sticky text-orange"></i> Special Instructions (optional)</label>
+            <textarea name="notes" class="fg-input-order" rows="2" placeholder="Any notes for the driver…"></textarea>
           </div>
         </div>
 
@@ -225,40 +227,29 @@
         </div>
       </div>
 
-      <!-- STEP 4: CONFIRM ORDER -->
+      <!-- ====== STEP 4 – CONFIRM ====== -->
       <div class="order-step-panel" id="step4">
-        <div class="osp-header">
-          <div class="osp-num">04</div>
-          <div>
-            <div class="osp-title">Review & Confirm</div>
-            <div class="osp-sub">Double-check your order before placing</div>
-          </div>
-        </div>
+        <div class="osp-header"><div class="osp-num">04</div><div><div class="osp-title">Review & Confirm</div><div class="osp-sub">Double-check before placing</div></div></div>
 
         <div class="order-summary-card">
-          <div class="osc-section">
-            <div class="osc-sec-title"><i class="fas fa-gas-pump text-orange"></i> Station</div>
-            <div class="osc-value" id="confirmStation">Total Energies – Kariakoo</div>
-          </div>
+          <div class="osc-section"><div class="osc-sec-title"><i class="fas fa-gas-pump text-orange"></i> Station</div><div class="osc-value" id="confirmStation">—</div></div>
           <div class="osc-divider"></div>
           <div class="osc-section two-col-sm">
-            <div><div class="osc-sec-title"><i class="fas fa-fire-flame-curved text-orange"></i> Fuel Type</div><div class="osc-value" id="confirmFuel">Petrol</div></div>
-            <div><div class="osc-sec-title"><i class="fas fa-droplet text-blue"></i> Quantity</div><div class="osc-value" id="confirmQty">20 Litres</div></div>
+            <div><div class="osc-sec-title"><i class="fas fa-fire-flame-curved text-orange"></i> Fuel</div><div class="osc-value" id="confirmFuel">—</div></div>
+            <div><div class="osc-sec-title"><i class="fas fa-droplet text-blue"></i> Quantity</div><div class="osc-value" id="confirmQty">—</div></div>
           </div>
           <div class="osc-divider"></div>
           <div class="osc-section">
-            <div class="osc-sec-title"><i class="fas fa-location-dot text-orange"></i> Delivery Address</div>
+            <div class="osc-sec-title"><i class="fas fa-location-dot text-orange"></i> Delivery Location</div>
             <div class="osc-value" id="confirmAddress">—</div>
+            <div id="confirmMapThumb" style="margin-top:10px;height:120px;border-radius:8px;overflow:hidden;display:none;border:1px solid var(--border-s)"></div>
           </div>
           <div class="osc-divider"></div>
           <div class="osc-section two-col-sm">
-            <div><div class="osc-sec-title"><i class="fas fa-wallet text-orange"></i> Payment</div><div class="osc-value" id="confirmPayment">Cash on Delivery</div></div>
-            <div><div class="osc-sec-title"><i class="fas fa-clock text-orange"></i> Delivery Time</div><div class="osc-value" id="confirmTime">As soon as possible</div></div>
+            <div><div class="osc-sec-title"><i class="fas fa-wallet text-orange"></i> Payment</div><div class="osc-value" id="confirmPayment">—</div></div>
+            <div><div class="osc-sec-title"><i class="fas fa-clock text-orange"></i> Time</div><div class="osc-value" id="confirmTime">—</div></div>
           </div>
-          <div class="osc-total-bar">
-            <span>Total Amount</span>
-            <span class="osc-total-num" id="confirmTotal">TZS 59,000</span>
-          </div>
+          <div class="osc-total-bar"><span>Total Amount</span><span class="osc-total-num" id="confirmTotal">—</span></div>
         </div>
 
         <div class="confirm-terms">
@@ -280,168 +271,319 @@
     </form>
   </div>
 
-  <!-- ===== ORDER SIDEBAR SUMMARY ===== -->
+  <!-- ===== SIDE SUMMARY ===== -->
   <div class="order-side-summary">
     <div class="oss-card">
       <div class="oss-title"><i class="fas fa-receipt text-orange"></i> Order Summary</div>
-      <div class="oss-row"><span>Station</span><span id="summStation">Total Energies</span></div>
+      <div class="oss-row"><span>Station</span><span id="summStation">—</span></div>
       <div class="oss-row"><span>Fuel</span><span id="summFuel">Petrol</span></div>
       <div class="oss-row"><span>Quantity</span><span id="summQty">20L</span></div>
       <div class="oss-row"><span>Price/L</span><span id="summPPL">TZS 2,850</span></div>
-      <div class="oss-row"><span>Delivery Fee</span><span>TZS 2,000</span></div>
+      <div class="oss-row"><span>Delivery</span><span>TZS 2,000</span></div>
       <div class="oss-divider"></div>
       <div class="oss-total"><span>Total</span><span id="summTotal">TZS 59,000</span></div>
-      <div class="oss-eta">
-        <i class="fas fa-clock text-orange"></i> Estimated arrival: <strong id="summEta">~10 min after confirmation</strong>
+      <div class="oss-row" id="summLocRow" style="display:none">
+        <span><i class="fas fa-location-dot text-orange"></i> Delivery</span>
+        <span id="summLocLabel" style="font-size:.75rem;max-width:120px;text-align:right;color:var(--green)">—</span>
       </div>
     </div>
-
     <div class="oss-info-card">
       <div class="oss-ic-title"><i class="fas fa-circle-info text-orange"></i> How it works</div>
-      <div class="oss-ic-step"><span>1</span> You place the order</div>
-      <div class="oss-ic-step"><span>2</span> Station confirms & assigns driver</div>
-      <div class="oss-ic-step"><span>3</span> Driver picks up fuel & delivers</div>
-      <div class="oss-ic-step"><span>4</span> You confirm receipt</div>
+      <div class="oss-ic-step"><span>1</span>You place the order</div>
+      <div class="oss-ic-step"><span>2</span>Station confirms & assigns driver</div>
+      <div class="oss-ic-step"><span>3</span>Driver delivers to your pinned location</div>
+      <div class="oss-ic-step"><span>4</span>You confirm receipt</div>
     </div>
   </div>
-
-</div><!-- /order-layout -->
+</div>
 
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-/* ---- Multi-step order form ---- */
-let currentStep = 1;
-const totalSteps = 4;
+/* =====================================================
+   ORDER FORM — Multi-step + Auto Location + Leaflet Map
+   ===================================================== */
+const PRICES = { Petrol: 2850, Diesel: 2700 };
+const DELIVERY_FEE = 2000;
+let deliveryLat = null, deliveryLng = null;
+let deliveryMapInstance = null, deliveryMarker = null;
+let confirmThumbMap = null;
+let mapPanelOpen = false;
+let selectedStationName = document.getElementById('summStation')?.textContent || '—';
 
-// Pre-select station if URL param set
+/* ---- Pre-select station from URL param ---- */
 const urlParams = new URLSearchParams(window.location.search);
 const stationParam = urlParams.get('station');
-if (stationParam) {
-  document.getElementById('selectedStationId').value = stationParam;
-}
+if (stationParam) document.getElementById('selectedStationId').value = stationParam;
 
+/* ---- Step navigation ---- */
 function goStep(step) {
-  // Validate step 1: station must be selected
+  // Validation
   if (step > 1) {
     const sid = document.getElementById('selectedStationId').value;
-    if (!sid) { showStepError('Please select a station first.'); return; }
+    if (!sid) { showErr('Please select a station first.'); return; }
   }
-  // Validate step 3: address required
   if (step > 3) {
-    const addr = document.querySelector('[name="delivery_address"]').value.trim();
-    if (!addr) { showStepError('Please enter your delivery address.'); return; }
+    if (!deliveryLat || !deliveryLng) { showErr('Please set your delivery location before continuing.'); return; }
+    const addr = document.getElementById('manualAddress').value.trim();
+    if (!addr) { showErr('Please enter or confirm your delivery address.'); return; }
     populateConfirm();
   }
-
   document.querySelectorAll('.order-step-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById(`step${step}`).classList.add('active');
-
+  document.getElementById('step' + step).classList.add('active');
   document.querySelectorAll('.os-step').forEach((s, i) => {
     s.classList.remove('active', 'done');
     if (i + 1 < step) s.classList.add('done');
     if (i + 1 === step) s.classList.add('active');
   });
-  currentStep = step;
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // When reaching step 3, auto-detect location
+  if (step === 3 && !deliveryLat) captureLocation();
 }
 
-function showStepError(msg) {
-  // Simple inline alert
-  let err = document.getElementById('stepError');
-  if (!err) {
-    err = document.createElement('div');
-    err.id = 'stepError';
-    err.className = 'step-error-msg';
-    document.querySelector('.order-step-panel.active').prepend(err);
-  }
-  err.textContent = msg;
-  err.style.display = 'flex';
-  setTimeout(() => { err.style.display = 'none'; }, 3000);
+function showErr(msg) {
+  let e = document.getElementById('stepErr');
+  if (!e) { e = document.createElement('div'); e.id = 'stepErr'; e.className = 'step-error-msg'; document.querySelector('.order-step-panel.active').prepend(e); }
+  e.innerHTML = '<i class="fas fa-circle-xmark"></i> ' + msg;
+  e.style.display = 'flex';
+  setTimeout(() => { if (e) e.style.display = 'none'; }, 4000);
 }
 
-function selectStation(el, id, name, distance, eta) {
+/* ---- Station selection ---- */
+function selectStation(el, id, name, dist, eta) {
   document.querySelectorAll('.ssl-item').forEach(i => i.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById('selectedStationId').value = id;
-  document.getElementById('summStation').textContent = name.split('–')[0].trim();
-  document.getElementById('summEta').textContent = `${eta} after confirmation`;
+  selectedStationName = name.split('–')[0].trim();
+  document.getElementById('summStation').textContent = selectedStationName;
 }
 
-const PRICES = { Petrol: 2850, Diesel: 2700 };
-const DELIVERY_FEE = 2000;
-
+/* ---- Cost calculator ---- */
 function updateTotal() {
-  const fuel = document.querySelector('[name="fuel_type"]:checked')?.value || 'Petrol';
-  const qty  = parseInt(document.getElementById('quantityInput').value) || 0;
-  const ppl  = PRICES[fuel] || 2850;
-  const total = (ppl * qty) + DELIVERY_FEE;
-
-  document.getElementById('pricePerL').textContent   = `TZS ${ppl.toLocaleString()}`;
-  document.getElementById('qtyDisplay').textContent  = `${qty} L`;
-  document.getElementById('totalCost').textContent   = `TZS ${total.toLocaleString()}`;
-  document.getElementById('summFuel').textContent    = fuel;
-  document.getElementById('summQty').textContent     = `${qty}L`;
-  document.getElementById('summPPL').textContent     = `TZS ${ppl.toLocaleString()}`;
-  document.getElementById('summTotal').textContent   = `TZS ${total.toLocaleString()}`;
+  const fuel  = document.querySelector('[name="fuel_type"]:checked')?.value || 'Petrol';
+  const qty   = parseInt(document.getElementById('quantityInput').value) || 0;
+  const ppl   = PRICES[fuel] || 2850;
+  const total = ppl * qty + DELIVERY_FEE;
+  document.getElementById('pricePerL').textContent = `TZS ${ppl.toLocaleString()}`;
+  document.getElementById('qtyDisplay').textContent = `${qty} L`;
+  document.getElementById('totalCost').textContent  = `TZS ${total.toLocaleString()}`;
+  document.getElementById('summFuel').textContent   = fuel;
+  document.getElementById('summQty').textContent    = `${qty}L`;
+  document.getElementById('summPPL').textContent    = `TZS ${ppl.toLocaleString()}`;
+  document.getElementById('summTotal').textContent  = `TZS ${total.toLocaleString()}`;
 }
+function adjustQty(d) { const i = document.getElementById('quantityInput'); i.value = Math.max(5, Math.min(200, (parseInt(i.value) || 0) + d)); updateTotal(); }
+function setQty(v) { document.getElementById('quantityInput').value = v; updateTotal(); }
 
-function adjustQty(delta) {
-  const inp = document.getElementById('quantityInput');
-  inp.value = Math.max(5, Math.min(200, (parseInt(inp.value) || 0) + delta));
+document.querySelectorAll('[name="fuel_type"]').forEach(r => r.addEventListener('change', () => {
+  document.querySelectorAll('.fts-option').forEach(o => o.classList.remove('selected'));
+  r.closest('.fts-option').classList.add('selected');
   updateTotal();
+}));
+document.querySelectorAll('[name="payment_method"]').forEach(r => r.addEventListener('change', () => {
+  document.querySelectorAll('.pay-option').forEach(o => o.classList.remove('selected'));
+  r.closest('.pay-option').classList.add('selected');
+}));
+
+/* ---- Auto-capture location ---- */
+function captureLocation() {
+  const btn    = document.getElementById('btnUseLoc');
+  const subEl  = document.getElementById('lcbSub');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Detecting…';
+  subEl.innerHTML = '<span class="loc-loading"><i class="fas fa-circle-notch"></i> Getting your location…</span>';
+
+  if (!navigator.geolocation) {
+    subEl.textContent = 'Geolocation not supported. Please pin your location on the map.';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-location-dot"></i> Use My Location';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      setDeliveryLocation(pos.coords.latitude, pos.coords.longitude, true);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-location-dot"></i> Update Location';
+    },
+    err => {
+      const msgs = { 1:'Location access denied — please pin on the map.', 2:'Location unavailable.', 3:'Timed out.' };
+      subEl.textContent = msgs[err.code] || 'Could not detect location.';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-location-dot"></i> Try Again';
+      // Open map panel automatically so user can pin
+      if (!mapPanelOpen) toggleMapPanel();
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+  );
 }
-function setQty(val) {
-  document.getElementById('quantityInput').value = val;
-  updateTotal();
+
+/* ---- Reverse geocode with Nominatim ---- */
+function reverseGeocode(lat, lng, cb) {
+  fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+    .then(r => r.json())
+    .then(d => {
+      const a = d.address;
+      const short = [a?.road, a?.suburb || a?.neighbourhood, a?.city || a?.town].filter(Boolean).join(', ');
+      cb(short || d.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+    })
+    .catch(() => cb(`${lat.toFixed(5)}, ${lng.toFixed(5)}`));
 }
 
-// Fuel type radio change
-document.querySelectorAll('[name="fuel_type"]').forEach(r => {
-  r.addEventListener('change', () => {
-    document.querySelectorAll('.fts-option').forEach(o => o.classList.remove('selected'));
-    r.closest('.fts-option').classList.add('selected');
-    updateTotal();
-  });
-});
+/* ---- Set delivery location ---- */
+function setDeliveryLocation(lat, lng, reverseCode = false) {
+  deliveryLat = lat;
+  deliveryLng = lng;
+  document.getElementById('deliveryLat').value = lat;
+  document.getElementById('deliveryLng').value = lng;
 
-// Payment option radio change
-document.querySelectorAll('[name="payment_method"]').forEach(r => {
-  r.addEventListener('change', () => {
-    document.querySelectorAll('.pay-option').forEach(o => o.classList.remove('selected'));
-    r.closest('.pay-option').classList.add('selected');
-  });
-});
+  const addrEl   = document.getElementById('lcbAddr');
+  const coordsEl = document.getElementById('lcbCoords');
+  const badge    = document.getElementById('capturedBadge');
+  const box      = document.getElementById('lcBox');
+  const subEl    = document.getElementById('lcbSub');
 
+  coordsEl.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  coordsEl.style.display = 'block';
+  badge.style.display = 'flex';
+  box.classList.add('captured');
+
+  if (reverseCode) {
+    subEl.innerHTML = '<span class="loc-loading"><i class="fas fa-circle-notch"></i> Getting address…</span>';
+    reverseGeocode(lat, lng, addr => {
+      addrEl.textContent = addr;
+      addrEl.style.display = 'block';
+      subEl.style.display = 'none';
+      document.getElementById('manualAddress').value = addr;
+      document.getElementById('deliveryAddressHidden').value = addr;
+      updateSummaryLocation(addr);
+    });
+  }
+
+  // Place / move marker on map
+  if (deliveryMapInstance) {
+    if (deliveryMarker) deliveryMarker.setLatLng([lat, lng]);
+    else deliveryMarker = L.marker([lat, lng], { icon: createDeliveryIcon(), draggable: true })
+      .addTo(deliveryMapInstance)
+      .on('dragend', e => {
+        const p = e.target.getLatLng();
+        setDeliveryLocation(p.lat, p.lng, true);
+      });
+    deliveryMapInstance.setView([lat, lng], 16);
+  }
+}
+
+/* ---- Leaflet icon ---- */
+function createDeliveryIcon() {
+  return L.divIcon({ className: '', html: '<div class="del-marker-pin"></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
+}
+
+/* ---- Toggle map panel ---- */
+function toggleMapPanel() {
+  mapPanelOpen = !mapPanelOpen;
+  const panel = document.getElementById('mapPanel');
+  const btn   = document.getElementById('btnPinMap');
+  panel.style.display = mapPanelOpen ? 'block' : 'none';
+  btn.classList.toggle('active', mapPanelOpen);
+
+  if (mapPanelOpen && !deliveryMapInstance) {
+    const cLat = deliveryLat || -6.8235;
+    const cLng = deliveryLng || 39.2695;
+    deliveryMapInstance = L.map('deliveryMap', { zoomControl: true, scrollWheelZoom: true })
+      .setView([cLat, cLng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>', maxZoom: 19
+    }).addTo(deliveryMapInstance);
+
+    // If location already set, place marker
+    if (deliveryLat) {
+      deliveryMarker = L.marker([deliveryLat, deliveryLng], { icon: createDeliveryIcon(), draggable: true })
+        .addTo(deliveryMapInstance)
+        .on('dragend', e => { const p = e.target.getLatLng(); setDeliveryLocation(p.lat, p.lng, true); });
+    }
+
+    // Click on map to pin location
+    deliveryMapInstance.on('click', e => {
+      setDeliveryLocation(e.latlng.lat, e.latlng.lng, true);
+    });
+
+    setTimeout(() => deliveryMapInstance.invalidateSize(), 120);
+  } else if (mapPanelOpen && deliveryMapInstance) {
+    setTimeout(() => deliveryMapInstance.invalidateSize(), 120);
+  }
+}
+
+/* ---- Manual address sync ---- */
+function syncAddress(val) {
+  document.getElementById('deliveryAddressHidden').value = val;
+  updateSummaryLocation(val);
+}
+
+function updateSummaryLocation(addr) {
+  const row   = document.getElementById('summLocRow');
+  const label = document.getElementById('summLocLabel');
+  if (row && label) { label.textContent = addr.length > 22 ? addr.slice(0, 22) + '…' : addr; row.style.display = 'flex'; }
+}
+
+/* ---- Populate confirm step ---- */
 function populateConfirm() {
-  const fuel     = document.querySelector('[name="fuel_type"]:checked')?.value || 'Petrol';
-  const qty      = document.getElementById('quantityInput').value;
-  const addr     = document.querySelector('[name="delivery_address"]').value;
-  const payment  = document.querySelector('[name="payment_method"]:checked')?.value || 'cash';
-  const time     = document.querySelector('[name="preferred_time"]').value;
-  const ppl      = PRICES[fuel] || 2850;
-  const total    = (ppl * parseInt(qty)) + DELIVERY_FEE;
-  const stName   = document.getElementById('summStation').textContent;
-  const payLabel = { cash: 'Cash on Delivery', mpesa: 'M-Pesa', tigopesa: 'Tigo Pesa' };
-  const timeLabel = { now: 'As soon as possible', '30min': 'Within 30 minutes', '1hr': 'Within 1 hour', schedule: 'Scheduled' };
+  const fuel    = document.querySelector('[name="fuel_type"]:checked')?.value || 'Petrol';
+  const qty     = document.getElementById('quantityInput').value;
+  const addr    = document.getElementById('manualAddress').value || `${deliveryLat?.toFixed(4)}, ${deliveryLng?.toFixed(4)}`;
+  const payment = document.querySelector('[name="payment_method"]:checked')?.value || 'cash';
+  const time    = document.querySelector('[name="preferred_time"]').value;
+  const ppl     = PRICES[fuel] || 2850;
+  const total   = ppl * parseInt(qty) + DELIVERY_FEE;
+  const payLabels = { cash:'Cash on Delivery', mpesa:'M-Pesa', tigopesa:'Tigo Pesa' };
+  const timeLabels= { now:'As soon as possible', '30min':'Within 30 min', '1hr':'Within 1 hour' };
 
-  document.getElementById('confirmStation').textContent = stName;
+  document.getElementById('confirmStation').textContent = selectedStationName || document.getElementById('summStation').textContent;
   document.getElementById('confirmFuel').textContent    = fuel;
-  document.getElementById('confirmQty').textContent     = `${qty} Litres`;
-  document.getElementById('confirmAddress').textContent = addr || '—';
-  document.getElementById('confirmPayment').textContent = payLabel[payment] || payment;
-  document.getElementById('confirmTime').textContent    = timeLabel[time] || time;
+  document.getElementById('confirmQty').textContent     = qty + ' Litres';
+  document.getElementById('confirmAddress').textContent = addr;
+  document.getElementById('confirmPayment').textContent = payLabels[payment] || payment;
+  document.getElementById('confirmTime').textContent    = timeLabels[time] || time;
   document.getElementById('confirmTotal').textContent   = `TZS ${total.toLocaleString()}`;
+
+  // Mini thumbnail map on confirm step
+  if (deliveryLat) {
+    const thumb = document.getElementById('confirmMapThumb');
+    thumb.style.display = 'block';
+    if (!confirmThumbMap) {
+      setTimeout(() => {
+        confirmThumbMap = L.map('confirmMapThumb', { zoomControl:false, dragging:false, scrollWheelZoom:false, attributionControl:false })
+          .setView([deliveryLat, deliveryLng], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(confirmThumbMap);
+        L.marker([deliveryLat, deliveryLng], { icon: createDeliveryIcon() }).addTo(confirmThumbMap).bindPopup('Delivery here').openPopup();
+        setTimeout(() => confirmThumbMap.invalidateSize(), 100);
+      }, 100);
+    } else {
+      confirmThumbMap.setView([deliveryLat, deliveryLng], 16);
+      confirmThumbMap.eachLayer(l => { if (l instanceof L.Marker) l.remove(); });
+      L.marker([deliveryLat, deliveryLng], { icon: createDeliveryIcon() }).addTo(confirmThumbMap);
+      setTimeout(() => confirmThumbMap.invalidateSize(), 100);
+    }
+  }
 }
 
-// Submit with loading state
+/* ---- Form submit ---- */
 document.getElementById('orderForm').addEventListener('submit', function(e) {
+  // Final guard: location must be set
+  if (!deliveryLat || !deliveryLng) {
+    e.preventDefault();
+    showErr('Delivery location is required. Please use "Use My Location" or pin on the map.');
+    goStep(3);
+    return;
+  }
   const btn = document.getElementById('placeOrderBtn');
   btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Placing Order…';
-  btn.disabled = true;
+  btn.disabled  = true;
 });
 
+/* ---- Init ---- */
 updateTotal();
 </script>
 {% endblock %}
