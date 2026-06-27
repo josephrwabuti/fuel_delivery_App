@@ -1,0 +1,245 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}FuelGo Admin – Drivers{% endblock %}
+{% block page_title %}Driver Management{% endblock %}
+{% block nav_drivers %}active{% endblock %}
+
+{% block content %}
+
+<!-- ===== MINI STATS ===== -->
+<div class="mini-stats-row">
+  <div class="msr-item"><div class="msr-num text-green">{{ approved_drivers|default:"38" }}</div><div class="msr-lbl">Approved</div></div>
+  <div class="msr-item"><div class="msr-num text-yellow">{{ pending_drivers|default:"3" }}</div><div class="msr-lbl">Pending</div></div>
+  <div class="msr-item"><div class="msr-num text-red">{{ rejected_drivers|default:"1" }}</div><div class="msr-lbl">Rejected</div></div>
+  <div class="msr-item"><div class="msr-num text-blue">{{ active_drivers|default:"14" }}</div><div class="msr-lbl">On Duty Now</div></div>
+</div>
+
+<!-- ===== PENDING APPROVAL BANNER ===== -->
+<div class="pending-banner">
+  <div class="pb-left">
+    <div class="pb-pulse"></div>
+    <div>
+      <div class="pb-title">3 Drivers Awaiting Approval</div>
+      <div class="pb-sub">Review their licence and personal details before approving access</div>
+    </div>
+  </div>
+  <button class="btn-filter-pending" onclick="filterByStatus('pending')">
+    <i class="fas fa-clock"></i> Show Pending Only
+  </button>
+</div>
+
+<!-- ===== FILTER BAR ===== -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <i class="fas fa-magnifying-glass sb-icon"></i>
+    <input type="text" class="search-input" id="driverSearch" placeholder="Search by name, phone or licence…"/>
+  </div>
+  <div class="filter-chips" id="filterChips">
+    <button class="fchip active" data-filter="all">All</button>
+    <button class="fchip" data-filter="pending">Pending</button>
+    <button class="fchip" data-filter="approved">Approved</button>
+    <button class="fchip" data-filter="rejected">Rejected</button>
+    <button class="fchip" data-filter="suspended">Suspended</button>
+  </div>
+</div>
+
+<!-- ===== DRIVERS TABLE ===== -->
+<div class="data-table-wrap">
+  <div class="data-table">
+    <div class="dt-header dr-grid">
+      <span>Driver</span><span>Phone</span><span>Email</span><span>Licence No.</span><span>Vehicle</span><span>Registered</span><span>Status</span><span>Actions</span>
+    </div>
+
+    {% for driver in drivers %}
+    <div class="dt-row dr-grid" data-status="{{ driver.status }}" data-search="{{ driver.get_full_name|lower }} {{ driver.phone }} {{ driver.driver.licence_number }}">
+      <span class="dt-name-cell">
+        <div class="entity-init blue">{{ driver.first_name|slice:":1" }}</div>
+        <div><div class="dt-main-name">{{ driver.get_full_name }}</div><div class="dt-sub">{{ driver.driver.vehicle_type }}</div></div>
+      </span>
+      <span class="dt-sub-text">{{ driver.driver.phone }}</span>
+      <span class="dt-sub-text">{{ driver.email }}</span>
+      <span class="dt-code licence">{{ driver.driver.licence_number }}</span>
+      <span class="dt-sub-text">{{ driver.driver.plate_number }}</span>
+      <span class="dt-time">{{ driver.date_joined|date:"d M Y" }}</span>
+      <span><div class="status-chip {{ driver.driver.status }}">{{ driver.driver.get_status_display }}</div></span>
+      <span class="dt-actions">
+        {% if driver.driver.status == 'pending' %}
+        <button class="btn-approve" onclick="approveDriver({{ driver.id }}, '{{ driver.get_full_name }}')" title="Approve"><i class="fas fa-check"></i></button>
+        <button class="btn-reject" onclick="rejectDriver({{ driver.id }}, '{{ driver.get_full_name }}')" title="Reject"><i class="fas fa-times"></i></button>
+        {% endif %}
+        <button class="btn-view" onclick="openDriverDetail('{{ driver.id }}', '{{ driver.get_full_name }}', '{{ driver.driver.licence_number }}', '{{ driver.driver.vehicle_type }}', '{{ driver.driver.plate_number }}', '{{ driver.email }}', '{{ driver.driver.phone }}')" title="View Detail"><i class="fas fa-eye"></i></button>
+        {% if driver.driver.status == 'approved' %}
+        <button class="btn-suspend" onclick="suspendDriver({{ driver.id }}, '{{ driver.get_full_name }}')" title="Suspend"><i class="fas fa-ban"></i></button>
+        {% endif %}
+      </span>
+    </div>
+    {% empty %}
+    <!-- Demo rows — pending drivers -->
+    <div class="dt-row dr-grid" data-status="pending" data-search="david mushi +255712000201 98765432101">
+      <span class="dt-name-cell"><div class="entity-init blue">D</div><div><div class="dt-main-name">David Mushi</div><div class="dt-sub">Motorcycle</div></div></span>
+      <span class="dt-sub-text">+255 712 000 201</span>
+      <span class="dt-sub-text">david.mushi@email.com</span>
+      <span class="dt-code licence">98765432101</span>
+      <span class="dt-sub-text">T 881 ZZA</span>
+      <span class="dt-time">23 Jun 2026</span>
+      <span><div class="status-chip pending">Pending</div></span>
+      <span class="dt-actions">
+        <button class="btn-approve" onclick="approveDriver(10,'David Mushi')" title="Approve"><i class="fas fa-check"></i></button>
+        <button class="btn-reject" onclick="rejectDriver(10,'David Mushi')" title="Reject"><i class="fas fa-times"></i></button>
+        <button class="btn-view" onclick="openDriverDetail(10,'David Mushi','98765432101','Motorcycle','T 881 ZZA','david.mushi@email.com','+255 712 000 201')" title="View"><i class="fas fa-eye"></i></button>
+      </span>
+    </div>
+    <div class="dt-row dr-grid" data-status="pending" data-search="grace ngoma +255712000202 12398765432">
+      <span class="dt-name-cell"><div class="entity-init blue">G</div><div><div class="dt-main-name">Grace Ngoma</div><div class="dt-sub">Pickup Truck</div></div></span>
+      <span class="dt-sub-text">+255 712 000 202</span>
+      <span class="dt-sub-text">grace.ngoma@email.com</span>
+      <span class="dt-code licence">12398765432</span>
+      <span class="dt-sub-text">T 442 KLA</span>
+      <span class="dt-time">24 Jun 2026</span>
+      <span><div class="status-chip pending">Pending</div></span>
+      <span class="dt-actions">
+        <button class="btn-approve" onclick="approveDriver(11,'Grace Ngoma')" title="Approve"><i class="fas fa-check"></i></button>
+        <button class="btn-reject" onclick="rejectDriver(11,'Grace Ngoma')" title="Reject"><i class="fas fa-times"></i></button>
+        <button class="btn-view" onclick="openDriverDetail(11,'Grace Ngoma','12398765432','Pickup Truck','T 442 KLA','grace.ngoma@email.com','+255 712 000 202')" title="View"><i class="fas fa-eye"></i></button>
+      </span>
+    </div>
+    <div class="dt-row dr-grid" data-status="pending" data-search="michael osei +255712000203 55544433322">
+      <span class="dt-name-cell"><div class="entity-init blue">M</div><div><div class="dt-main-name">Michael Osei</div><div class="dt-sub">Van</div></div></span>
+      <span class="dt-sub-text">+255 712 000 203</span>
+      <span class="dt-sub-text">m.osei@email.com</span>
+      <span class="dt-code licence">55544433322</span>
+      <span class="dt-sub-text">T 119 BBA</span>
+      <span class="dt-time">25 Jun 2026</span>
+      <span><div class="status-chip pending">Pending</div></span>
+      <span class="dt-actions">
+        <button class="btn-approve" onclick="approveDriver(12,'Michael Osei')" title="Approve"><i class="fas fa-check"></i></button>
+        <button class="btn-reject" onclick="rejectDriver(12,'Michael Osei')" title="Reject"><i class="fas fa-times"></i></button>
+        <button class="btn-view" onclick="openDriverDetail(12,'Michael Osei','55544433322','Van','T 119 BBA','m.osei@email.com','+255 712 000 203')" title="View"><i class="fas fa-eye"></i></button>
+      </span>
+    </div>
+    <!-- Approved drivers -->
+    <div class="dt-row dr-grid" data-status="approved" data-search="john mwalimu +255712000101 11122233344">
+      <span class="dt-name-cell"><div class="entity-init blue">J</div><div><div class="dt-main-name">John Mwalimu</div><div class="dt-sub">Motorcycle</div></div></span>
+      <span class="dt-sub-text">+255 712 000 101</span>
+      <span class="dt-sub-text">john.m@email.com</span>
+      <span class="dt-code licence">11122233344</span>
+      <span class="dt-sub-text">T 123 ABC</span>
+      <span class="dt-time">15 Jan 2026</span>
+      <span><div class="status-chip approved">Approved</div></span>
+      <span class="dt-actions">
+        <button class="btn-view" onclick="openDriverDetail(1,'John Mwalimu','11122233344','Motorcycle','T 123 ABC','john.m@email.com','+255 712 000 101')" title="View"><i class="fas fa-eye"></i></button>
+        <button class="btn-suspend" onclick="suspendDriver(1,'John Mwalimu')" title="Suspend"><i class="fas fa-ban"></i></button>
+      </span>
+    </div>
+    <div class="dt-row dr-grid" data-status="approved" data-search="amina said +255712000102 44455566677">
+      <span class="dt-name-cell"><div class="entity-init blue">A</div><div><div class="dt-main-name">Amina Said</div><div class="dt-sub">Pickup Truck</div></div></span>
+      <span class="dt-sub-text">+255 712 000 102</span>
+      <span class="dt-sub-text">amina.s@email.com</span>
+      <span class="dt-code licence">44455566677</span>
+      <span class="dt-sub-text">T 456 DEF</span>
+      <span class="dt-time">20 Feb 2026</span>
+      <span><div class="status-chip approved">Approved</div></span>
+      <span class="dt-actions">
+        <button class="btn-view" onclick="openDriverDetail(2,'Amina Said','44455566677','Pickup Truck','T 456 DEF','amina.s@email.com','+255 712 000 102')" title="View"><i class="fas fa-eye"></i></button>
+        <button class="btn-suspend" onclick="suspendDriver(2,'Amina Said')" title="Suspend"><i class="fas fa-ban"></i></button>
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ===== DRIVER DETAIL MODAL ===== -->
+<div class="modal-overlay" id="driverDetailModal" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('driverDetailModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-hdr-entity">
+      <div class="mhe-init blue" id="ddInitial">J</div>
+      <div>
+        <div class="mhe-name" id="ddName">John Mwalimu</div>
+        <div class="mhe-sub" id="ddStatus"><div class="status-chip approved">Approved</div></div>
+      </div>
+    </div>
+    <div class="detail-grid single">
+      <div class="dg-section">
+        <div class="dg-title">Driver Information</div>
+        <div class="dg-row"><span>Full Name</span><strong id="ddFullName">—</strong></div>
+        <div class="dg-row"><span>Email</span><strong id="ddEmail">—</strong></div>
+        <div class="dg-row"><span>Phone</span><strong id="ddPhone">—</strong></div>
+        <div class="dg-row licence-highlight"><span>Licence No.</span><strong id="ddLicence" class="licence-num">—</strong></div>
+        <div class="dg-row"><span>Vehicle Type</span><strong id="ddVehicle">—</strong></div>
+        <div class="dg-row"><span>Plate No.</span><strong id="ddPlate">—</strong></div>
+      </div>
+    </div>
+    <div class="modal-footer-btns" id="ddFooter">
+      <button class="btn-modal-cancel" onclick="closeModal('driverDetailModal')">Close</button>
+      <button class="btn-modal-confirm" id="ddApproveBtn"><i class="fas fa-check"></i> Approve Driver</button>
+      <button class="btn-modal-danger" id="ddRejectBtn"><i class="fas fa-times"></i> Reject</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function approveDriver(id, name) {
+  showConfirm('Approve Driver', `Approve <strong>${name}</strong>? They will receive a notification and can start delivering.`, 'green', () => {
+    showToast(`${name} approved. They can now go On Duty.`, 'success');
+    updateDriverRow(id, 'approved');
+    closeModal('driverDetailModal');
+  });
+}
+function rejectDriver(id, name) {
+  document.getElementById('rejectTitle') && (document.getElementById('rejectTitle').textContent = 'Reject Driver');
+  openModal('rejectModal');
+}
+function suspendDriver(id, name) {
+  showConfirm('Suspend Driver', `Suspend <strong>${name}</strong>? They will be unable to receive orders.`, 'red', () => {
+    showToast(`${name} has been suspended.`, 'error');
+    updateDriverRow(id, 'suspended');
+  });
+}
+function openDriverDetail(id, name, licence, vehicle, plate, email, phone) {
+  document.getElementById('ddInitial').textContent  = name.charAt(0);
+  document.getElementById('ddName').textContent     = name;
+  document.getElementById('ddFullName').textContent = name;
+  document.getElementById('ddEmail').textContent    = email;
+  document.getElementById('ddPhone').textContent    = phone;
+  document.getElementById('ddLicence').textContent  = licence;
+  document.getElementById('ddVehicle').textContent  = vehicle;
+  document.getElementById('ddPlate').textContent    = plate;
+  document.getElementById('ddApproveBtn').onclick   = () => approveDriver(id, name);
+  document.getElementById('ddRejectBtn').onclick    = () => { closeModal('driverDetailModal'); rejectDriver(id, name); };
+  openModal('driverDetailModal');
+}
+function updateDriverRow(id, status) {
+  document.querySelectorAll('.dt-row.dr-grid, .dt-row[data-search]').forEach(row => {
+    if (row.innerHTML.includes('openDriverDetail(' + id + ',')) {
+      row.dataset.status = status;
+      const chip = row.querySelector('.status-chip');
+      if (chip) { chip.className = 'status-chip ' + status; chip.textContent = status.charAt(0).toUpperCase() + status.slice(1); }
+      const actions = row.querySelector('.dt-actions');
+      if (actions && status === 'approved') {
+        actions.innerHTML = `<button class="btn-view" onclick="openDriverDetail(${id},'','','','','','')" title="View"><i class="fas fa-eye"></i></button><button class="btn-suspend" onclick="suspendDriver(${id},'')" title="Suspend"><i class="fas fa-ban"></i></button>`;
+      }
+    }
+  });
+}
+function filterByStatus(status) {
+  document.querySelectorAll('.fchip').forEach(c => { c.classList.toggle('active', c.dataset.filter === status); });
+  document.querySelectorAll('.dt-row').forEach(r => { r.style.display = r.dataset.status === status ? '' : 'none'; });
+}
+document.getElementById('driverSearch')?.addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.dt-row').forEach(r => { r.style.display = (r.dataset.search||'').includes(q) ? '' : 'none'; });
+});
+document.querySelectorAll('.fchip').forEach(c => {
+  c.addEventListener('click', function() {
+    document.querySelectorAll('.fchip').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+    const f = this.dataset.filter;
+    document.querySelectorAll('.dt-row').forEach(r => { r.style.display = (f==='all'||r.dataset.status===f)?'':'none'; });
+  });
+});
+</script>
+{% endblock %}

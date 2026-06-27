@@ -1,0 +1,158 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}FuelGo Admin – Settings{% endblock %}
+{% block page_title %}System Settings{% endblock %}
+{% block nav_settings %}active{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+
+  <!-- ===== PLATFORM SETTINGS ===== -->
+  <div class="settings-card">
+    <div class="sc-title"><i class="fas fa-sliders text-orange"></i> Platform Configuration</div>
+    <form method="POST" action="{% url 'admin_save_settings' %}">
+      {% csrf_token %}
+      <div class="form-grid-2">
+        <div class="fg-group">
+          <label class="fg-label">Platform Name</label>
+          <input type="text" name="platform_name" class="fg-input-a" value="{{ settings.platform_name|default:'FuelGo' }}"/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Support Email</label>
+          <input type="email" name="support_email" class="fg-input-a" value="{{ settings.support_email|default:'support@fuelgo.co.tz' }}"/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Support Phone</label>
+          <input type="tel" name="support_phone" class="fg-input-a" value="{{ settings.support_phone|default:'+255 700 000 000' }}"/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Default Delivery Fee (TZS)</label>
+          <input type="number" name="delivery_fee" class="fg-input-a" value="{{ settings.delivery_fee|default:'2000' }}"/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Max Delivery Radius (km)</label>
+          <input type="number" name="max_radius" class="fg-input-a" value="{{ settings.max_radius|default:'10' }}"/>
+        </div>
+        <div class="fg-group">
+          <label class="fg-label">Order Timeout (minutes)</label>
+          <input type="number" name="order_timeout" class="fg-input-a" value="{{ settings.order_timeout|default:'15' }}"/>
+        </div>
+        <div class="fg-group fw">
+          <label class="fg-label">Service Coverage Area</label>
+          <input type="text" name="coverage_area" class="fg-input-a" value="{{ settings.coverage_area|default:'Dar es Salaam, Tanzania' }}"/>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button type="submit" class="btn-save-settings"><i class="fas fa-save"></i> Save Configuration</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===== APPROVAL SETTINGS ===== -->
+  <div class="settings-card">
+    <div class="sc-title"><i class="fas fa-shield-check text-blue"></i> Approval & Verification</div>
+    <div class="pref-list">
+      <div class="pref-item">
+        <div class="pref-info"><strong>Auto-approve Customers</strong><span>Automatically activate customer accounts upon registration</span></div>
+        <label class="toggle-sw"><input type="checkbox" checked/><span class="tsw-slider"></span></label>
+      </div>
+      <div class="pref-item">
+        <div class="pref-info"><strong>Manual Driver Approval</strong><span>Require admin review before drivers can go on duty</span></div>
+        <label class="toggle-sw"><input type="checkbox" checked/><span class="tsw-slider"></span></label>
+      </div>
+      <div class="pref-item">
+        <div class="pref-info"><strong>Manual Station Approval</strong><span>Require admin review before stations appear to customers</span></div>
+        <label class="toggle-sw"><input type="checkbox" checked/><span class="tsw-slider"></span></label>
+      </div>
+      <div class="pref-item">
+        <div class="pref-info"><strong>Licence Verification Required</strong><span>Validate 11-digit driver licence before approval</span></div>
+        <label class="toggle-sw"><input type="checkbox" checked/><span class="tsw-slider"></span></label>
+      </div>
+      <div class="pref-item">
+        <div class="pref-info"><strong>Email Notifications on New Registrations</strong><span>Send admin an email when a new driver or station registers</span></div>
+        <label class="toggle-sw"><input type="checkbox" checked/><span class="tsw-slider"></span></label>
+      </div>
+    </div>
+    <div class="settings-actions">
+      <button class="btn-save-settings" onclick="showToast('Approval settings saved.','success')"><i class="fas fa-save"></i> Save Preferences</button>
+    </div>
+  </div>
+
+  <!-- ===== NOTIFICATION SETTINGS ===== -->
+  <div class="settings-card">
+    <div class="sc-title"><i class="fas fa-bell text-purple"></i> Notification Settings</div>
+    <div class="pref-list">
+      <div class="pref-item">
+        <div class="pref-info"><strong>Order Alerts to Admin</strong><span>Receive alerts for new, cancelled or failed orders</span></div>
+        <label class="toggle-sw"><input type="checkbox" checked/><span class="tsw-slider"></span></label>
+      </div>
+      <div class="pref-item">
+        <div class="pref-info"><strong>Low Stock Alerts</strong><span>Notify admin when any station falls below 20% stock</span></div>
+        <label class="toggle-sw"><input type="checkbox" checked/><span class="tsw-slider"></span></label>
+      </div>
+      <div class="pref-item">
+        <div class="pref-info"><strong>Driver Approval Reminders</strong><span>Remind admin daily of pending driver approvals</span></div>
+        <label class="toggle-sw"><input type="checkbox"/><span class="tsw-slider"></span></label>
+      </div>
+      <div class="pref-item">
+        <div class="pref-info"><strong>Weekly System Report</strong><span>Email a weekly performance summary every Monday</span></div>
+        <label class="toggle-sw"><input type="checkbox" checked/><span class="tsw-slider"></span></label>
+      </div>
+      <div class="pref-item">
+        <div class="pref-info"><strong>System Health Alerts</strong><span>Immediate alert if any system service degrades</span></div>
+        <label class="toggle-sw"><input type="checkbox" checked/><span class="tsw-slider"></span></label>
+      </div>
+    </div>
+    <div class="settings-actions">
+      <button class="btn-save-settings" onclick="showToast('Notification settings saved.','success')"><i class="fas fa-save"></i> Save Notifications</button>
+    </div>
+  </div>
+
+  <!-- ===== AI FORECAST SETTINGS ===== -->
+  <div class="settings-card">
+    <div class="sc-title"><i class="fas fa-brain text-orange"></i> AI Demand Forecast Settings</div>
+    <div class="form-grid-2">
+      <div class="fg-group">
+        <label class="fg-label">Forecast Horizon (days)</label>
+        <select class="fg-input-a" name="forecast_days">
+          <option value="3">3 Days</option>
+          <option value="7" selected>7 Days</option>
+          <option value="14">14 Days</option>
+          <option value="30">30 Days</option>
+        </select>
+      </div>
+      <div class="fg-group">
+        <label class="fg-label">Model Update Frequency</label>
+        <select class="fg-input-a" name="model_update">
+          <option value="hourly" selected>Hourly</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+        </select>
+      </div>
+      <div class="fg-group fw">
+        <label class="fg-label">Low Stock Threshold (%)</label>
+        <input type="number" name="stock_threshold" class="fg-input-a" value="25" min="5" max="50"/>
+      </div>
+    </div>
+    <div class="settings-actions">
+      <button class="btn-save-settings" onclick="showToast('AI settings saved.','success')"><i class="fas fa-save"></i> Save AI Settings</button>
+    </div>
+  </div>
+
+  <!-- ===== DANGER ZONE ===== -->
+  <div class="settings-card danger-zone">
+    <div class="sc-title"><i class="fas fa-triangle-exclamation text-red"></i> Danger Zone</div>
+    <div class="danger-actions">
+      <div class="da-item">
+        <div class="da-info"><strong>Clear All Order History</strong><span>Permanently delete all historical order records. Cannot be undone.</span></div>
+        <button class="btn-danger" onclick="showConfirm('Clear Order History','This will permanently delete all order records. Are you absolutely sure?','red',()=>showToast('Action cancelled for safety.','error'))"><i class="fas fa-trash-can"></i> Clear</button>
+      </div>
+      <div class="da-item">
+        <div class="da-info"><strong>Reset AI Forecast Model</strong><span>Clear all training data and retrain the AI model from scratch.</span></div>
+        <button class="btn-danger" onclick="showConfirm('Reset AI Model','This will delete all forecast training data. The model will retrain automatically.','red',()=>showToast('AI model reset initiated.','info'))"><i class="fas fa-rotate-right"></i> Reset</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

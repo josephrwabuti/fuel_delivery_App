@@ -1,0 +1,87 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}FuelGo Admin – Orders{% endblock %}
+{% block page_title %}All Orders{% endblock %}
+{% block nav_orders %}active{% endblock %}
+
+{% block content %}
+<div class="mini-stats-row">
+  <div class="msr-item"><div class="msr-num text-yellow">{{ pending_orders|default:"5" }}</div><div class="msr-lbl">Pending</div></div>
+  <div class="msr-item"><div class="msr-num text-orange">{{ delivering_orders|default:"8" }}</div><div class="msr-lbl">Delivering</div></div>
+  <div class="msr-item"><div class="msr-num text-green">{{ delivered_today|default:"31" }}</div><div class="msr-lbl">Delivered Today</div></div>
+  <div class="msr-item"><div class="msr-num text-blue">{{ total_orders|default:"3,841" }}</div><div class="msr-lbl">All Time</div></div>
+</div>
+
+<div class="filter-bar">
+  <div class="search-wrap"><i class="fas fa-magnifying-glass sb-icon"></i><input type="text" class="search-input" id="orderSearch" placeholder="Search by order ID, customer or station…"/></div>
+  <div class="filter-chips">
+    <button class="fchip active" data-filter="all">All</button>
+    <button class="fchip" data-filter="pending">Pending</button>
+    <button class="fchip" data-filter="confirmed">Confirmed</button>
+    <button class="fchip" data-filter="delivering">Delivering</button>
+    <button class="fchip" data-filter="delivered">Delivered</button>
+    <button class="fchip" data-filter="rejected">Rejected</button>
+    <button class="fchip" data-filter="cancelled">Cancelled</button>
+  </div>
+  <button class="btn-export"><i class="fas fa-file-arrow-down"></i> Export</button>
+</div>
+
+<div class="data-table-wrap">
+  <div class="data-table">
+    <div class="dt-header or-grid"><span>Order ID</span><span>Customer</span><span>Station</span><span>Fuel</span><span>Qty</span><span>Total</span><span>Driver</span><span>Status</span><span>Date</span><span>View</span></div>
+    {% for order in orders %}
+    <div class="dt-row or-grid" data-status="{{ order.status }}" data-search="{{ order.id }} {{ order.customer.get_full_name|lower }} {{ order.station.name|lower }}">
+      <span class="dt-id">#{{ order.id }}</span>
+      <span class="dt-sub-text">{{ order.customer.get_full_name }}</span>
+      <span class="dt-sub-text">{{ order.station.name|truncatechars:20 }}</span>
+      <span><span class="fuel-badge {{ order.fuel_type|lower }}">{{ order.fuel_type }}</span></span>
+      <span>{{ order.quantity }}L</span>
+      <span class="fw-600">TZS {{ order.total_amount }}</span>
+      <span class="dt-sub-text">{{ order.driver.name|default:"—" }}</span>
+      <span><div class="status-chip {{ order.status }}">{{ order.get_status_display }}</div></span>
+      <span class="dt-time">{{ order.created_at|date:"d M, H:i" }}</span>
+      <span><button class="btn-view" onclick="openOrderDetail('{{ order.id }}')" title="View"><i class="fas fa-eye"></i></button></span>
+    </div>
+    {% empty %}
+    <div class="dt-row or-grid" data-status="pending" data-search="fg-2047 asha mwangi total energies"><span class="dt-id">#FG-2047</span><span class="dt-sub-text">Asha Mwangi</span><span class="dt-sub-text">Total Energies</span><span><span class="fuel-badge petrol">Petrol</span></span><span>20L</span><span class="fw-600">TZS 59,000</span><span class="dt-sub-text">—</span><span><div class="status-chip pending">Pending</div></span><span class="dt-time">25 Jun, 14:18</span><span><button class="btn-view" onclick="openOrderDetail('FG-2047')" title="View"><i class="fas fa-eye"></i></button></span></div>
+    <div class="dt-row or-grid" data-status="delivering" data-search="fg-2046 john kimaro puma energy"><span class="dt-id">#FG-2046</span><span class="dt-sub-text">John Kimaro</span><span class="dt-sub-text">Puma Energy</span><span><span class="fuel-badge diesel">Diesel</span></span><span>30L</span><span class="fw-600">TZS 83,000</span><span class="dt-sub-text">John Mwalimu</span><span><div class="status-chip delivering">Delivering</div></span><span class="dt-time">25 Jun, 13:55</span><span><button class="btn-view" onclick="openOrderDetail('FG-2046')" title="View"><i class="fas fa-eye"></i></button></span></div>
+    <div class="dt-row or-grid" data-status="delivered" data-search="fg-2045 grace ntare total energies"><span class="dt-id">#FG-2045</span><span class="dt-sub-text">Grace Ntare</span><span class="dt-sub-text">Total Energies</span><span><span class="fuel-badge petrol">Petrol</span></span><span>15L</span><span class="fw-600">TZS 44,750</span><span class="dt-sub-text">Amina Said</span><span><div class="status-chip delivered">Delivered</div></span><span class="dt-time">25 Jun, 12:30</span><span><button class="btn-view" onclick="openOrderDetail('FG-2045')" title="View"><i class="fas fa-eye"></i></button></span></div>
+    <div class="dt-row or-grid" data-status="delivered" data-search="fg-2044 baraka juma total energies"><span class="dt-id">#FG-2044</span><span class="dt-sub-text">Baraka Juma</span><span class="dt-sub-text">Total Energies</span><span><span class="fuel-badge petrol">Petrol</span></span><span>25L</span><span class="fw-600">TZS 73,250</span><span class="dt-sub-text">John Mwalimu</span><span><div class="status-chip delivered">Delivered</div></span><span class="dt-time">25 Jun, 11:10</span><span><button class="btn-view" onclick="openOrderDetail('FG-2044')" title="View"><i class="fas fa-eye"></i></button></span></div>
+    <div class="dt-row or-grid" data-status="cancelled" data-search="fg-2040 david mushi shell"><span class="dt-id">#FG-2040</span><span class="dt-sub-text">David Mushi</span><span class="dt-sub-text">Shell – Temeke</span><span><span class="fuel-badge petrol">Petrol</span></span><span>10L</span><span class="fw-600">—</span><span class="dt-sub-text">—</span><span><div class="status-chip cancelled">Cancelled</div></span><span class="dt-time">24 Jun, 18:45</span><span><button class="btn-view" onclick="openOrderDetail('FG-2040')" title="View"><i class="fas fa-eye"></i></button></span></div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="orderDetailModal" style="display:none">
+  <div class="modal-box wide">
+    <button class="modal-close" onclick="closeModal('orderDetailModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-hdr-simple"><div class="mhs-icon orange"><i class="fas fa-receipt"></i></div><div><div class="mhs-title" id="odTitle">Order #FG-2047</div><div class="mhs-sub"><div class="status-chip pending">Pending</div></div></div></div>
+    <div class="detail-grid">
+      <div class="dg-section"><div class="dg-title">Order Info</div>
+        <div class="dg-row"><span>Customer</span><strong>Asha Mwangi</strong></div>
+        <div class="dg-row"><span>Station</span><strong>Total Energies – Kariakoo</strong></div>
+        <div class="dg-row"><span>Driver</span><strong>John Mwalimu</strong></div>
+        <div class="dg-row"><span>Fuel Type</span><strong>Petrol (RON 91)</strong></div>
+        <div class="dg-row"><span>Quantity</span><strong>20 Litres</strong></div>
+        <div class="dg-row"><span>Payment</span><strong>Cash on Delivery</strong></div>
+      </div>
+      <div class="dg-section"><div class="dg-title">Financials & Timeline</div>
+        <div class="dg-row"><span>Fuel Cost</span><strong>TZS 57,000</strong></div>
+        <div class="dg-row"><span>Delivery Fee</span><strong>TZS 2,000</strong></div>
+        <div class="dg-row"><span>Total</span><strong class="text-orange">TZS 59,000</strong></div>
+        <div class="dg-row"><span>Placed</span><strong>25 Jun 2026, 14:18</strong></div>
+        <div class="dg-row"><span>Delivery Address</span><strong>Kariakoo Market, Block C</strong></div>
+      </div>
+    </div>
+    <div class="modal-footer-btns"><button class="btn-modal-cancel" onclick="closeModal('orderDetailModal')">Close</button></div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function openOrderDetail(id) { document.getElementById('odTitle').textContent='Order #'+id; openModal('orderDetailModal'); }
+document.getElementById('orderSearch')?.addEventListener('input',function(){const q=this.value.toLowerCase();document.querySelectorAll('.dt-row').forEach(r=>{r.style.display=(r.dataset.search||'').includes(q)?'':'none';});});
+document.querySelectorAll('.fchip').forEach(c=>{c.addEventListener('click',function(){document.querySelectorAll('.fchip').forEach(x=>x.classList.remove('active'));this.classList.add('active');const f=this.dataset.filter;document.querySelectorAll('.dt-row').forEach(r=>{r.style.display=(f==='all'||r.dataset.status===f)?'':'none';});});});
+</script>
+{% endblock %}

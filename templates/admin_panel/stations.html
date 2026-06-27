@@ -1,0 +1,251 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}FuelGo Admin – Fuel Stations{% endblock %}
+{% block page_title %}Fuel Stations{% endblock %}
+{% block nav_stations %}active{% endblock %}
+
+{% block content %}
+
+<!-- ===== STATS ROW ===== -->
+<div class="mini-stats-row">
+  <div class="msr-item"><div class="msr-num text-green">{{ approved_count|default:"12" }}</div><div class="msr-lbl">Approved</div></div>
+  <div class="msr-item"><div class="msr-num text-yellow">{{ pending_count|default:"2" }}</div><div class="msr-lbl">Pending</div></div>
+  <div class="msr-item"><div class="msr-num text-red">{{ rejected_count|default:"1" }}</div><div class="msr-lbl">Rejected</div></div>
+  <div class="msr-item"><div class="msr-num text-orange">{{ total_count|default:"15" }}</div><div class="msr-lbl">Total</div></div>
+</div>
+
+<!-- ===== FILTER BAR ===== -->
+<div class="filter-bar">
+  <div class="search-wrap">
+    <i class="fas fa-magnifying-glass sb-icon"></i>
+    <input type="text" class="search-input" id="stationSearch" placeholder="Search stations by name or location…"/>
+  </div>
+  <div class="filter-chips">
+    <button class="fchip active" data-filter="all">All</button>
+    <button class="fchip" data-filter="pending">Pending <span class="fc-count">2</span></button>
+    <button class="fchip" data-filter="approved">Approved</button>
+    <button class="fchip" data-filter="rejected">Rejected</button>
+  </div>
+</div>
+
+<!-- ===== STATIONS TABLE ===== -->
+<div class="data-table-wrap">
+  <div class="data-table">
+    <div class="dt-header st-grid">
+      <span>Station</span><span>Owner</span><span>Location</span><span>Phone</span><span>Licence</span><span>Registered</span><span>Status</span><span>Actions</span>
+    </div>
+
+    {% for station in stations %}
+    <div class="dt-row st-grid" data-status="{{ station.status }}" data-search="{{ station.name|lower }} {{ station.address|lower }}">
+      <span class="dt-name-cell">
+        <div class="entity-init">{{ station.name|slice:":1" }}</div>
+        <div><div class="dt-main-name">{{ station.name }}</div><div class="dt-sub">{{ station.fuel_types }}</div></div>
+      </span>
+      <span class="dt-sub-text">{{ station.owner.get_full_name }}</span>
+      <span class="dt-sub-text">{{ station.address|truncatechars:28 }}</span>
+      <span class="dt-sub-text">{{ station.phone }}</span>
+      <span class="dt-code">{{ station.licence_no }}</span>
+      <span class="dt-time">{{ station.created_at|date:"d M Y" }}</span>
+      <span>
+        {% if station.status == 'approved' %}
+        <div class="status-chip approved">Approved</div>
+        {% elif station.status == 'pending' %}
+        <div class="status-chip pending">Pending</div>
+        {% else %}
+        <div class="status-chip rejected">Rejected</div>
+        {% endif %}
+      </span>
+      <span class="dt-actions">
+        {% if station.status == 'pending' %}
+        <button class="btn-approve" onclick="approveStation({{ station.id }}, '{{ station.name }}')" title="Approve"><i class="fas fa-check"></i></button>
+        <button class="btn-reject" onclick="rejectEntity('station', {{ station.id }}, '{{ station.name }}')" title="Reject"><i class="fas fa-times"></i></button>
+        {% endif %}
+        <button class="btn-view" onclick="openStationDetail({{ station.id }})" title="View"><i class="fas fa-eye"></i></button>
+        {% if station.status == 'approved' %}
+        <button class="btn-suspend" onclick="suspendEntity('station', {{ station.id }}, '{{ station.name }}')" title="Suspend"><i class="fas fa-ban"></i></button>
+        {% endif %}
+      </span>
+    </div>
+    {% empty %}
+    <!-- Demo rows -->
+    <div class="dt-row st-grid" data-status="pending" data-search="puma energy msimbazi">
+      <span class="dt-name-cell"><div class="entity-init">P</div><div><div class="dt-main-name">Puma Energy – Msimbazi</div><div class="dt-sub">Petrol, Diesel</div></div></span>
+      <span class="dt-sub-text">James Kariuki</span>
+      <span class="dt-sub-text">Msimbazi Centre, DSM</span>
+      <span class="dt-sub-text">+255 712 001 001</span>
+      <span class="dt-code">LIC-2024-0042</span>
+      <span class="dt-time">20 Jun 2026</span>
+      <span><div class="status-chip pending">Pending</div></span>
+      <span class="dt-actions">
+        <button class="btn-approve" onclick="approveStation(2,'Puma Energy')" title="Approve"><i class="fas fa-check"></i></button>
+        <button class="btn-reject" onclick="rejectEntity('station',2,'Puma Energy')" title="Reject"><i class="fas fa-times"></i></button>
+        <button class="btn-view" onclick="openStationDetail(2)" title="View"><i class="fas fa-eye"></i></button>
+      </span>
+    </div>
+    <div class="dt-row st-grid" data-status="pending" data-search="oryx petrol kinondoni">
+      <span class="dt-name-cell"><div class="entity-init">O</div><div><div class="dt-main-name">Oryx Petrol – Kinondoni</div><div class="dt-sub">Petrol</div></div></span>
+      <span class="dt-sub-text">Sara Mwangi</span>
+      <span class="dt-sub-text">Kinondoni Rd, DSM</span>
+      <span class="dt-sub-text">+255 712 001 002</span>
+      <span class="dt-code">LIC-2024-0038</span>
+      <span class="dt-time">22 Jun 2026</span>
+      <span><div class="status-chip pending">Pending</div></span>
+      <span class="dt-actions">
+        <button class="btn-approve" onclick="approveStation(3,'Oryx Petrol')" title="Approve"><i class="fas fa-check"></i></button>
+        <button class="btn-reject" onclick="rejectEntity('station',3,'Oryx Petrol')" title="Reject"><i class="fas fa-times"></i></button>
+        <button class="btn-view" onclick="openStationDetail(3)" title="View"><i class="fas fa-eye"></i></button>
+      </span>
+    </div>
+    <div class="dt-row st-grid" data-status="approved" data-search="total energies kariakoo">
+      <span class="dt-name-cell"><div class="entity-init">T</div><div><div class="dt-main-name">Total Energies – Kariakoo</div><div class="dt-sub">Petrol, Diesel, Premium</div></div></span>
+      <span class="dt-sub-text">Ali Hassan</span>
+      <span class="dt-sub-text">Kariakoo St, DSM</span>
+      <span class="dt-sub-text">+255 712 001 003</span>
+      <span class="dt-code">LIC-2023-0011</span>
+      <span class="dt-time">10 Jan 2026</span>
+      <span><div class="status-chip approved">Approved</div></span>
+      <span class="dt-actions">
+        <button class="btn-view" onclick="openStationDetail(1)" title="View"><i class="fas fa-eye"></i></button>
+        <button class="btn-suspend" onclick="suspendEntity('station',1,'Total Energies')" title="Suspend"><i class="fas fa-ban"></i></button>
+      </span>
+    </div>
+    <div class="dt-row st-grid" data-status="approved" data-search="shell temeke">
+      <span class="dt-name-cell"><div class="entity-init">S</div><div><div class="dt-main-name">Shell – Temeke</div><div class="dt-sub">Petrol, Diesel</div></div></span>
+      <span class="dt-sub-text">Peter Mtui</span>
+      <span class="dt-sub-text">Chang'ombe Rd, Temeke</span>
+      <span class="dt-sub-text">+255 712 001 004</span>
+      <span class="dt-code">LIC-2023-0019</span>
+      <span class="dt-time">15 Feb 2026</span>
+      <span><div class="status-chip approved">Approved</div></span>
+      <span class="dt-actions">
+        <button class="btn-view" onclick="openStationDetail(4)" title="View"><i class="fas fa-eye"></i></button>
+        <button class="btn-suspend" onclick="suspendEntity('station',4,'Shell Temeke')" title="Suspend"><i class="fas fa-ban"></i></button>
+      </span>
+    </div>
+    <div class="dt-row st-grid" data-status="rejected" data-search="xyz fuels ilala">
+      <span class="dt-name-cell"><div class="entity-init">X</div><div><div class="dt-main-name">XYZ Fuels – Ilala</div><div class="dt-sub">Petrol</div></div></span>
+      <span class="dt-sub-text">Tom Banda</span>
+      <span class="dt-sub-text">Ilala, Lumumba St</span>
+      <span class="dt-sub-text">+255 712 001 005</span>
+      <span class="dt-code">LIC-INVALID</span>
+      <span class="dt-time">18 Jun 2026</span>
+      <span><div class="status-chip rejected">Rejected</div></span>
+      <span class="dt-actions">
+        <button class="btn-view" onclick="openStationDetail(5)" title="View"><i class="fas fa-eye"></i></button>
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ===== STATION DETAIL MODAL ===== -->
+<div class="modal-overlay" id="stationDetailModal" style="display:none">
+  <div class="modal-box wide">
+    <button class="modal-close" onclick="closeModal('stationDetailModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-hdr-entity">
+      <div class="mhe-init">T</div>
+      <div>
+        <div class="mhe-name">Total Energies – Kariakoo</div>
+        <div class="mhe-sub"><div class="status-chip approved">Approved</div></div>
+      </div>
+    </div>
+    <div class="detail-grid">
+      <div class="dg-section"><div class="dg-title">Station Info</div>
+        <div class="dg-row"><span>Owner</span><strong>Ali Hassan</strong></div>
+        <div class="dg-row"><span>Phone</span><strong>+255 712 001 003</strong></div>
+        <div class="dg-row"><span>Email</span><strong>total@example.com</strong></div>
+        <div class="dg-row"><span>Address</span><strong>Kariakoo St, Dar es Salaam</strong></div>
+        <div class="dg-row"><span>Licence No.</span><strong>LIC-2023-0011</strong></div>
+        <div class="dg-row"><span>Registered</span><strong>10 Jan 2026</strong></div>
+      </div>
+      <div class="dg-section"><div class="dg-title">Performance</div>
+        <div class="dg-row"><span>Total Orders</span><strong>428</strong></div>
+        <div class="dg-row"><span>Revenue Generated</span><strong>TZS 24.8M</strong></div>
+        <div class="dg-row"><span>Avg. Delivery Time</span><strong>12 min</strong></div>
+        <div class="dg-row"><span>Customer Rating</span><strong><i class="fas fa-star text-orange"></i> 4.9</strong></div>
+        <div class="dg-row"><span>Active Drivers</span><strong>4</strong></div>
+        <div class="dg-row"><span>Fuel Types</span><strong>Petrol, Diesel, Premium</strong></div>
+      </div>
+    </div>
+    <div class="modal-footer-btns">
+      <button class="btn-modal-cancel" onclick="closeModal('stationDetailModal')">Close</button>
+      <button class="btn-modal-danger" onclick="suspendEntity('station',1,'Total Energies');closeModal('stationDetailModal')"><i class="fas fa-ban"></i> Suspend Station</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REJECT REASON MODAL ===== -->
+<div class="modal-overlay" id="rejectModal" style="display:none">
+  <div class="modal-box narrow">
+    <button class="modal-close" onclick="closeModal('rejectModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-hdr-simple"><div class="mhs-icon red"><i class="fas fa-times-circle"></i></div><div><div class="mhs-title" id="rejectTitle">Reject Station</div><div class="mhs-sub">Provide a reason for the rejection</div></div></div>
+    <form method="POST" id="rejectForm" action="">
+      {% csrf_token %}
+      <input type="hidden" name="entity_id" id="rejectEntityId"/>
+      <div class="fg-group mb-14">
+        <label class="fg-label">Rejection Reason</label>
+        <select name="reason" class="fg-input-a">
+          <option value="invalid_licence">Invalid / unverifiable licence</option>
+          <option value="incomplete_info">Incomplete registration info</option>
+          <option value="outside_area">Outside service area</option>
+          <option value="duplicate">Duplicate registration</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="fg-group mb-14">
+        <label class="fg-label">Additional Notes</label>
+        <textarea name="notes" class="fg-input-a" rows="3" placeholder="Optional notes for the applicant…"></textarea>
+      </div>
+      <div class="modal-footer-btns">
+        <button type="button" class="btn-modal-cancel" onclick="closeModal('rejectModal')">Cancel</button>
+        <button type="submit" class="btn-modal-danger"><i class="fas fa-times-circle"></i> Confirm Rejection</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function approveStation(id, name) {
+  showConfirm('Approve Station', `Approve <strong>${name}</strong>? They will be visible to customers immediately.`, 'green', () => {
+    showToast(`${name} approved successfully.`, 'success');
+    updateRowStatus(id, 'approved');
+  });
+}
+function openStationDetail(id) { openModal('stationDetailModal'); }
+function rejectEntity(type, id, name) {
+  document.getElementById('rejectTitle').textContent = `Reject ${type === 'station' ? 'Station' : 'Driver'}`;
+  document.getElementById('rejectEntityId').value = id;
+  openModal('rejectModal');
+}
+function suspendEntity(type, id, name) {
+  showConfirm('Suspend Account', `Suspend <strong>${name}</strong>? They will be hidden from the platform.`, 'red', () => {
+    showToast(`${name} has been suspended.`, 'error');
+  });
+}
+function updateRowStatus(id, status) {
+  const rows = document.querySelectorAll('.dt-row');
+  rows.forEach(row => {
+    if (row.innerHTML.includes('openStationDetail(' + id + ')')) {
+      row.dataset.status = status;
+      const chip = row.querySelector('.status-chip');
+      if (chip) { chip.className = 'status-chip ' + status; chip.textContent = status.charAt(0).toUpperCase() + status.slice(1); }
+    }
+  });
+}
+document.getElementById('stationSearch')?.addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.dt-row').forEach(r => { r.style.display = (r.dataset.search||'').includes(q) ? '' : 'none'; });
+});
+document.querySelectorAll('.fchip').forEach(c => {
+  c.addEventListener('click', function() {
+    document.querySelectorAll('.fchip').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+    const f = this.dataset.filter;
+    document.querySelectorAll('.dt-row').forEach(r => { r.style.display = (f==='all'||r.dataset.status===f)?'':'none'; });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}FuelGo Admin – Reports{% endblock %}
+{% block page_title %}System Reports{% endblock %}
+{% block nav_reports %}active{% endblock %}
+
+{% block content %}
+<div class="report-filter-bar">
+  <div class="rfb-periods">
+    <button class="period-btn active" data-period="7">Last 7 Days</button>
+    <button class="period-btn" data-period="30">Last 30 Days</button>
+    <button class="period-btn" data-period="90">Last 3 Months</button>
+    <button class="period-btn" data-period="custom">Custom</button>
+  </div>
+  <div id="customRangeWrap" style="display:none" class="rfb-custom">
+    <input type="date" class="fg-input-a compact" name="from"/>
+    <span style="color:var(--text-m);font-size:0.82rem">to</span>
+    <input type="date" class="fg-input-a compact" name="to"/>
+    <button class="btn-primary-sm"><i class="fas fa-filter"></i> Apply</button>
+  </div>
+  <button class="btn-export" style="margin-left:auto"><i class="fas fa-file-arrow-down"></i> Export CSV</button>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-icon orange"><i class="fas fa-receipt"></i></div><div class="kpi-body"><div class="kpi-num">{{ period_orders|default:"612" }}</div><div class="kpi-label">Orders</div></div><div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +18%</div></div>
+  <div class="kpi-card"><div class="kpi-icon blue"><i class="fas fa-droplet"></i></div><div class="kpi-body"><div class="kpi-num">{{ period_litres|default:"15,840" }}L</div><div class="kpi-label">Litres Sold</div></div><div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +12%</div></div>
+  <div class="kpi-card"><div class="kpi-icon purple"><i class="fas fa-coins"></i></div><div class="kpi-body"><div class="kpi-num">TZS {{ period_revenue|default:"45.2M" }}</div><div class="kpi-label">Revenue</div></div><div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +21%</div></div>
+  <div class="kpi-card"><div class="kpi-icon orange"><i class="fas fa-user-plus"></i></div><div class="kpi-body"><div class="kpi-num">{{ new_users|default:"84" }}</div><div class="kpi-label">New Users</div></div><div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +9%</div></div>
+</div>
+
+<div class="reports-grid">
+  <!-- Orders chart -->
+  <div class="report-card large">
+    <div class="rc-header"><div class="rc-title"><i class="fas fa-chart-line text-orange"></i> Orders Over Time</div></div>
+    <div class="chart-area">
+      <div class="ca-bars">
+        <div class="ca-col"><div class="ca-bar" style="height:42%"><span>87</span></div><span>Mon</span></div>
+        <div class="ca-col"><div class="ca-bar" style="height:58%"><span>119</span></div><span>Tue</span></div>
+        <div class="ca-col"><div class="ca-bar" style="height:51%"><span>105</span></div><span>Wed</span></div>
+        <div class="ca-col"><div class="ca-bar high" style="height:88%"><span>181</span></div><span>Thu</span></div>
+        <div class="ca-col"><div class="ca-bar high" style="height:100%"><span>206</span></div><span>Fri</span></div>
+        <div class="ca-col"><div class="ca-bar" style="height:72%"><span>148</span></div><span>Sat</span></div>
+        <div class="ca-col"><div class="ca-bar today" style="height:38%"><span>78</span></div><span>Today</span></div>
+      </div>
+    </div>
+  </div>
+  <!-- Fuel mix -->
+  <div class="report-card">
+    <div class="rc-header"><div class="rc-title"><i class="fas fa-chart-pie text-blue"></i> Fuel Type Mix</div></div>
+    <div class="fuel-mix">
+      <svg viewBox="0 0 120 120" class="donut-svg">
+        <circle class="donut-track" cx="60" cy="60" r="48" fill="none" stroke-width="16"/>
+        <circle class="donut-seg" cx="60" cy="60" r="48" fill="none" stroke-width="16" stroke="#e85d04" stroke-dasharray="181 301" stroke-dashoffset="0"/>
+        <circle class="donut-seg" cx="60" cy="60" r="48" fill="none" stroke-width="16" stroke="#3b82f6" stroke-dasharray="90 301" stroke-dashoffset="-181"/>
+        <circle class="donut-seg" cx="60" cy="60" r="48" fill="none" stroke-width="16" stroke="#8b5cf6" stroke-dasharray="30 301" stroke-dashoffset="-271"/>
+        <text x="60" y="56" class="donut-num">{{ period_orders|default:"612" }}</text>
+        <text x="60" y="68" class="donut-lbl">orders</text>
+      </svg>
+      <div class="fm-legend">
+        <div class="fml-item"><span class="fml-dot orange"></span>Petrol<strong>60%</strong></div>
+        <div class="fml-item"><span class="fml-dot blue"></span>Diesel<strong>30%</strong></div>
+        <div class="fml-item"><span class="fml-dot purple"></span>Premium<strong>10%</strong></div>
+      </div>
+    </div>
+  </div>
+  <!-- Top stations -->
+  <div class="report-card">
+    <div class="rc-header"><div class="rc-title"><i class="fas fa-gas-pump text-orange"></i> Top Stations</div></div>
+    <div class="top-list">
+      <div class="tl-item"><div class="tl-rank">1</div><div class="tl-init">T</div><div class="tl-info"><span>Total Energies – Kariakoo</span><span>428 orders · TZS 24.8M</span></div><div class="tl-bar-wrap"><div class="tl-bar" style="width:100%"></div></div></div>
+      <div class="tl-item"><div class="tl-rank">2</div><div class="tl-init">S</div><div class="tl-info"><span>Shell – Temeke</span><span>312 orders · TZS 18.1M</span></div><div class="tl-bar-wrap"><div class="tl-bar" style="width:73%"></div></div></div>
+      <div class="tl-item"><div class="tl-rank">3</div><div class="tl-init">P</div><div class="tl-info"><span>Puma Energy – Msimbazi</span><span>198 orders · TZS 11.4M</span></div><div class="tl-bar-wrap"><div class="tl-bar" style="width:46%"></div></div></div>
+    </div>
+  </div>
+  <!-- Top drivers -->
+  <div class="report-card">
+    <div class="rc-header"><div class="rc-title"><i class="fas fa-id-badge text-purple"></i> Top Drivers</div></div>
+    <div class="top-list">
+      <div class="tl-item"><div class="tl-rank">1</div><div class="tl-init blue">J</div><div class="tl-info"><span>John Mwalimu</span><span>148 deliveries · ⭐ 4.8</span></div><div class="tl-bar-wrap"><div class="tl-bar blue" style="width:100%"></div></div></div>
+      <div class="tl-item"><div class="tl-rank">2</div><div class="tl-init blue">A</div><div class="tl-info"><span>Amina Said</span><span>112 deliveries · ⭐ 4.7</span></div><div class="tl-bar-wrap"><div class="tl-bar blue" style="width:76%"></div></div></div>
+      <div class="tl-item"><div class="tl-rank">3</div><div class="tl-init blue">P</div><div class="tl-info"><span>Peter Mtui</span><span>88 deliveries · ⭐ 4.6</span></div><div class="tl-bar-wrap"><div class="tl-bar blue" style="width:59%"></div></div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.querySelectorAll('.period-btn').forEach(btn=>{btn.addEventListener('click',function(){document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('customRangeWrap').style.display=this.dataset.period==='custom'?'flex':'none';});});
+</script>
+{% endblock %}

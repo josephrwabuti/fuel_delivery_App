@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}FuelGo – Admin{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/admin.css' %}"/>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ========== SIDEBAR ========== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <span class="brand-icon"><i class="fas fa-gas-pump"></i></span>
+      <span class="brand-text">Fuel<span class="brand-accent">Go</span></span>
+    </div>
+    <button class="sidebar-close" id="sidebarClose"><i class="fas fa-times"></i></button>
+  </div>
+
+  <!-- Admin card -->
+  <div class="sidebar-admin">
+    <div class="admin-avatar"><i class="fas fa-shield-halved"></i></div>
+    <div class="admin-info">
+      <span class="admin-name">{{ request.user.get_full_name|default:"System Admin" }}</span>
+      <span class="admin-role"><i class="fas fa-circle"></i> Super Administrator</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Overview</div>
+    <a href="{% url 'admin_home' %}"          class="nav-item {% block nav_home %}{% endblock %}">
+      <i class="fas fa-gauge-high"></i><span>Dashboard</span>
+    </a>
+
+    <div class="nav-section-label">Management</div>
+    <a href="{% url 'admin_stations' %}"      class="nav-item {% block nav_stations %}{% endblock %}">
+      <i class="fas fa-gas-pump"></i><span>Fuel Stations</span>
+      {% if pending_stations %}<span class="nav-badge pulse">{{ pending_stations }}</span>{% endif %}
+    </a>
+    <a href="{% url 'admin_drivers' %}"       class="nav-item {% block nav_drivers %}{% endblock %}">
+      <i class="fas fa-id-badge"></i><span>Drivers</span>
+      {% if pending_drivers %}<span class="nav-badge pulse">{{ pending_drivers }}</span>{% endif %}
+    </a>
+    <a href="{% url 'admin_customers' %}"     class="nav-item {% block nav_customers %}{% endblock %}">
+      <i class="fas fa-users"></i><span>Customers</span>
+    </a>
+    <a href="{% url 'admin_orders' %}"        class="nav-item {% block nav_orders %}{% endblock %}">
+      <i class="fas fa-receipt"></i><span>All Orders</span>
+    </a>
+
+    <div class="nav-section-label">Insights</div>
+    <a href="{% url 'admin_reports' %}"       class="nav-item {% block nav_reports %}{% endblock %}">
+      <i class="fas fa-chart-line"></i><span>Reports</span>
+    </a>
+    <a href="{% url 'admin_demand' %}"        class="nav-item {% block nav_demand %}{% endblock %}">
+      <i class="fas fa-brain"></i><span>AI Demand Forecast</span>
+    </a>
+
+    <div class="nav-section-label">System</div>
+    <a href="{% url 'admin_activity' %}"      class="nav-item {% block nav_activity %}{% endblock %}">
+      <i class="fas fa-wave-square"></i><span>System Activity</span>
+    </a>
+    <a href="{% url 'admin_settings' %}"      class="nav-item {% block nav_settings %}{% endblock %}">
+      <i class="fas fa-sliders"></i><span>Settings</span>
+    </a>
+    <a href="{% url 'admin_profile' %}"       class="nav-item {% block nav_profile %}{% endblock %}">
+      <i class="fas fa-user-shield"></i><span>My Profile</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="{% url 'logout' %}" class="logout-btn">
+      <i class="fas fa-right-from-bracket"></i> Sign Out
+    </a>
+    <div class="sidebar-version">FuelGo v1.0 · Admin Panel</div>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ========== MAIN ========== -->
+<div class="main-wrap" id="mainWrap">
+  <header class="topbar">
+    <button class="topbar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+    <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+    <div class="topbar-right">
+      {% if pending_stations or pending_drivers %}
+      <div class="topbar-alert">
+        <i class="fas fa-bell-ring"></i>
+        {% if pending_stations %}{{ pending_stations }} station{{ pending_stations|pluralize }} pending{% endif %}
+        {% if pending_stations and pending_drivers %} · {% endif %}
+        {% if pending_drivers %}{{ pending_drivers }} driver{{ pending_drivers|pluralize }} pending{% endif %}
+      </div>
+      {% endif %}
+      <button class="topbar-icon-btn" id="notifBell">
+        <i class="fas fa-bell"></i>
+        <span class="icon-badge">{{ notif_count|default:"4" }}</span>
+      </button>
+      <div class="topbar-avatar"><i class="fas fa-user-shield"></i></div>
+    </div>
+  </header>
+
+  <main class="page-content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script src="{% static 'js/admin.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
