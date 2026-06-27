@@ -4,6 +4,178 @@
 {% block page_title %}Active Delivery{% endblock %}
 {% block nav_active %}active{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+/* ===== BOLT-STYLE MAP ===== */
+#deliveryMapFull {
+  height: 420px; width: 100%;
+  border-radius: var(--radius);
+  overflow: hidden; z-index: 1;
+  border: 1px solid var(--border-m);
+}
+/* Dark map tiles override */
+.leaflet-tile { filter: brightness(0.85) saturate(0.7) hue-rotate(195deg); }
+.leaflet-popup-content-wrapper {
+  background: var(--navy-800); border: 1px solid var(--border-m);
+  border-radius: 12px; color: var(--text-p);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+}
+.leaflet-popup-tip { background: var(--navy-800); }
+
+/* Driver pulsing marker */
+.driver-live-marker {
+  width: 28px; height: 28px; position: relative;
+}
+.dlm-pulse {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: rgba(232,93,4,0.35);
+  animation: dlm-ripple 1.8s ease-out infinite;
+}
+@keyframes dlm-ripple {
+  0%   { transform: scale(0.7); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.dlm-core {
+  position: absolute; inset: 4px;
+  background: var(--orange); border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(232,93,4,0.6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; color: #fff;
+}
+
+/* Station marker */
+.station-map-marker {
+  width: 32px; height: 32px;
+  background: var(--blue); border: 3px solid #fff;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.5);
+}
+
+/* Customer marker */
+.customer-map-marker {
+  width: 32px; height: 32px;
+  background: var(--green); border: 3px solid #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px;
+  box-shadow: 0 2px 8px rgba(34,197,94,0.5);
+}
+
+/* ETA banner */
+.eta-bar {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.eta-item {
+  background: var(--glass-l); border: 1px solid var(--border-s);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  text-align: center;
+}
+.eta-item.highlight { border-color: var(--orange-bdr); background: var(--orange-dim); }
+.eta-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.8rem; line-height: 1;
+  color: var(--orange); margin-bottom: 3px;
+}
+.eta-item:not(.highlight) .eta-num { color: var(--text-p); font-size: 1.4rem; }
+.eta-label { font-size: 0.72rem; color: var(--text-m); text-transform: uppercase; letter-spacing: 1px; }
+
+/* Phase indicator */
+.phase-indicator {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; padding: 10px 16px;
+  border-radius: var(--radius-sm); margin-bottom: 14px;
+  font-size: 0.88rem; font-weight: 700;
+}
+.phase-indicator.phase-pickup  { background: var(--blue-dim);  border: 1px solid var(--blue-bdr);  color: var(--blue); }
+.phase-indicator.phase-deliver { background: var(--orange-dim); border: 1px solid var(--orange-bdr); color: var(--orange); }
+.phase-indicator.phase-done    { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: var(--green); }
+
+/* Map control overlay */
+.map-controls-overlay {
+  position: relative;
+}
+.map-top-overlay {
+  position: absolute; top: 10px; left: 10px; right: 10px;
+  z-index: 10; display: flex; justify-content: space-between; align-items: flex-start;
+  pointer-events: none;
+}
+.mot-badge {
+  background: rgba(8,15,31,0.88); backdrop-filter: blur(10px);
+  border: 1px solid var(--border-m); border-radius: 10px;
+  padding: 8px 14px; font-size: 0.8rem; font-weight: 700;
+  color: var(--text-p); pointer-events: auto;
+  display: flex; align-items: center; gap: 7px;
+}
+.mot-badge.live-badge { border-color: var(--green); color: var(--green); }
+.live-blink { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: dlm-ripple 1.5s infinite; }
+.btn-recenter {
+  background: rgba(8,15,31,0.88); backdrop-filter: blur(10px);
+  border: 1px solid var(--border-m); border-radius: 10px;
+  padding: 8px 12px; font-size: 0.82rem; font-weight: 600;
+  color: var(--text-s); cursor: pointer; pointer-events: auto;
+  display: flex; align-items: center; gap: 6px;
+  transition: all var(--tr); font-family: 'Outfit', sans-serif;
+}
+.btn-recenter:hover { border-color: var(--orange-bdr); color: var(--orange); }
+
+/* Route legend */
+.route-legend {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--glass-l); border: 1px solid var(--border-s);
+  border-radius: var(--radius-xs); margin-top: -4px; margin-bottom: 14px;
+  font-size: 0.75rem; color: var(--text-s);
+}
+.rl-item { display: flex; align-items: center; gap: 6px; }
+.rl-line { width: 24px; height: 4px; border-radius: 2px; }
+.rl-line.blue   { background: var(--blue); }
+.rl-line.orange { background: var(--orange); }
+
+/* Status update strip */
+.status-strip {
+  display: grid;
+  gap: 10px;
+}
+.ss-btn {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 15px 20px; border: none; border-radius: var(--radius-sm);
+  font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 700;
+  cursor: pointer; transition: all var(--tr);
+}
+.ss-btn.pickup  { background: var(--blue);   color: #fff; box-shadow: 0 6px 18px rgba(59,130,246,0.35); }
+.ss-btn.enroute { background: var(--orange);  color: #fff; box-shadow: 0 6px 18px rgba(232,93,4,0.35); }
+.ss-btn.deliver { background: var(--green);   color: var(--navy-950); box-shadow: 0 6px 18px rgba(34,197,94,0.35); }
+.ss-btn:hover   { transform: translateY(-2px); filter: brightness(1.08); }
+.ss-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+.ss-btn-done {
+  width: 100%; padding: 14px; border-radius: var(--radius-sm);
+  background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3);
+  color: var(--green); font-size: 0.9rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+}
+.ss-note {
+  font-size: 0.78rem; color: var(--text-m); text-align: center; padding: 4px;
+}
+
+/* Speed indicator */
+.speed-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; color: var(--text-s);
+}
+.speed-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.2rem; color: var(--text-p); line-height: 1;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 
 {% if not active_order %}
@@ -13,143 +185,125 @@
   <p>You have no delivery in progress. Check your assigned orders to start one.</p>
   <a href="{% url 'driver_orders' %}" class="btn-ef"><i class="fas fa-clipboard-list"></i> View Assigned Orders</a>
 </div>
+
 {% else %}
 
-<!-- ===== STATUS STEPPER ===== -->
-<div class="delivery-stepper">
-  <div class="ds-step {% if active_order.status in 'assigned,picked_up,delivering,delivered' %}done{% endif %}" id="ds1">
+<!-- ===== PHASE INDICATOR ===== -->
+<div class="phase-indicator phase-pickup" id="phaseIndicator">
+  <i class="fas fa-gas-pump"></i>
+  <span id="phaseText">Phase 1 of 2 — Head to station to pick up fuel</span>
+</div>
+
+<!-- ===== ETA BAR ===== -->
+<div class="eta-bar">
+  <div class="eta-item highlight">
+    <div class="eta-num" id="etaCountdown">--:--</div>
+    <div class="eta-label" id="etaLabel">ETA to Station</div>
+  </div>
+  <div class="eta-item">
+    <div class="eta-num" id="distanceVal">-- km</div>
+    <div class="eta-label" id="distLabel">To Station</div>
+  </div>
+  <div class="eta-item">
+    <div class="eta-num" id="speedVal">0 km/h</div>
+    <div class="eta-label">Current Speed</div>
+  </div>
+</div>
+
+<!-- ===== LIVE MAP ===== -->
+<div class="map-controls-overlay" style="margin-bottom:4px">
+  <div class="map-top-overlay">
+    <div class="mot-badge live-badge">
+      <div class="live-blink"></div> Live Location
+    </div>
+    <button class="btn-recenter" onclick="recenterMap()">
+      <i class="fas fa-crosshairs"></i> Recenter
+    </button>
+  </div>
+  <div id="deliveryMapFull"></div>
+</div>
+
+<!-- Route legend -->
+<div class="route-legend">
+  <div class="rl-item"><div class="rl-line blue"></div> Route to station (pickup)</div>
+  <div class="rl-item"><div class="rl-line orange"></div> Route to customer (delivery)</div>
+</div>
+
+<!-- ===== DELIVERY STEPPER ===== -->
+<div class="delivery-stepper" style="margin-bottom:16px">
+  <div class="ds-step done" id="ds1">
     <div class="ds-icon"><i class="fas fa-check"></i></div>
-    <div class="ds-body"><div class="ds-title">Order Accepted</div><div class="ds-time">{{ active_order.assigned_at|time:"H:i"|default:"14:27" }}</div></div>
+    <div class="ds-body"><div class="ds-title">Assigned</div><div class="ds-time" id="assignedTime">{{ active_order.assigned_at|time:"H:i"|default:"—" }}</div></div>
   </div>
-  <div class="ds-line {% if active_order.status in 'picked_up,delivering,delivered' %}done{% endif %}"></div>
-  <div class="ds-step {% if active_order.status == 'picked_up' %}active{% elif active_order.status in 'delivering,delivered' %}done{% endif %}" id="ds2">
+  <div class="ds-line" id="dl1"></div>
+  <div class="ds-step" id="ds2">
     <div class="ds-icon"><i class="fas fa-gas-pump"></i></div>
-    <div class="ds-body"><div class="ds-title">Fuel Picked Up</div><div class="ds-time" id="pickupTime">—</div></div>
+    <div class="ds-body"><div class="ds-title">Picked Up</div><div class="ds-time" id="pickedTime">—</div></div>
   </div>
-  <div class="ds-line {% if active_order.status in 'delivering,delivered' %}done{% endif %}"></div>
-  <div class="ds-step {% if active_order.status == 'delivering' %}active{% elif active_order.status == 'delivered' %}done{% endif %}" id="ds3">
+  <div class="ds-line" id="dl2"></div>
+  <div class="ds-step" id="ds3">
     <div class="ds-icon"><i class="fas fa-truck-fast"></i></div>
     <div class="ds-body"><div class="ds-title">En Route</div><div class="ds-time" id="enrouteTime">—</div></div>
   </div>
-  <div class="ds-line {% if active_order.status == 'delivered' %}done{% endif %}"></div>
-  <div class="ds-step {% if active_order.status == 'delivered' %}done{% endif %}" id="ds4">
+  <div class="ds-line" id="dl3"></div>
+  <div class="ds-step" id="ds4">
     <div class="ds-icon"><i class="fas fa-circle-check"></i></div>
     <div class="ds-body"><div class="ds-title">Delivered</div><div class="ds-time" id="deliveredTime">—</div></div>
   </div>
 </div>
 
 <div class="active-del-layout">
-
-  <!-- LEFT: Map + Controls -->
   <div class="adl-main">
 
-    <!-- Order summary strip -->
-    <div class="order-strip">
-      <div class="os-item"><span>Order</span><strong class="text-orange">#{{ active_order.id|default:"FG-2044" }}</strong></div>
-      <div class="os-item"><span>Fuel</span><strong>{{ active_order.fuel_type|default:"Petrol" }} · {{ active_order.quantity|default:"25" }}L</strong></div>
-      <div class="os-item"><span>Customer</span><strong>{{ active_order.customer.get_full_name|default:"Baraka Juma" }}</strong></div>
-      <div class="os-item"><span>Payment</span><strong>{{ active_order.payment_method|default:"Tigo Pesa" }}</strong></div>
-    </div>
+    <!-- STATUS ACTION STRIP -->
+    <div class="status-strip" id="statusStrip">
 
-    <!-- Live map -->
-    <div class="live-map-container">
-      <div class="lmc-topbar">
-        <span class="lmc-live"><span class="live-dot"></span> Live Location</span>
-        <span class="lmc-eta"><i class="fas fa-clock text-orange"></i> ETA: <strong id="etaDisplay">12 min</strong></span>
-      </div>
-      <div class="lmc-map">
-        <div class="lmc-grid"></div>
-        <!-- Station marker -->
-        <div class="map-station-marker">
-          <i class="fas fa-gas-pump"></i>
-          <span>Pickup</span>
-        </div>
-        <!-- Driver marker (animated) -->
-        <div class="map-driver-marker" id="driverMarker">
-          <div class="dmm-pulse"></div>
-          <div class="dmm-icon"><i class="fas fa-motorcycle"></i></div>
-          <div class="dmm-label">You</div>
-        </div>
-        <!-- Destination marker -->
-        <div class="map-dest-marker">
-          <i class="fas fa-location-dot"></i>
-          <span>Delivery</span>
-        </div>
-        <!-- Route line -->
-        <div class="map-route"></div>
-      </div>
-    </div>
-
-    <!-- Delivery address card -->
-    <div class="delivery-addr-card">
-      <div class="dac-icon"><i class="fas fa-location-dot"></i></div>
-      <div class="dac-body">
-        <div class="dac-title">Delivery Address</div>
-        <div class="dac-addr">{{ active_order.delivery_address|default:"Ilala, Lumumba St, Block 4" }}</div>
-        {% if active_order.landmark %}
-        <div class="dac-landmark">📍 {{ active_order.landmark|default:"Near Ilala Municipal Council" }}</div>
-        {% endif %}
-        <div class="dac-landmark">📍 Near Ilala Municipal Council</div>
-      </div>
-      <a href="https://maps.google.com/?q={{ active_order.delivery_address|urlencode }}" target="_blank" class="btn-open-maps">
-        <i class="fas fa-diamond-turn-right"></i>
-      </a>
-    </div>
-
-    <!-- Status update buttons -->
-    <div class="status-update-panel" id="statusPanel">
-
-      {% if active_order.status == 'assigned' %}
-      <div class="sup-info">Confirm you have picked up the fuel from the station</div>
-      <form method="POST" action="{% url 'driver_update_status' active_order.id %}">
-        {% csrf_token %}
-        <input type="hidden" name="status" value="picked_up"/>
-        <button type="submit" class="btn-status-update pickup">
-          <i class="fas fa-gas-pump"></i> Confirm Fuel Picked Up
+      {% if active_order.status == 'assigned' or not active_order.status %}
+      <div class="ss-note">Go to the station and confirm when you have collected the fuel</div>
+      <form method="POST" action="{% url 'driver_update_status' active_order.id|default:1 %}">
+        {% csrf_token %}<input type="hidden" name="status" value="picked_up"/>
+        <button type="submit" class="ss-btn pickup" id="btnPickup">
+          <i class="fas fa-gas-pump"></i> Confirm Fuel Collected at Station
         </button>
       </form>
 
       {% elif active_order.status == 'picked_up' %}
-      <div class="sup-info">Confirm you are now heading to the customer</div>
-      <form method="POST" action="{% url 'driver_update_status' active_order.id %}">
-        {% csrf_token %}
-        <input type="hidden" name="status" value="delivering"/>
-        <button type="submit" class="btn-status-update enroute">
-          <i class="fas fa-truck-fast"></i> I'm En Route to Customer
+      <div class="ss-note">Head to the customer's location</div>
+      <form method="POST" action="{% url 'driver_update_status' active_order.id|default:1 %}">
+        {% csrf_token %}<input type="hidden" name="status" value="delivering"/>
+        <button type="submit" class="ss-btn enroute" id="btnEnroute">
+          <i class="fas fa-truck-fast"></i> Start Delivery to Customer
         </button>
       </form>
 
       {% elif active_order.status == 'delivering' %}
-      <div class="sup-info">Confirm delivery after handing over the fuel to the customer</div>
-      <form method="POST" action="{% url 'driver_update_status' active_order.id %}">
-        {% csrf_token %}
-        <input type="hidden" name="status" value="delivered"/>
-        <button type="submit" class="btn-status-update delivered">
-          <i class="fas fa-circle-check"></i> Mark as Delivered
+      <div class="ss-note">Arrive at the customer, hand over fuel, then confirm</div>
+      <form method="POST" action="{% url 'driver_update_status' active_order.id|default:1 %}">
+        {% csrf_token %}<input type="hidden" name="status" value="delivered"/>
+        <button type="submit" class="ss-btn deliver" id="btnDeliver">
+          <i class="fas fa-circle-check"></i> Confirm Fuel Delivered to Customer
         </button>
       </form>
 
       {% else %}
-      <!-- Demo buttons -->
-      <div class="sup-info">Update the delivery status as you progress</div>
-      <button class="btn-status-update pickup" onclick="demoUpdateStatus('pickup')">
-        <i class="fas fa-gas-pump"></i> Confirm Fuel Picked Up
+      <!-- Demo buttons for UI preview -->
+      <div class="ss-note">Go to the station and confirm when you have collected the fuel</div>
+      <button class="ss-btn pickup" id="btnPickup" onclick="doStatusUpdate('pickup')">
+        <i class="fas fa-gas-pump"></i> Confirm Fuel Collected at Station
       </button>
       {% endif %}
 
     </div>
-  </div>
 
-  <!-- RIGHT: Customer + order info panel -->
-  <div class="adl-side">
-
-    <!-- Customer card -->
-    <div class="customer-card">
+    <!-- Customer call/SMS -->
+    <div class="customer-card" style="margin-top:14px">
       <div class="cc-header">
         <div class="cc-avatar">{{ active_order.customer.first_name|slice:":1"|default:"B" }}</div>
         <div class="cc-info">
           <div class="cc-name">{{ active_order.customer.get_full_name|default:"Baraka Juma" }}</div>
-          <div class="cc-sub">Customer</div>
+          <div class="cc-sub"><i class="fas fa-map-marker-alt" style="color:var(--green)"></i>
+            {{ active_order.delivery_address|default:"Ilala, Lumumba St, Block 4" }}
+          </div>
         </div>
       </div>
       <div class="cc-contact">
@@ -162,28 +316,40 @@
       </div>
     </div>
 
-    <!-- Order details -->
-    <div class="side-order-detail">
-      <div class="sod-title">Order Details</div>
-      <div class="sod-row"><span>Order ID</span><strong>#{{ active_order.id|default:"FG-2044" }}</strong></div>
-      <div class="sod-row"><span>Fuel Type</span><strong>{{ active_order.fuel_type|default:"Petrol" }}</strong></div>
-      <div class="sod-row"><span>Quantity</span><strong>{{ active_order.quantity|default:"25" }} Litres</strong></div>
-      <div class="sod-row"><span>Station</span><strong>{{ active_order.station.name|default:"Total Energies" }}</strong></div>
-      <div class="sod-row"><span>Payment</span><strong>{{ active_order.payment_method|default:"Tigo Pesa" }}</strong></div>
-      <div class="sod-divider"></div>
-      <div class="sod-row total"><span>Total Value</span><strong class="text-orange">TZS {{ active_order.total_amount|default:"73,250" }}</strong></div>
-      <div class="sod-row"><span>Your Earnings</span><strong class="text-green">TZS {{ active_order.driver_earning|default:"7,325" }}</strong></div>
-    </div>
-
     <!-- Report issue -->
-    <button class="btn-report-issue" onclick="openModal('issueModal')">
+    <button class="btn-report-issue" style="margin-top:10px" onclick="openModal('issueModal')">
       <i class="fas fa-triangle-exclamation"></i> Report an Issue
     </button>
 
   </div>
+
+  <!-- SIDE PANEL -->
+  <div class="adl-side">
+    <!-- Order card -->
+    <div class="side-order-detail">
+      <div class="sod-title">Order Details</div>
+      <div class="sod-row"><span>Order ID</span><strong>#{{ active_order.id|default:"FG-2044" }}</strong></div>
+      <div class="sod-row"><span>Station</span><strong>{{ active_order.station.name|default:"Total Energies" }}</strong></div>
+      <div class="sod-row"><span>Fuel</span><strong>{{ active_order.fuel_type|default:"Petrol" }}</strong></div>
+      <div class="sod-row"><span>Quantity</span><strong>{{ active_order.quantity|default:"25" }}L</strong></div>
+      <div class="sod-row"><span>Payment</span><strong>{{ active_order.payment_method|default:"Tigo Pesa" }}</strong></div>
+      <div class="sod-divider"></div>
+      <div class="sod-row total"><span>Order Value</span><strong class="text-orange">TZS {{ active_order.total_amount|default:"73,250" }}</strong></div>
+      <div class="sod-row"><span>Your Earnings</span><strong class="text-green">TZS {{ active_order.driver_earning|default:"7,325" }}</strong></div>
+    </div>
+
+    <!-- Coordinates card -->
+    <div class="side-order-detail" style="margin-top:10px">
+      <div class="sod-title"><i class="fas fa-satellite-dish text-orange"></i> Live Coordinates</div>
+      <div class="sod-row"><span>Your Lat</span><strong id="coordLat" style="font-family:monospace;font-size:.78rem">—</strong></div>
+      <div class="sod-row"><span>Your Lng</span><strong id="coordLng" style="font-family:monospace;font-size:.78rem">—</strong></div>
+      <div class="sod-row"><span>Accuracy</span><strong id="coordAcc" style="font-size:.78rem">—</strong></div>
+      <div class="sod-row"><span>Last Update</span><strong id="lastUpdate" style="font-size:.78rem">—</strong></div>
+    </div>
+  </div>
 </div>
 
-<!-- Report Issue Modal -->
+<!-- Issue modal -->
 <div class="modal-overlay" id="issueModal" style="display:none">
   <div class="modal-box narrow">
     <button class="modal-close" onclick="closeModal('issueModal')"><i class="fas fa-times"></i></button>
@@ -207,52 +373,364 @@
       </div>
       <div class="modal-footer-simple">
         <button type="button" class="btn-modal-cancel" onclick="closeModal('issueModal')">Cancel</button>
-        <button type="submit" class="btn-modal-confirm"><i class="fas fa-paper-plane"></i> Submit Report</button>
+        <button type="submit" class="btn-modal-confirm"><i class="fas fa-paper-plane"></i> Submit</button>
       </div>
     </form>
   </div>
 </div>
 
 {% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-/* Animate driver marker */
-(function(){
-  const m = document.getElementById('driverMarker');
-  if (!m) return;
-  let t = 0;
-  setInterval(() => {
-    t += 0.5;
-    m.style.left = (22 + t * 0.35) + '%';
-    m.style.top  = (35 + Math.sin(t * 0.18) * 10) + '%';
-  }, 700);
-})();
+/* =====================================================================
+   FuelGo Driver — Live Delivery Map (Leaflet + OpenStreetMap)
+   Features:
+   - Real-time GPS tracking (updates every 5 seconds)
+   - Route line: Driver → Station (blue) then Driver → Customer (orange)
+   - Animated driver marker with pulse ring
+   - Station marker (blue square) + Customer marker (green circle)
+   - ETA countdown updated from actual distance
+   - Auto-recenter toggle
+   - Status stepper updates on button click
+   ===================================================================== */
 
-/* Demo status update */
-function demoUpdateStatus(step) {
-  const now = new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
-  if (step === 'pickup') {
-    document.getElementById('ds2')?.classList.replace('','done');
-    document.getElementById('pickupTime').textContent = now;
-    document.querySelector('.btn-status-update.pickup').outerHTML =
-      `<div class="sup-info">Confirm you are now heading to the customer</div>
-       <button class="btn-status-update enroute" onclick="demoUpdateStatus('enroute')">
-         <i class="fas fa-truck-fast"></i> I'm En Route to Customer</button>`;
-  } else if (step === 'enroute') {
-    document.getElementById('ds3')?.classList.add('active');
-    document.getElementById('enrouteTime').textContent = now;
-    document.querySelector('.btn-status-update.enroute').outerHTML =
-      `<div class="sup-info">Confirm delivery after handing over fuel</div>
-       <button class="btn-status-update delivered" onclick="demoUpdateStatus('delivered')">
-         <i class="fas fa-circle-check"></i> Mark as Delivered</button>`;
-  } else if (step === 'delivered') {
-    document.getElementById('deliveredTime').textContent = now;
-    document.querySelector('.btn-status-update.delivered').outerHTML =
-      `<div class="delivery-complete-msg"><i class="fas fa-party-horn"></i> Delivery Complete! Great job.</div>`;
-    setTimeout(() => { window.location.href = '{% url "driver_history" %}'; }, 2000);
+// ---- Order data (replace with Django template vars in production) ----
+const ORDER = {
+  id:          '{{ active_order.id|default:"FG-2044" }}',
+  status:      '{{ active_order.status|default:"assigned" }}',
+  stationLat:  {{ active_order.station.lat|default:"-6.8160" }},
+  stationLng:  {{ active_order.station.lng|default:"39.2803" }},
+  stationName: '{{ active_order.station.name|default:"Total Energies – Kariakoo" }}',
+  customerLat: {{ active_order.customer_lat|default:"-6.8250" }},
+  customerLng: {{ active_order.customer_lng|default:"39.2820" }},
+  customerName:'{{ active_order.customer.get_full_name|default:"Baraka Juma" }}',
+  deliveryAddr:'{{ active_order.delivery_address|default:"Ilala, Lumumba St, Block 4" }}',
+};
+
+let map, driverMarker, stationMarker, customerMarker;
+let routeToStation = null, routeToCustomer = null;
+let driverLat = null, driverLng = null;
+let currentPhase = ORDER.status === 'delivering' ? 2 : 1; // 1=go to station, 2=go to customer
+let watchId = null;
+let etaSeconds = 0;
+let etaInterval = null;
+let autoRecenter = true;
+
+/* ---- Custom marker icons ---- */
+function driverIcon() {
+  return L.divIcon({
+    className: '',
+    html: `<div class="driver-live-marker"><div class="dlm-pulse"></div><div class="dlm-core"><i class="fas fa-motorcycle"></i></div></div>`,
+    iconSize: [28,28], iconAnchor: [14,14],
+  });
+}
+function stationIcon() {
+  return L.divIcon({
+    className: '',
+    html: `<div class="station-map-marker"><i class="fas fa-gas-pump"></i></div>`,
+    iconSize: [32,32], iconAnchor: [16,16],
+  });
+}
+function customerIcon() {
+  return L.divIcon({
+    className: '',
+    html: `<div class="customer-map-marker"><i class="fas fa-user"></i></div>`,
+    iconSize: [32,32], iconAnchor: [16,16],
+  });
+}
+
+/* ---- Haversine ---- */
+function haversine(a,b,c,d) {
+  const R=6371, dLat=(c-a)*Math.PI/180, dLng=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+
+/* ---- Format time mm:ss ---- */
+function fmtTime(sec) {
+  if (sec <= 0) return '00:00';
+  const m = String(Math.floor(sec/60)).padStart(2,'0');
+  const s = String(sec%60).padStart(2,'0');
+  return `${m}:${s}`;
+}
+
+/* ---- Draw straight-line route (free, no routing API) ---- */
+function drawRoutes() {
+  if (!driverLat) return;
+
+  // Remove old routes
+  if (routeToStation)  { map.removeLayer(routeToStation);  routeToStation  = null; }
+  if (routeToCustomer) { map.removeLayer(routeToCustomer); routeToCustomer = null; }
+
+  if (currentPhase === 1) {
+    // Blue dashed line: driver → station
+    routeToStation = L.polyline(
+      [[driverLat, driverLng], [ORDER.stationLat, ORDER.stationLng]],
+      { color: '#3b82f6', weight: 4, opacity: 0.85, dashArray: '10,6' }
+    ).addTo(map);
+    // Orange dotted line: station → customer (upcoming)
+    routeToCustomer = L.polyline(
+      [[ORDER.stationLat, ORDER.stationLng], [ORDER.customerLat, ORDER.customerLng]],
+      { color: '#e85d04', weight: 3, opacity: 0.35, dashArray: '6,8' }
+    ).addTo(map);
+  } else {
+    // Orange solid line: driver → customer
+    routeToCustomer = L.polyline(
+      [[driverLat, driverLng], [ORDER.customerLat, ORDER.customerLng]],
+      { color: '#e85d04', weight: 4, opacity: 0.9, dashArray: '10,6' }
+    ).addTo(map);
   }
 }
+
+/* ---- Update ETA display ---- */
+function updateETA() {
+  if (!driverLat) return;
+  const targetLat = currentPhase === 1 ? ORDER.stationLat : ORDER.customerLat;
+  const targetLng = currentPhase === 1 ? ORDER.stationLng : ORDER.customerLng;
+  const dist = haversine(driverLat, driverLng, targetLat, targetLng);
+
+  // Estimate: avg 25 km/h in city
+  etaSeconds = Math.round((dist / 25) * 3600);
+
+  document.getElementById('distanceVal').textContent = dist < 1
+    ? `${Math.round(dist*1000)} m` : `${dist.toFixed(1)} km`;
+  document.getElementById('distLabel').textContent = currentPhase === 1 ? 'To Station' : 'To Customer';
+  document.getElementById('etaLabel').textContent  = currentPhase === 1 ? 'ETA to Station' : 'ETA to Customer';
+
+  // Start countdown
+  clearInterval(etaInterval);
+  etaInterval = setInterval(() => {
+    etaSeconds = Math.max(0, etaSeconds - 1);
+    document.getElementById('etaCountdown').textContent = fmtTime(etaSeconds);
+  }, 1000);
+  document.getElementById('etaCountdown').textContent = fmtTime(etaSeconds);
+}
+
+/* ---- Update phase UI ---- */
+function setPhase(phase) {
+  currentPhase = phase;
+  const indicator = document.getElementById('phaseIndicator');
+  const phaseText = document.getElementById('phaseText');
+  if (phase === 1) {
+    indicator.className = 'phase-indicator phase-pickup';
+    indicator.innerHTML = '<i class="fas fa-gas-pump"></i><span id="phaseText">Phase 1 of 2 — Head to station to pick up fuel</span>';
+  } else if (phase === 2) {
+    indicator.className = 'phase-indicator phase-deliver';
+    indicator.innerHTML = '<i class="fas fa-truck-fast"></i><span id="phaseText">Phase 2 of 2 — Head to customer for delivery</span>';
+    // Recalculate
+    if (map && stationMarker) {
+      stationMarker.setOpacity(0.4);
+    }
+  } else {
+    indicator.className = 'phase-indicator phase-done';
+    indicator.innerHTML = '<i class="fas fa-circle-check"></i><span>Delivery Complete!</span>';
+    stopTracking();
+  }
+  updateETA();
+  drawRoutes();
+  if (autoRecenter && driverLat) recenterMap();
+}
+
+/* ---- Move driver marker ---- */
+function updateDriverPosition(lat, lng, speed, accuracy) {
+  driverLat = lat; driverLng = lng;
+
+  if (!driverMarker) {
+    driverMarker = L.marker([lat, lng], { icon: driverIcon(), zIndexOffset: 1000 })
+      .addTo(map)
+      .bindPopup('<strong>📍 You are here</strong>');
+  } else {
+    driverMarker.setLatLng([lat, lng]);
+  }
+
+  if (autoRecenter) map.panTo([lat, lng], { animate: true, duration: 0.8 });
+
+  drawRoutes();
+  updateETA();
+
+  // Update coordinate display
+  document.getElementById('coordLat').textContent  = lat.toFixed(6);
+  document.getElementById('coordLng').textContent  = lng.toFixed(6);
+  document.getElementById('coordAcc').textContent  = accuracy ? `±${Math.round(accuracy)}m` : '—';
+  document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+
+  const kmh = speed ? Math.round(speed * 3.6) : 0;
+  document.getElementById('speedVal').textContent = `${kmh} km/h`;
+
+  // Send location to server every update
+  sendLocationToServer(lat, lng);
+}
+
+/* ---- Send location to Django backend ---- */
+function sendLocationToServer(lat, lng) {
+  fetch('/driver/update-location/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken'),
+    },
+    body: JSON.stringify({ lat, lng, order_id: ORDER.id }),
+  }).catch(() => {}); // Silently fail if endpoint not ready
+}
+
+function getCookie(name) {
+  const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+
+/* ---- Start GPS tracking ---- */
+function startTracking() {
+  if (!navigator.geolocation) {
+    useDemoMode();
+    return;
+  }
+  // Watch position - updates every 5 seconds automatically
+  watchId = navigator.geolocation.watchPosition(
+    pos => updateDriverPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.speed, pos.coords.accuracy),
+    err => {
+      console.warn('GPS error:', err.message);
+      useDemoMode();
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+  );
+}
+
+function stopTracking() {
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  clearInterval(etaInterval);
+}
+
+/* ---- Demo mode (simulates movement if GPS denied) ---- */
+function useDemoMode() {
+  let t = 0;
+  // Start near the station for demo
+  let lat = ORDER.stationLat + 0.012;
+  let lng = ORDER.stationLng - 0.008;
+  updateDriverPosition(lat, lng, 8, 15);
+
+  // Move driver gradually toward station then customer
+  const moveInterval = setInterval(() => {
+    t += 0.02;
+    const targetLat = currentPhase === 1 ? ORDER.stationLat : ORDER.customerLat;
+    const targetLng = currentPhase === 1 ? ORDER.stationLng : ORDER.customerLng;
+    lat += (targetLat - lat) * 0.04 + (Math.random()-0.5)*0.0003;
+    lng += (targetLng - lng) * 0.04 + (Math.random()-0.5)*0.0003;
+    const speed = 6 + Math.random()*4;
+    updateDriverPosition(lat, lng, speed, 12);
+
+    const dist = haversine(lat, lng, targetLat, targetLng);
+    if (dist < 0.08 && currentPhase === 1) {
+      // Auto-advance to phase 2 in demo
+      setPhase(2);
+    }
+  }, 5000);
+}
+
+/* ---- Recenter map ---- */
+window.recenterMap = function() {
+  if (driverLat && map) {
+    const bounds = L.latLngBounds(
+      [[driverLat, driverLng]],
+    );
+    if (currentPhase === 1) bounds.extend([ORDER.stationLat, ORDER.stationLng]);
+    else bounds.extend([ORDER.customerLat, ORDER.customerLng]);
+    map.fitBounds(bounds, { padding: [50,50], maxZoom: 16 });
+  }
+};
+
+/* ---- Status update (demo) ---- */
+window.doStatusUpdate = function(step) {
+  const now = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  if (step === 'pickup') {
+    document.getElementById('ds2').classList.add('active');
+    document.getElementById('dl1').classList.add('done');
+    document.getElementById('pickedTime').textContent = now;
+    const strip = document.getElementById('statusStrip');
+    strip.innerHTML = `
+      <div class="ss-btn-done"><i class="fas fa-check"></i> Fuel Collected at Station</div>
+      <div class="ss-note" style="margin-top:8px">Head to the customer's location</div>
+      <button class="ss-btn enroute" onclick="doStatusUpdate('enroute')">
+        <i class="fas fa-truck-fast"></i> Start Delivery to Customer
+      </button>`;
+    setPhase(1); // still going to station in stepper
+  } else if (step === 'enroute') {
+    document.getElementById('ds3').classList.add('active');
+    document.getElementById('dl2').classList.add('done');
+    document.getElementById('enrouteTime').textContent = now;
+    const strip = document.getElementById('statusStrip');
+    strip.innerHTML = `
+      <div class="ss-btn-done"><i class="fas fa-check"></i> En Route to Customer</div>
+      <div class="ss-note" style="margin-top:8px">Arrive and hand over fuel</div>
+      <button class="ss-btn deliver" onclick="doStatusUpdate('delivered')">
+        <i class="fas fa-circle-check"></i> Confirm Fuel Delivered
+      </button>`;
+    setPhase(2);
+  } else if (step === 'delivered') {
+    document.getElementById('ds4').classList.add('done');
+    document.getElementById('dl3').classList.add('done');
+    document.getElementById('deliveredTime').textContent = now;
+    const strip = document.getElementById('statusStrip');
+    strip.innerHTML = `<div class="ss-btn-done" style="font-size:1rem;padding:18px"><i class="fas fa-party-horn"></i> Delivery Complete! Great job.</div>`;
+    setPhase(3);
+    setTimeout(() => { window.location.href = '{% url "driver_history" %}'; }, 3000);
+  }
+};
+
+/* ---- Init map ---- */
+function initMap() {
+  // Center between station and customer for initial view
+  const cLat = (ORDER.stationLat + ORDER.customerLat) / 2;
+  const cLng = (ORDER.stationLng + ORDER.customerLng) / 2;
+
+  map = L.map('deliveryMapFull', { zoomControl: true, scrollWheelZoom: true })
+    .setView([cLat, cLng], 14);
+
+  // OpenStreetMap tiles - free, no API key
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+  }).addTo(map);
+
+  // Station marker
+  stationMarker = L.marker([ORDER.stationLat, ORDER.stationLng], { icon: stationIcon() })
+    .addTo(map)
+    .bindPopup(`
+      <div style="padding:4px">
+        <div style="font-weight:700;color:var(--text-p);margin-bottom:4px">${ORDER.stationName}</div>
+        <div style="font-size:.78rem;color:#3b82f6"><i class="fas fa-gas-pump"></i> Fuel Pickup Point</div>
+      </div>`);
+
+  // Customer marker
+  customerMarker = L.marker([ORDER.customerLat, ORDER.customerLng], { icon: customerIcon() })
+    .addTo(map)
+    .bindPopup(`
+      <div style="padding:4px">
+        <div style="font-weight:700;color:var(--text-p);margin-bottom:4px">${ORDER.customerName}</div>
+        <div style="font-size:.78rem;color:#22c55e"><i class="fas fa-location-dot"></i> ${ORDER.deliveryAddr}</div>
+      </div>`);
+
+  // Disable recenter when user manually pans
+  map.on('dragstart', () => { autoRecenter = false; });
+
+  // Fit both markers on screen
+  map.fitBounds([
+    [ORDER.stationLat, ORDER.stationLng],
+    [ORDER.customerLat, ORDER.customerLng]
+  ], { padding: [60, 60], maxZoom: 15 });
+
+  // Set initial phase from order status
+  if (ORDER.status === 'delivering') setPhase(2);
+  else setPhase(1);
+
+  // Start GPS
+  startTracking();
+}
+
+// Boot when DOM ready
+document.addEventListener('DOMContentLoaded', initMap);
 </script>
 {% endblock %}

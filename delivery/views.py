@@ -37,3 +37,4 @@ def driver_update_profile(request):
 
 def driver_change_password(request):
     return render(request, "driver/profile.html")
+
