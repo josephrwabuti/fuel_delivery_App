@@ -44,6 +44,51 @@ def register(request):
 
 
 @login_required
+def admin_home(request):
+    context = {
+        "total_orders_today": 47,
+        "active_stations": 12,
+        "active_drivers": 38,
+        "on_duty_drivers": 22,
+        "total_customers": 1247,
+        "revenue_today": "8.4M",
+        "live_deliveries": 9,
+        
+        "total_orders": 3841,
+        "total_stations": 15,
+        "total_drivers": 42,
+        "total_revenue": "112M",
+        "delivery_rate": 97,
+        
+        "pending_station_list": [],
+        "pending_driver_list": []
+    }
+    
+    return render(request, "admin_panel/home.html", context)
+
+
+@login_required
+def admin_stations(request):
+    return render(request, "admin_panel/stations.html")
+
+@login_required
+def admin_drivers(request):
+    return render(request, "admin_panel/drivers.html")
+
+@login_required
+def admin_reports(request):
+    return render(request, "admin_panel/reports.html")
+
+@login_required
+def admin_orders(request):
+    return render(request, "admin_panel/orders.html")
+
+@login_required
+def admin_activity(request):
+    return render(request, "admin_panel/activity.html")
+
+
+@login_required
 def customer_home(request):
     return render(request, "customer/home.html")
 
