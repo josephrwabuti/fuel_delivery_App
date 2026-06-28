@@ -64,42 +64,57 @@
       <input type="hidden" name="delivery_address" id="deliveryAddressHidden"/>
       <input type="hidden" name="station_id"       id="selectedStationId" value="{{ preselected_station.id|default:'' }}"/>
 
-      <!-- ====== STEP 1 – STATION ====== -->
+      <!-- ====== STEP 1 – STATION CONFIRMED ====== -->
       <div class="order-step-panel active" id="step1">
-        <div class="osp-header"><div class="osp-num">01</div><div><div class="osp-title">Choose a Fuel Station</div><div class="osp-sub">Pick the station to order from</div></div></div>
+        <div class="osp-header">
+          <div class="osp-num">01</div>
+          <div>
+            <div class="osp-title">Station Selected</div>
+            <div class="osp-sub">You chose this station from the map — confirm or go back to change</div>
+          </div>
+        </div>
 
-        {% if preselected_station %}
-        <div class="preselected-station">
-          <div class="ps-icon">{{ preselected_station.name|slice:":1" }}</div>
+        <!-- Confirmed station display — populated by JS from URL param or Django context -->
+        <div class="preselected-station" id="confirmedStationCard">
+          <div class="ps-icon" id="psInitial">
+            {{ preselected_station.name|slice:":1"|default:"?" }}
+          </div>
           <div class="ps-info">
-            <strong>{{ preselected_station.name }}</strong>
-            <span><i class="fas fa-location-dot"></i> {{ preselected_station.address }}</span>
-            <span><i class="fas fa-route"></i> {{ preselected_station.distance|default:'—' }} km · ~{{ preselected_station.eta|default:'—' }} min</span>
+            <strong id="psName">{{ preselected_station.name|default:"Loading station…" }}</strong>
+            <span id="psAddress">
+              {% if preselected_station %}
+              <i class="fas fa-location-dot"></i> {{ preselected_station.address }}
+              {% else %}
+              <i class="fas fa-location-dot"></i> <span class="text-muted">Address loading…</span>
+              {% endif %}
+            </span>
+            <span id="psMeta">
+              {% if preselected_station %}
+              <i class="fas fa-route"></i> {{ preselected_station.distance|default:'—' }} km
+              · <i class="fas fa-clock"></i> ~{{ preselected_station.eta|default:'—' }} min delivery
+              {% endif %}
+            </span>
           </div>
-          <button type="button" class="ps-change" onclick="goStep(1)">Change</button>
+          <a href="{% url 'customer_stations' %}" class="ps-change" title="Go back and pick a different station">
+            <i class="fas fa-arrow-left"></i> Change
+          </a>
         </div>
-        {% else %}
-        <div class="station-select-list" id="stationSelectList">
-          <div class="ssl-item selected" data-id="1" onclick="selectStation(this,1,'Total Energies – Kariakoo','0.8 km','~8 min')">
-            <div class="ssl-initial">T</div>
-            <div class="ssl-info"><strong>Total Energies – Kariakoo</strong><span><i class="fas fa-route"></i> 0.8 km · <i class="fas fa-clock"></i> ~8 min</span><div class="ssl-prices"><span>Petrol: TZS 2,850/L</span><span>Diesel: TZS 2,700/L</span></div></div>
-            <div class="ssl-check"><i class="fas fa-circle-check"></i></div>
-          </div>
-          <div class="ssl-item" data-id="2" onclick="selectStation(this,2,'Puma Energy – Msimbazi','1.4 km','~14 min')">
-            <div class="ssl-initial">P</div>
-            <div class="ssl-info"><strong>Puma Energy – Msimbazi</strong><span><i class="fas fa-route"></i> 1.4 km · <i class="fas fa-clock"></i> ~14 min</span><div class="ssl-prices"><span>Petrol: TZS 2,830/L</span><span>Diesel: TZS 2,680/L</span></div></div>
-            <div class="ssl-check"><i class="fas fa-circle-check"></i></div>
-          </div>
-          <div class="ssl-item" data-id="3" onclick="selectStation(this,3,'Oryx Petrol – Kinondoni','2.1 km','~18 min')">
-            <div class="ssl-initial">O</div>
-            <div class="ssl-info"><strong>Oryx Petrol – Kinondoni</strong><span><i class="fas fa-route"></i> 2.1 km · <i class="fas fa-clock"></i> ~18 min</span><div class="ssl-prices"><span>Petrol: TZS 2,860/L</span></div></div>
-            <div class="ssl-check"><i class="fas fa-circle-check"></i></div>
+
+        <!-- Station not found fallback (shown if no station param in URL) -->
+        <div id="noStationWarning" style="display:none">
+          <div class="step-error-msg" style="display:flex;margin-bottom:14px">
+            <i class="fas fa-circle-info"></i>
+            No station selected. Please go to <a href="{% url 'customer_stations' %}" style="color:var(--orange);font-weight:700;margin:0 4px">Find Stations</a> and tap "Order from Here" on your preferred station.
           </div>
         </div>
-        {% endif %}
 
         <div class="step-actions">
-          <button type="button" class="btn-next" onclick="goStep(2)">Next: Fuel Details <i class="fas fa-arrow-right"></i></button>
+          <a href="{% url 'customer_stations' %}" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Change Station
+          </a>
+          <button type="button" class="btn-next" onclick="goStep(2)">
+            Next: Fuel Details <i class="fas fa-arrow-right"></i>
+          </button>
         </div>
       </div>
 
@@ -311,19 +326,57 @@ let deliveryLat = null, deliveryLng = null;
 let deliveryMapInstance = null, deliveryMarker = null;
 let confirmThumbMap = null;
 let mapPanelOpen = false;
-let selectedStationName = document.getElementById('summStation')?.textContent || '—';
+/* ---- Station data (mirrors stations.html STATIONS array) ---- */
+const STATION_DATA = {
+  '1': { name:'Total Energies – Kariakoo', address:'Kariakoo St, Dar es Salaam', distance:'0.8', eta:'8' },
+  '2': { name:'Puma Energy – Msimbazi',    address:'Msimbazi Centre, Dar es Salaam', distance:'1.4', eta:'14' },
+  '3': { name:'Oryx Petrol – Kinondoni',   address:'Kinondoni Rd, Dar es Salaam', distance:'2.1', eta:'18' },
+  '4': { name:'Engen – Ilala',             address:'Lumumba St, Ilala, Dar es Salaam', distance:'2.8', eta:'22' },
+  '5': { name:'Shell – Temeke',            address:"Chang'ombe Rd, Temeke", distance:'3.2', eta:'28' },
+  '6': { name:'GAPCO – Ubungo',            address:'Morogoro Rd, Ubungo', distance:'3.9', eta:'32' },
+};
 
-/* ---- Pre-select station from URL param ---- */
 const urlParams = new URLSearchParams(window.location.search);
 const stationParam = urlParams.get('station');
-if (stationParam) document.getElementById('selectedStationId').value = stationParam;
+let selectedStationName = '—';
+
+(function bootStation() {
+  const sid = stationParam;
+  if (!sid) {
+    const card    = document.getElementById('confirmedStationCard');
+    const warning = document.getElementById('noStationWarning');
+    if (card)    card.style.display    = 'none';
+    if (warning) warning.style.display = 'block';
+    return;
+  }
+  document.getElementById('selectedStationId').value = sid;
+  const djName = document.getElementById('psName')?.textContent?.trim();
+  const known  = STATION_DATA[sid];
+  if (djName && djName !== 'Loading station\u2026' && djName !== '?') {
+    selectedStationName = djName;
+  } else if (known) {
+    const el = (id) => document.getElementById(id);
+    if (el('psInitial')) el('psInitial').textContent = known.name.charAt(0);
+    if (el('psName'))    el('psName').textContent    = known.name;
+    if (el('psAddress')) el('psAddress').innerHTML   = '<i class="fas fa-location-dot"></i> ' + known.address;
+    if (el('psMeta'))    el('psMeta').innerHTML      = '<i class="fas fa-route"></i> ' + known.distance + ' km · <i class="fas fa-clock"></i> ~' + known.eta + ' min delivery';
+    selectedStationName = known.name.split('\u2013')[0].split('-')[0].trim();
+  }
+  const summEl = document.getElementById('summStation');
+  if (summEl) summEl.textContent = selectedStationName;
+  // Auto-skip to step 2 — station already chosen on the stations page
+  setTimeout(() => goStep(2), 60);
+})();
 
 /* ---- Step navigation ---- */
 function goStep(step) {
-  // Validation
+  // Validation — station must be set before going past step 1
   if (step > 1) {
     const sid = document.getElementById('selectedStationId').value;
-    if (!sid) { showErr('Please select a station first.'); return; }
+    if (!sid) {
+      showErr('No station selected. Please go back to Find Stations and choose one.');
+      return;
+    }
   }
   if (step > 3) {
     if (!deliveryLat || !deliveryLng) { showErr('Please set your delivery location before continuing.'); return; }
@@ -352,13 +405,12 @@ function showErr(msg) {
   setTimeout(() => { if (e) e.style.display = 'none'; }, 4000);
 }
 
-/* ---- Station selection ---- */
-function selectStation(el, id, name, dist, eta) {
-  document.querySelectorAll('.ssl-item').forEach(i => i.classList.remove('selected'));
-  el.classList.add('selected');
+/* ---- Station selection (kept for backwards compat, not used in new flow) ---- */
+function selectStation(el, id, name) {
   document.getElementById('selectedStationId').value = id;
-  selectedStationName = name.split('–')[0].trim();
-  document.getElementById('summStation').textContent = selectedStationName;
+  selectedStationName = name.split('–')[0].split('-')[0].trim();
+  const summEl = document.getElementById('summStation');
+  if (summEl) summEl.textContent = selectedStationName;
 }
 
 /* ---- Cost calculator ---- */
