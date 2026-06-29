@@ -100,7 +100,7 @@
           <span id="signinRoleText">Customer Portal</span>
         </div>
 
-        <form method="POST" action="{% url 'login_dispatch' %}" id="signinForm">
+        <form method="POST" action="{% url 'login' %}" id="signinForm">
           {% csrf_token %}
           <input type="hidden" name="role" id="signinRoleInput" value="customer"/>
 
@@ -227,7 +227,7 @@
           <span id="signupRoleText">Customer Account</span>
         </div>
 
-        <form method="POST" action="{% url 'register_dispatch' %}" id="signupForm">
+        <form method="POST" action="{% url 'register' %}" id="signupForm">
           {% csrf_token %}
           <input type="hidden" name="role" id="signupRoleInput" value="customer"/>
 

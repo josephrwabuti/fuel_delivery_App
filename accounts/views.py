@@ -1,115 +1,56 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
-from .models import CustomerProfile, Driver, Station
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, login as auth_login, logout
+from django.contrib import messages
+
+User = get_user_model()
 
 
-def login_dispatch(request):
+def login_view(request):
     if request.method == "POST":
-        role = request.POST.get("role")
-        email = request.POST.get("email")
-        password = request.POST.get("password")
+        email = request.POST['email']
+        password = request.POST['password']
 
         user = authenticate(request, username=email, password=password)
 
-        if not user:
-            return render(request, "accounts/login_register.html", {
-                "error": "Invalid credentials",
-                "initial_role": role
-            })
+        if user is not None:
+            auth_login(request, user)
+            return redirect('customer_dashboard')
+        else:
+            messages.error(request, "Invalid credentials")
 
-        # CUSTOMER
-        if role == "customer" and hasattr(user, "customerprofile"):
-            login(request, user)
-            return redirect("customer_home")
+    return render(request, 'accounts/login_register.html')
 
-        # DRIVER
-        if role == "driver" and hasattr(user, "driver"):
-            login(request, user)
-            return redirect("driver_home")
 
-        # PROVIDER
-        if role == "provider" and hasattr(user, "station"):
-            login(request, user)
-            return redirect("provider_home")
-
-        # ADMIN
-        if role == "admin" and user.is_staff:
-            login(request, user)
-            return redirect("admin_home")
-
-        return render(request, "accounts/login_register.html", {
-            "error": "Role mismatch or invalid account",
-            "initial_role": role
-        })
-
-    return render(request, "accounts/login_register.html")
-
-def register_dispatch(request):
+def register(request):
     if request.method == "POST":
-        role = request.POST.get("role")
+        first_name = request.POST['first_name']
+        last_name = request.POST['last_name']
+        email = request.POST['email']
+        password = request.POST['password1']
 
-        # ================= CUSTOMER =================
-        if role == "customer":
-            user = User.objects.create_user(
-                username=request.POST["email"],
-                email=request.POST["email"],
-                password=request.POST["password1"],
-                first_name=request.POST["first_name"],
-                last_name=request.POST["last_name"],
-            )
+        if User.objects.filter(username=email).exists():
+            messages.error(request, "User already exists")
+            return redirect('register')
 
-            CustomerProfile.objects.create(
-                user=user,
-                phone=request.POST.get("phone", "")
-            )
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name
+        )
 
-            return redirect("/accounts/login/")
+        user.save()
 
-        # ================= DRIVER =================
-        if role == "driver":
-            user = User.objects.create_user(
-                username=request.POST["email"],
-                email=request.POST["email"],
-                password=request.POST["password1"],
-                first_name=request.POST["first_name"],
-                last_name=request.POST["last_name"],
-            )
+        messages.success(request, "Account created successfully")
+        return redirect('login')
 
-            Driver.objects.create(
-                user=user,
-                phone=request.POST["phone"],
-                licence_number=request.POST.get("license_no", ""),
-                status="pending",
-                is_approved=False,
-            )
+    return render(request, 'accounts/login_register.html')
 
-            return redirect("login_dispatch")
-
-        # ================= PROVIDER =================
-        if role == "provider":
-            user = User.objects.create_user(
-                username=request.POST["email"],
-                email=request.POST["email"],
-                password=request.POST["password1"],
-                first_name=request.POST["first_name"],
-                last_name=request.POST["last_name"],
-            )
-
-            Station.objects.create(
-                owner=user,
-                name=request.POST["station_name"],
-                address=request.POST["station_address"],
-                lat=request.POST["station_lat"],
-                lng=request.POST["station_lng"],
-                status="pending",
-                is_approved=False,
-            )
-
-            return redirect("login_dispatch")
-
-    return render(request, "accounts/login_register.html")
-
+def logout_view(request):
+    logout(request)
+    return redirect('login')
 
 def forgot_password(request):
-    return render(request, "accounts/forgot_password.html")
+    return render(request, "accounts/login_register.html")
