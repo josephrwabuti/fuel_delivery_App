@@ -27,4 +27,5 @@ urlpatterns = [
     path('providers/', include('providers.urls')),
     
     path('delivery/', include('delivery.urls')),
+    
 ]
