@@ -29,7 +29,7 @@ def login_view(request):
                 return redirect("provider_home")
 
             elif user.role == "driver":
-                return redirect("driver_dashboard")
+                return redirect("driver_home")
 
             elif user.role == "admin":
                 return redirect("admin_home")
