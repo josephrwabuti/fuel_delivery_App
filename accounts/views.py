@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import get_user_model
-from django.contrib.auth import authenticate, login as auth_login, logout
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .models import User
 
@@ -23,16 +23,16 @@ def login_view(request):
             login(request, user)
 
             if user.role == "customer":
-                return redirect("customer_dashboard")
+                return redirect("customer_home")
 
             elif user.role == "provider":
-                return redirect("provider_dashboard")
+                return redirect("provider_home")
 
             elif user.role == "driver":
                 return redirect("driver_dashboard")
 
             elif user.role == "admin":
-                return redirect("admin_dashboard")
+                return redirect("admin_home")
 
         messages.error(request, "Invalid email or password")
 
