@@ -131,3 +131,5 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/customer/home/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
+AUTH_USER_MODEL = "accounts.User"
+
