@@ -4,6 +4,7 @@ from accounts.decorators import role_required
 from orders.forms import OrderForm
 from accounts.models import Station
 from orders.models import Order
+from django.contrib.auth.models import User
 
 
 
@@ -107,3 +108,43 @@ def customer_place_order(request):
         return redirect("customer_tracking")
 
     return redirect("customer_order")
+
+@login_required(login_url='login')
+@role_required('admin')
+def admin_stations(request):
+    stations = Station.objects.all()
+    return render(request, 'admin_panel/stations.html', {"stations": stations})
+
+def admin_drivers(request):
+    return render(request, 'admin_panel/drivers.html')
+
+def admin_customers(request):
+    return render(request, 'admin_panel/customers.html')
+
+def admin_orders(request):
+    return render(request, 'admin_panel/orders.html')
+
+def admin_reports(request):
+    return render(request, 'admin_panel/reports.html')
+
+def admin_demand(request):
+    return render(request, 'admin_panel/reports.html')
+
+def admin_activity(request):
+    return render(request, 'admin_panel/activity.html')
+
+def admin_settings(request):
+    return render(request, 'admin_panel/settings.html')
+
+def admin_profile(request):
+    return render(request, 'admin_panel/profile.html')
+
+def admin_save_settings(request):
+    return render(request, 'admin_panel/settings.html')
+
+def admin_update_profile(request):
+    return render(request, 'admin_panel/profile.html')
+
+
+def admin_change_password(request):
+    return render(request, 'admin_panel/profile.html')

@@ -6,7 +6,7 @@ urlpatterns = [
     path('customer/dashboard/', views.customer_home, name='customer_home'),
     path('provider/dashboard/', views.provider_home, name='provider_home'),
     path('driver/dashboard/', views.driver_home, name='driver_home'),
-    path('admin/dashboard/', views.admin_home, name='admin_home'),
+    path('dashboard/admin/', views.admin_home, name='admin_home'),
 
     path(
         "customer/stations/",
@@ -53,4 +53,20 @@ urlpatterns = [
     path(
         'customer/place-order/', views.customer_place_order, name='customer_place_order'
     ),
+    
+    path('stations/', views.admin_stations, name='admin_stations'),
+    path('drivers/', views.admin_drivers, name='admin_drivers'),
+    path('orders/', views.admin_orders, name='admin_orders'),
+    path('customers/', views.admin_customers, name='admin_customers'),
+    path('reports/', views.admin_reports, name='admin_reports'),
+    path('demand/', views.admin_demand, name='admin_demand'),
+    path('activity/', views.admin_activity, name='admin_activity'),
+    path('settings/', views.admin_settings, name='admin_settings'),
+    path('profile/', views.admin_profile, name='admin_profile'),
+    path('save-settings/', views.admin_save_settings, name='admin_save_settings'),
+    path('update-profile/', views.admin_update_profile, name='admin_update_profile'),
+    path('change-password/', views.admin_change_password, name='admin_change_password'),
+    
+    
+    
 ]
