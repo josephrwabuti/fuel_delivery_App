@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import get_user_model
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
-from .models import User
+from accounts.models import Station
 
 User = get_user_model()
 
@@ -60,11 +60,21 @@ def register(request):
             role=role
         )
 
+        # 🔥 IF USER IS STATION PROVIDER CREATE STATION
+        if role == "provider":
+            Station.objects.create(
+                owner=user,
+                name=request.POST.get('station_name') or f"{first_name} Station",
+                address=request.POST.get('station_address', "Not set yet"),
+                lat=request.POST.get('station_lat') or None,
+                lng=request.POST.get('station_lng') or None,
+                status="pending"
+            )
+
         messages.success(request, "Account created successfully")
         return redirect('login')
 
     return render(request, "accounts/login_register.html")
-
 
 def logout_view(request):
     logout(request)

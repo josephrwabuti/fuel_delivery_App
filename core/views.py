@@ -5,6 +5,7 @@ from orders.forms import OrderForm
 from accounts.models import Station
 from orders.models import Order
 from django.contrib.auth.models import User
+from django.http import JsonResponse
 
 
 
@@ -36,7 +37,7 @@ def admin_home(request):
     return render(request, 'admin_panel/home.html')
 
 def customer_stations(request):
-    stations = Station.objects.filter(is_approved=True)
+    stations = Station.objects.filter(status="approved")
 
     context = {
         "stations": stations
@@ -112,8 +113,39 @@ def customer_place_order(request):
 @login_required(login_url='login')
 @role_required('admin')
 def admin_stations(request):
-    stations = Station.objects.all()
-    return render(request, 'admin_panel/stations.html', {"stations": stations})
+
+    pending_stations = Station.objects.filter(status='pending')
+    approved_stations = Station.objects.filter(status='approved')
+    rejected_stations = Station.objects.filter(status='rejected')
+
+    return render(request, 'admin_panel/stations.html', {
+        'pending_stations': pending_stations,
+        'approved_stations': approved_stations,
+        'rejected_stations': rejected_stations,
+        'stations': Station.objects.all()  # optional for table loop
+    })
+    
+
+@login_required
+@role_required("admin")
+def approve_station(request, station_id):
+
+    station = get_object_or_404(Station, id=station_id)
+    station.status = "approved"
+    station.save()
+
+    return JsonResponse({"success": True})
+
+
+@login_required
+def reject_station(request, station_id):
+
+    station = get_object_or_404(Station, id=station_id)
+    station.status = "rejected"
+    station.save()
+
+    return JsonResponse({"success": True})
+
 
 def admin_drivers(request):
     return render(request, 'admin_panel/drivers.html')

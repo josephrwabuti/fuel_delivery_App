@@ -5,12 +5,11 @@ from accounts.models import Station, Driver
 
 class Order(models.Model):
 
-    STATUS = (
+    STATUS_CHOICES = (
         ("pending", "Pending"),
-        ("accepted", "Accepted"),
-        ("assigned", "Driver Assigned"),
-        ("picked", "Picked Up"),
-        ("delivering", "Delivering"),
+        ("confirmed", "Confirmed"),
+        ("driver_assigned", "Driver Assigned"),
+        ("en_route", "En Route"),
         ("delivered", "Delivered"),
         ("cancelled", "Cancelled"),
     )
@@ -18,9 +17,10 @@ class Order(models.Model):
     PAYMENT_STATUS = (
         ("pending", "Pending"),
         ("paid", "Paid"),
+        ("failed", "Failed"),
     )
 
-    FUEL = (
+    FUEL_CHOICES = (
         ("Petrol", "Petrol"),
         ("Diesel", "Diesel"),
         ("Kerosene", "Kerosene"),
@@ -46,43 +46,17 @@ class Order(models.Model):
         related_name="orders"
     )
 
-    fuel_type = models.CharField(
-        max_length=20,
-        choices=FUEL
-    )
-
-    quantity = models.DecimalField(
-        max_digits=8,
-        decimal_places=2
-    )
+    fuel_type = models.CharField(max_length=20, choices=FUEL_CHOICES)
+    quantity = models.DecimalField(max_digits=8, decimal_places=2)
 
     delivery_address = models.TextField()
-
-    latitude = models.DecimalField(
-        max_digits=10,
-        decimal_places=7,
-        null=True,
-        blank=True
-    )
-
-    longitude = models.DecimalField(
-        max_digits=10,
-        decimal_places=7,
-        null=True,
-        blank=True
-    )
+    latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
 
     phone = models.CharField(max_length=20)
+    notes = models.TextField(blank=True)
 
-    notes = models.TextField(
-        blank=True
-    )
-
-    total_price = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0
-    )
+    total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     payment_status = models.CharField(
         max_length=20,
@@ -92,19 +66,10 @@ class Order(models.Model):
 
     status = models.CharField(
         max_length=20,
-        choices=STATUS,
+        choices=STATUS_CHOICES,
         default="pending"
     )
 
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-
-    accepted_at = models.DateTimeField(
-        null=True,
-        blank=True
-    )
-
-    delivered_at = models.DateTimeField(
-        null=True,
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)

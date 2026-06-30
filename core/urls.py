@@ -54,7 +54,9 @@ urlpatterns = [
         'customer/place-order/', views.customer_place_order, name='customer_place_order'
     ),
     
-    path('stations/', views.admin_stations, name='admin_stations'),
+    path('dashboard/admin/stations/', views.admin_stations, name='admin_stations'),
+    path('admin/station/approve/<int:station_id>/', views.approve_station, name='approve_station'),
+    path('/admin/station/reject/<int:station_id>/', views.reject_station, name='reject_station'),
     path('drivers/', views.admin_drivers, name='admin_drivers'),
     path('orders/', views.admin_orders, name='admin_orders'),
     path('customers/', views.admin_customers, name='admin_customers'),
@@ -67,6 +69,9 @@ urlpatterns = [
     path('update-profile/', views.admin_update_profile, name='admin_update_profile'),
     path('change-password/', views.admin_change_password, name='admin_change_password'),
     
+    
+    
+
     
     
 ]

@@ -18,12 +18,25 @@ class CustomerProfile(models.Model):
 
 
 class Station(models.Model):
+
+    STATUS_CHOICES = (
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    )
+
     owner = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
     address = models.TextField(default="No address provided")
     lat = models.FloatField(null=True, blank=True)
     lng = models.FloatField(null=True, blank=True)
-    is_approved = models.BooleanField(default=False)
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="pending"
+    )
+
     created_at = models.DateTimeField(default=timezone.now)
 
 
