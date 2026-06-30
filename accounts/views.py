@@ -41,15 +41,15 @@ def login_view(request):
 
 def register(request):
     if request.method == "POST":
-        first_name = request.POST['first_name']
-        last_name = request.POST['last_name']
-        email = request.POST['email']
-        password = request.POST['password1']
-        role = request.POST.get('role', 'customer')
+        first_name = request.POST["first_name"]
+        last_name = request.POST["last_name"]
+        email = request.POST["email"]
+        password = request.POST["password1"]
+        role = request.POST.get("role", "customer")
 
         if User.objects.filter(username=email).exists():
             messages.error(request, "User already exists")
-            return redirect('register')
+            return redirect("register")
 
         user = User.objects.create_user(
             username=email,
@@ -57,24 +57,36 @@ def register(request):
             password=password,
             first_name=first_name,
             last_name=last_name,
-            role=role
+            role=role,
+            phone=request.POST.get("phone"),
         )
 
-        # 🔥 IF USER IS STATION PROVIDER CREATE STATION
+        # Create station if provider
         if role == "provider":
+
+            lat = request.POST.get("station_lat")
+            lng = request.POST.get("station_lng")
+
+            if not lat or not lng:
+                user.delete()   # Remove created user if station location wasn't provided
+                messages.error(request, "Please select your station location on the map.")
+                return redirect("register")
+
             Station.objects.create(
                 owner=user,
-                name=request.POST.get('station_name') or f"{first_name} Station",
-                address=request.POST.get('station_address', "Not set yet"),
-                lat=request.POST.get('station_lat') or None,
-                lng=request.POST.get('station_lng') or None,
-                status="pending"
+                name=request.POST.get("station_name") or f"{first_name} Station",
+                address=request.POST.get("station_address") or "Not set yet",
+                lat=float(lat),
+                lng=float(lng),
+                phone=request.POST.get("phone"),
+                status="closed",
             )
 
         messages.success(request, "Account created successfully")
-        return redirect('login')
+        return redirect("login")
 
     return render(request, "accounts/login_register.html")
+
 
 def logout_view(request):
     logout(request)

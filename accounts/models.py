@@ -11,6 +11,7 @@ class User(AbstractUser):
         ('admin', 'Admin'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
+    phone = models.CharField(max_length=20, blank=True)
 
 
 class CustomerProfile(models.Model):
@@ -23,6 +24,11 @@ class Station(models.Model):
         ("open", "Open"),
         ("closed", "Closed"),
     ]
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="station"
+    )
 
     name = models.CharField(max_length=255)
     address = models.TextField()
