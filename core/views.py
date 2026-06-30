@@ -6,7 +6,9 @@ from accounts.models import Station
 from orders.models import Order
 from django.contrib.auth.models import User
 from django.http import JsonResponse
-
+from django.db.models import Sum
+from django.utils import timezone
+import json
 
 
 def home(request):
@@ -16,7 +18,53 @@ def home(request):
 @login_required(login_url='login')
 @role_required('customer')
 def customer_home(request):
-    return render(request, 'customer/home.html')
+
+    nearby_stations = Station.objects.filter(
+        status="approved"
+    ).order_by("-created_at")[:6]
+
+    recent_orders = Order.objects.filter(
+        customer=request.user
+    ).select_related("station").order_by("-created_at")[:5]
+
+    last_order = Order.objects.filter(
+        customer=request.user
+    ).select_related("station").order_by("-created_at").first()
+
+    active_order = Order.objects.filter(
+        customer=request.user,
+        status__in=[
+            "pending",
+            "confirmed",
+            "driver_assigned",
+            "en_route"
+        ]
+    ).select_related("driver", "station").first()
+
+    total_orders = Order.objects.filter(
+        customer=request.user
+    ).count()
+
+    delivered_orders = Order.objects.filter(
+        customer=request.user,
+        status="delivered"
+    ).count()
+
+    total_litres = Order.objects.filter(
+        customer=request.user
+    ).aggregate(total=Sum("quantity"))["total"] or 0
+
+    context = {
+        "nearby_stations": nearby_stations,
+        "recent_orders": recent_orders,
+        "last_order": last_order,
+        "active_order": active_order,
+        "total_orders": total_orders,
+        "delivered_orders": delivered_orders,
+        "total_litres": total_litres,
+    }
+
+    return render(request, "customer/home.html", context)
 
 
 @login_required(login_url='login')
@@ -36,25 +84,71 @@ def driver_home(request):
 def admin_home(request):
     return render(request, 'admin_panel/home.html')
 
-def customer_stations(request):
-    stations = Station.objects.filter(status="approved")
+def stations_view(request):
+    stations = Station.objects.prefetch_related("fuels").all()
 
-    context = {
-        "stations": stations
-    }
-    return render(request, "customer/stations.html", context)
-
-
-def customer_order(request):
-    return render(request, "customer/order.html")
+    return render(request, "customer/stations.html", {
+        "stations": stations,
+        "stations_json": json.dumps([...])
+    })
 
 
-def customer_tracking(request):
-    return render(request, "customer/tracking.html")
+def create_order(request):
+    station_id = request.GET.get("station")
+    station = Station.objects.get(id=station_id)
+
+    if request.method == "POST":
+        order = Order.objects.create(
+            customer=request.user,
+            station=station,
+            fuel_type=request.POST['fuel_type'],
+            quantity=request.POST['quantity'],
+            total_amount=request.POST['total_amount'],
+            status="pending"
+        )
+        return redirect("customer_tracking")
+
+    return render(request, "customer/order.html", {
+        "station": station
+    })
 
 
-def customer_history(request):
-    return render(request, "customer/history.html")
+def tracking_view(request):
+    active_order = Order.objects.filter(
+        customer=request.user
+    ).exclude(status="delivered").first()
+
+    return render(request, "customer/tracking.html", {
+        "active_order": active_order
+    })
+
+
+def history_view(request):
+    orders = Order.objects.filter(customer=request.user).order_by('-created_at')
+
+    return render(request, "customer/history.html", {
+        "orders": orders
+    })
+    
+def confirm_delivery(request, order_id):
+    order = Order.objects.get(id=order_id, customer=request.user)
+
+    if request.method == "POST":
+        order.status = "delivered"
+        order.save()
+
+    return redirect("customer_tracking")
+
+
+def cancel_order(request, order_id):
+    order = Order.objects.get(id=order_id, customer=request.user)
+
+    if request.method == "POST":
+        order.status = "cancelled"
+        order.save()
+
+    return redirect("customer_tracking")
+
 
 def customer_profile(request):
     return render(request, "customer/profile.html")

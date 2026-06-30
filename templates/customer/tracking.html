@@ -162,7 +162,7 @@
       <div class="tos-row"><span>Station</span><strong>{{ active_order.station.name|default:'Total Energies' }}</strong></div>
       <div class="tos-row"><span>Payment</span><strong>{{ active_order.payment_method|default:'Cash on Delivery' }}</strong></div>
       <div class="tos-divider"></div>
-      <div class="tos-row total"><span>Total</span><strong>TZS {{ active_order.total_amount|default:'59,000' }}</strong></div>
+      <div class="tos-row total"><span>Total</span><strong>TZS {{ active_order.total_price|default:'59,000' }}</strong></div>
     </div>
 
     <!-- Cancel order button (only if not yet dispatched) -->

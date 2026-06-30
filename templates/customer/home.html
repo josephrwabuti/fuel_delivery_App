@@ -42,7 +42,7 @@
     <span class="aob-dot-pulse"></span>
     <div>
       <div class="aob-title">Order #{{ active_order.id }} is on the way</div>
-      <div class="aob-sub">{{ active_order.fuel_type }} · {{ active_order.quantity }}L · Driver: {{ active_order.driver.name }}</div>
+      <div class="aob-sub">{{ active_order.fuel_type }} · {{ active_order.quantity }}L · Driver: {{ active_order.driver.user.first_name }}</div>
     </div>
   </div>
   <a href="{% url 'customer_tracking' %}" class="btn-track-now">

@@ -11,13 +11,11 @@ class OrderAdmin(admin.ModelAdmin):
         "fuel_type",
         "quantity",
         "status",
-        "payment_status",
         "created_at",
     )
 
     list_filter = (
         "status",
-        "payment_status",
         "fuel_type",
         "created_at",
     )

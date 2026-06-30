@@ -8,29 +8,18 @@ urlpatterns = [
     path('driver/dashboard/', views.driver_home, name='driver_home'),
     path('dashboard/admin/', views.admin_home, name='admin_home'),
 
-    path(
-        "customer/stations/",
-        views.customer_stations,
-        name="customer_stations",
-    ),
+    path("customer/stations/", views.stations_view, name="customer_stations"),
 
-    path(
-        "customer/order/",
-        views.customer_order,
-        name="customer_order",
-    ),
+    path( "customer/order/", views.create_order, name="customer_order"),
 
-    path(
-        "customer/tracking/",
-        views.customer_tracking,
-        name="customer_tracking",
-    ),
+    path( "customer/tracking/", views.tracking_view, name="customer_tracking" ),
 
-    path(
-        "customer/history/",
-        views.customer_history,
-        name="customer_history",
-    ),
+    path("customer/history/", views.history_view, name="customer_history"),
+    
+    path("order/confirm/<int:order_id>/", views.confirm_delivery, name="customer_confirm_delivery"),
+    
+    path("order/cancel/<int:order_id>/", views.cancel_order, name="customer_cancel_order"),
+    
     path(
         "customer/profile/",
         views.customer_profile,
@@ -56,7 +45,7 @@ urlpatterns = [
     
     path('dashboard/admin/stations/', views.admin_stations, name='admin_stations'),
     path('admin/station/approve/<int:station_id>/', views.approve_station, name='approve_station'),
-    path('/admin/station/reject/<int:station_id>/', views.reject_station, name='reject_station'),
+    path('admin/station/reject/<int:station_id>/', views.reject_station, name='reject_station'),
     path('drivers/', views.admin_drivers, name='admin_drivers'),
     path('orders/', views.admin_orders, name='admin_orders'),
     path('customers/', views.admin_customers, name='admin_customers'),

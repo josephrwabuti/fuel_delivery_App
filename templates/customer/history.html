@@ -34,7 +34,7 @@
       <span class="ht-station">{{ order.station.name }}</span>
       <span>{{ order.fuel_type }}</span>
       <span>{{ order.quantity }}L</span>
-      <span class="ht-price">TZS {{ order.total_amount }}</span>
+      <span class="ht-price">TZS {{ order.total_price }}</span>
       <span><div class="status-chip {{ order.status }}">{{ order.get_status_display }}</div></span>
       <span class="ht-date">{{ order.created_at|date:"d M Y" }}</span>
       <span>
