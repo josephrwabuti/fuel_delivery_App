@@ -79,7 +79,7 @@ def register(request):
                 lat=float(lat),
                 lng=float(lng),
                 phone=request.POST.get("phone"),
-                status="closed",
+                status="pending",
             )
 
         # Create driver record if driver

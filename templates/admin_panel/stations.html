@@ -4,6 +4,10 @@
 {% block page_title %}Fuel Stations{% endblock %}
 {% block nav_stations %}active{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+{% endblock %}
+
 {% block content %}
 
 <!-- ===== STATS ROW ===== -->
@@ -36,7 +40,19 @@
     </div>
 
     {% for station in stations %}
-    <div class="dt-row st-grid" data-status="{{ station.status }}" data-search="{{ station.name|lower }} {{ station.address|lower }}">
+    <div class="dt-row st-grid" data-status="{{ station.status }}" data-search="{{ station.name|lower }} {{ station.address|lower }}"
+         data-id="{{ station.id }}"
+         data-name="{{ station.name }}"
+         data-owner="{{ station.owner.get_full_name }}"
+         data-address="{{ station.address }}"
+         data-lat="{{ station.lat }}"
+         data-lng="{{ station.lng }}"
+         data-phone="{{ station.phone }}"
+         data-licence="{{ station.licence_no }}"
+         data-status-text="{{ station.status }}"
+         data-email="{{ station.owner.email }}"
+         data-fuels="{{ station.fuel_types }}"
+         data-date="{{ station.created_at|date:'d M Y' }}">
       <span class="dt-name-cell">
         <div class="entity-init">{{ station.name|slice:":1" }}</div>
         <div><div class="dt-main-name">{{ station.name }}</div><div class="dt-sub">{{ station.fuel_types }}</div></div>
@@ -57,12 +73,12 @@
       </span>
       <span class="dt-actions">
         {% if station.status == 'pending' %}
-        <button class="btn-approve" onclick="approveStation({{ station.id }}, '{{ station.name }}')" title="Approve"><i class="fas fa-check"></i></button>
-        <button class="btn-reject" onclick="rejectEntity('station', {{ station.id }}, '{{ station.name }}')" title="Reject"><i class="fas fa-times"></i></button>
+        <button class="btn-approve" onclick="approveStation({{ station.id }}, '{{ station.name|escapejs }}')" title="Approve"><i class="fas fa-check"></i></button>
+        <button class="btn-reject" onclick="rejectEntity('station', {{ station.id }}, '{{ station.name|escapejs }}')" title="Reject"><i class="fas fa-times"></i></button>
         {% endif %}
         <button class="btn-view" onclick="openStationDetail({{ station.id }})" title="View"><i class="fas fa-eye"></i></button>
         {% if station.is_approved %}
-        <button class="btn-suspend" onclick="suspendEntity('station', {{ station.id }}, '{{ station.name }}')" title="Suspend"><i class="fas fa-ban"></i></button>
+        <button class="btn-suspend" onclick="suspendEntity('station', {{ station.id }}, '{{ station.name|escapejs }}')" title="Suspend"><i class="fas fa-ban"></i></button>
         {% endif %}
       </span>
     </div>
@@ -77,33 +93,31 @@
   <div class="modal-box wide">
     <button class="modal-close" onclick="closeModal('stationDetailModal')"><i class="fas fa-times"></i></button>
     <div class="modal-hdr-entity">
-      <div class="mhe-init">T</div>
+      <div class="mhe-init" id="sdInitial">T</div>
       <div>
-        <div class="mhe-name">Total Energies – Kariakoo</div>
-        <div class="mhe-sub"><div class="status-chip approved">Approved</div></div>
+        <div class="mhe-name" id="sdName">Station Name</div>
+        <div class="mhe-sub"><div class="status-chip" id="sdStatus">Pending</div></div>
       </div>
     </div>
     <div class="detail-grid">
       <div class="dg-section"><div class="dg-title">Station Info</div>
-        <div class="dg-row"><span>Owner</span><strong>Ali Hassan</strong></div>
-        <div class="dg-row"><span>Phone</span><strong>+255 712 001 003</strong></div>
-        <div class="dg-row"><span>Email</span><strong>total@example.com</strong></div>
-        <div class="dg-row"><span>Address</span><strong>Kariakoo St, Dar es Salaam</strong></div>
-        <div class="dg-row"><span>Licence No.</span><strong>LIC-2023-0011</strong></div>
-        <div class="dg-row"><span>Registered</span><strong>10 Jan 2026</strong></div>
+        <div class="dg-row"><span>Owner</span><strong id="sdOwner">—</strong></div>
+        <div class="dg-row"><span>Phone</span><strong id="sdPhone">—</strong></div>
+        <div class="dg-row"><span>Email</span><strong id="sdEmail">—</strong></div>
+        <div class="dg-row"><span>Address</span><strong id="sdAddress">—</strong></div>
+        <div class="dg-row"><span>Coordinates</span><strong id="sdCoords">—</strong></div>
+        <div class="dg-row"><span>Licence No.</span><strong id="sdLicence">—</strong></div>
+        <div class="dg-row"><span>Fuel Types</span><strong id="sdFuels">—</strong></div>
+        <div class="dg-row"><span>Registered</span><strong id="sdDate">—</strong></div>
       </div>
-      <div class="dg-section"><div class="dg-title">Performance</div>
-        <div class="dg-row"><span>Total Orders</span><strong>428</strong></div>
-        <div class="dg-row"><span>Revenue Generated</span><strong>TZS 24.8M</strong></div>
-        <div class="dg-row"><span>Avg. Delivery Time</span><strong>12 min</strong></div>
-        <div class="dg-row"><span>Customer Rating</span><strong><i class="fas fa-star text-orange"></i> 4.9</strong></div>
-        <div class="dg-row"><span>Active Drivers</span><strong>4</strong></div>
-        <div class="dg-row"><span>Fuel Types</span><strong>Petrol, Diesel, Premium</strong></div>
+      <div class="dg-section"><div class="dg-title">Pinned Location</div>
+        <div id="stationDetailMap" style="height:220px;width:100%;border-radius:10px;margin-top:6px;background:#0d1a2e"></div>
       </div>
     </div>
     <div class="modal-footer-btns">
       <button class="btn-modal-cancel" onclick="closeModal('stationDetailModal')">Close</button>
-      <button class="btn-modal-danger" onclick="suspendEntity('station',1,'Total Energies');closeModal('stationDetailModal')"><i class="fas fa-ban"></i> Suspend Station</button>
+      <button class="btn-modal-confirm" id="sdApproveBtn" style="display:none"><i class="fas fa-check"></i> Approve Station</button>
+      <button class="btn-modal-danger" id="sdSuspendBtn" style="display:none"><i class="fas fa-ban"></i> Suspend Station</button>
     </div>
   </div>
 </div>
@@ -141,7 +155,10 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
+let stationDetailMap = null;
+let currentStationId = null;
 
 function approveStation(id, name) {
   fetch(`/admin/station/approve/${id}/`)
@@ -154,7 +171,79 @@ function approveStation(id, name) {
   });
 }
 
-function openStationDetail(id) { openModal('stationDetailModal'); }
+function openStationDetail(id) {
+  currentStationId = id;
+  const row = document.querySelector(`.dt-row[data-id="${id}"]`);
+  if (!row) { showToast('Station row not found', 'error'); return; }
+  populateStationModal({
+    id: parseInt(row.dataset.id),
+    name: row.dataset.name,
+    owner: row.dataset.owner,
+    address: row.dataset.address,
+    lat: parseFloat(row.dataset.lat),
+    lng: parseFloat(row.dataset.lng),
+    phone: row.dataset.phone,
+    licence_no: row.dataset.licence,
+    status: row.dataset.statusText,
+    email: row.dataset.email || '',
+    fuel_types: row.dataset.fuels || '',
+    created_at: row.dataset.date || '',
+  });
+}
+
+function populateStationModal(data) {
+  document.getElementById('sdInitial').textContent = (data.name || '?')[0];
+  document.getElementById('sdName').textContent = data.name || '—';
+  const statusEl = document.getElementById('sdStatus');
+  statusEl.textContent = (data.status || 'pending').charAt(0).toUpperCase() + (data.status || 'pending').slice(1);
+  statusEl.className = 'status-chip ' + (data.status || 'pending');
+  document.getElementById('sdOwner').textContent = data.owner || '—';
+  document.getElementById('sdPhone').textContent = data.phone || '—';
+  document.getElementById('sdEmail').textContent = data.email || '—';
+  document.getElementById('sdAddress').textContent = data.address || '—';
+  document.getElementById('sdCoords').textContent = data.lat && data.lng ? `${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}` : '—';
+  document.getElementById('sdLicence').textContent = data.licence_no || '—';
+  document.getElementById('sdFuels').textContent = data.fuel_types || '—';
+  document.getElementById('sdDate').textContent = data.created_at || '—';
+
+  // Buttons
+  const approveBtn = document.getElementById('sdApproveBtn');
+  const suspendBtn = document.getElementById('sdSuspendBtn');
+  if (data.status === 'pending') {
+    approveBtn.style.display = 'inline-flex';
+    approveBtn.onclick = () => { approveStation(data.id, data.name); closeModal('stationDetailModal'); };
+    suspendBtn.style.display = 'none';
+  } else if (data.status === 'approved') {
+    approveBtn.style.display = 'none';
+    suspendBtn.style.display = 'inline-flex';
+    suspendBtn.onclick = () => { closeModal('stationDetailModal'); showToast(`${data.name} suspended.`, 'error'); };
+  } else {
+    approveBtn.style.display = 'none';
+    suspendBtn.style.display = 'none';
+  }
+
+  // Map
+  initStationDetailMap(data.lat, data.lng, data.name);
+  openModal('stationDetailModal');
+}
+
+function initStationDetailMap(lat, lng, name) {
+  const container = document.getElementById('stationDetailMap');
+  if (!container) return;
+  if (stationDetailMap) { stationDetailMap.remove(); stationDetailMap = null; }
+  if (!lat || !lng) {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-m);font-size:.85rem"><i class="fas fa-map-pin" style="margin-right:6px"></i> No location pinned</div>';
+    return;
+  }
+  stationDetailMap = L.map(container, { zoomControl: false, scrollWheelZoom: false }).setView([lat, lng], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19,
+  }).addTo(stationDetailMap);
+  L.marker([lat, lng]).addTo(stationDetailMap).bindPopup(name || 'Station');
+  setTimeout(() => stationDetailMap?.invalidateSize(), 300);
+}
+
 function rejectEntity(type, id, name) {
   document.getElementById('rejectTitle').textContent = `Reject ${type === 'station' ? 'Station' : 'Driver'}`;
   document.getElementById('rejectEntityId').value = id;
