@@ -77,12 +77,37 @@ def provider_home(request):
     return render(request, 'provider/home.html')
 
 
+@login_required(login_url='login')
+@role_required('customer')
 def stations_view(request):
-    stations = Station.objects.prefetch_related("fuels").all()
+    stations = Station.objects.filter(status="approved").prefetch_related("fuels")
+
+    stations_list = []
+    for s in stations:
+        fuels = []
+        for f in s.fuels.all():
+            fuels.append({
+                "type": f.type,
+                "price": f"{f.price:,.0f}",
+                "ok": f.available,
+            })
+        stations_list.append({
+            "id": s.id,
+            "name": s.name,
+            "address": s.address,
+            "lat": s.lat,
+            "lng": s.lng,
+            "status": s.status,
+            "rating": str(s.rating),
+            "reviews": str(s.review_count),
+            "hours": s.hours or "24/7",
+            "phone": s.phone or "—",
+            "fuels": fuels,
+        })
 
     return render(request, "customer/stations.html", {
         "stations": stations,
-        "stations_json": json.dumps([...])
+        "stations_json": json.dumps(stations_list),
     })
 
 
