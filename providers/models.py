@@ -23,7 +23,19 @@ class StationStock(models.Model):
         return f"{self.station.name} - {self.fuel_type}"
 
     @property
+    def type(self):
+        return self.fuel_type
+
+    @property
     def pct(self):
         if self.capacity == 0:
             return 0
         return int((self.litres_available / self.capacity) * 100)
+
+    @property
+    def updated_at(self):
+        return self.last_updated
+
+    @property
+    def price(self):
+        return self.price_per_litre

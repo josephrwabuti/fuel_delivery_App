@@ -28,14 +28,25 @@ document.addEventListener('DOMContentLoaded', function () {
   /* ===== STATION OPEN/CLOSE TOGGLE ===== */
   window.toggleStationOpen = function (checkbox) {
     const label = document.getElementById('openLabel');
-    if (checkbox.checked) {
-      if (label) { label.textContent = 'Open'; label.style.color = 'var(--green)'; }
-      showToast('Station is now Open for orders.', 'success');
-    } else {
-      if (label) { label.textContent = 'Closed'; label.style.color = 'var(--red)'; }
-      showToast('Station marked Closed. No new orders will be received.', 'error');
-    }
-    // POST to Django: fetch('/provider/toggle-open/', { method:'POST', ... })
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+    fetch('/provider/station/toggle-open/', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrf ? csrf.value : '',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    }).then(r => r.json()).then(data => {
+      if (data.is_open) {
+        if (label) { label.textContent = 'Open'; label.style.color = 'var(--green)'; }
+        showToast('Station is now Open for orders.', 'success');
+      } else {
+        if (label) { label.textContent = 'Closed'; label.style.color = 'var(--red)'; }
+        showToast('Station marked Closed. No new orders will be received.', 'error');
+      }
+    }).catch(() => {
+      checkbox.checked = !checkbox.checked;
+      showToast('Failed to update status.', 'error');
+    });
   };
 
   /* ===== MODAL HELPERS ===== */

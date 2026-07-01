@@ -182,32 +182,26 @@
       </div>
     </div>
     <div class="driver-select-list" id="driverSelectList">
-      <div class="dsl-item selected" data-driver="1" onclick="selectDriver(this,1,'John Mwalimu')">
-        <div class="dsl-avatar">J</div>
+      {% for driver in available_drivers %}
+      <div class="dsl-item {% if forloop.first %}selected{% endif %}" data-driver="{{ driver.id }}" onclick="selectDriver(this, {{ driver.id }}, '{{ driver.name }}')">
+        <div class="dsl-avatar">{{ driver.name|slice:":1" }}</div>
         <div class="dsl-info">
-          <strong>John Mwalimu</strong>
-          <span><i class="fas fa-star text-orange"></i> 4.8 · <span class="dml-status available">Available</span></span>
+          <strong>{{ driver.name }}</strong>
+          <span><i class="fas fa-star text-orange"></i> {{ driver.rating|default:"5.0" }} · <span class="dml-status available">Available</span></span>
         </div>
         <div class="dsl-check"><i class="fas fa-circle-check"></i></div>
       </div>
-      <div class="dsl-item" data-driver="2" onclick="selectDriver(this,2,'Amina Said')">
-        <div class="dsl-avatar">A</div>
+      {% empty %}
+      <div class="dsl-item disabled">
+        <div class="dsl-avatar">—</div>
         <div class="dsl-info">
-          <strong>Amina Said</strong>
-          <span><i class="fas fa-star text-orange"></i> 4.7 · <span class="dml-status available">Available</span></span>
+          <strong>No drivers available</strong>
+          <span>Add drivers from the Drivers page</span>
         </div>
-        <div class="dsl-check"><i class="fas fa-circle-check"></i></div>
       </div>
-      <div class="dsl-item disabled" data-driver="3">
-        <div class="dsl-avatar">P</div>
-        <div class="dsl-info">
-          <strong>Peter Mtui</strong>
-          <span><i class="fas fa-star text-orange"></i> 4.6 · <span class="dml-status busy">On Delivery</span></span>
-        </div>
-        <div class="dsl-check" style="color:var(--text-m)"><i class="fas fa-circle-xmark"></i></div>
-      </div>
+      {% endfor %}
     </div>
-    <input type="hidden" id="selectedDriverId" value="1"/>
+    <input type="hidden" id="selectedDriverId" value="{{ available_drivers.first.id|default:'' }}"/>
     <div class="modal-footer">
       <button class="btn-modal-cancel" onclick="closeModal('assignModal')">Cancel</button>
       <button class="btn-modal-confirm" onclick="confirmAssign()">
@@ -306,18 +300,29 @@
 <script>
 let currentOrderId = null;
 
+function getCSRF() {
+  const m = document.querySelector('[name=csrfmiddlewaretoken]');
+  return m ? m.value : '';
+}
+
 function quickAction(action, orderId) {
   currentOrderId = orderId;
+  const row = document.querySelector(`[data-search*="${orderId.toLowerCase()}"]`);
   if (action === 'accept') {
-    const row = document.querySelector(`[data-search*="${orderId.toLowerCase()}"]`);
-    if (row) {
-      row.querySelector('.status-chip').className = 'status-chip confirmed';
-      row.querySelector('.status-chip').textContent = 'Confirmed';
-      const actions = row.querySelector('.dt-actions');
-      actions.innerHTML = `<button class="btn-assign-sm" onclick="openAssignModal('${orderId}')" title="Assign Driver"><i class="fas fa-id-badge"></i></button>
-        <button class="btn-view-sm" onclick="openOrderDetail('${orderId}')" title="View"><i class="fas fa-eye"></i></button>`;
-    }
-    showToast('Order accepted. Assign a driver to proceed.', 'success');
+    fetch(`/provider/orders/${orderId}/accept/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCSRF() },
+    }).then(() => {
+      if (row) {
+        row.dataset.status = 'confirmed';
+        row.querySelector('.status-chip').className = 'status-chip confirmed';
+        row.querySelector('.status-chip').textContent = 'Confirmed';
+        row.querySelector('.dt-actions').innerHTML =
+          `<button class="btn-assign-sm" onclick="openAssignModal('${orderId}')" title="Assign Driver"><i class="fas fa-id-badge"></i></button>
+           <button class="btn-view-sm" onclick="openOrderDetail('${orderId}')" title="View"><i class="fas fa-eye"></i></button>`;
+      }
+      showToast('Order accepted. Assign a driver to proceed.', 'success');
+    }).catch(() => showToast('Failed to accept order.', 'error'));
   }
 }
 
@@ -347,15 +352,44 @@ function selectDriver(el, id, name) {
 
 function confirmAssign() {
   const driverId = document.getElementById('selectedDriverId').value;
-  closeModal('assignModal');
-  showToast('Driver assigned successfully! Order is now delivering.', 'success');
+  if (!driverId) { showToast('No driver selected.', 'error'); return; }
+  fetch(`/provider/orders/${currentOrderId}/assign/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'driver_id=' + encodeURIComponent(driverId),
+  }).then(() => {
+    closeModal('assignModal');
+    showToast('Driver assigned successfully! Order is now delivering.', 'success');
+    const row = document.querySelector(`[data-search*="${currentOrderId.toLowerCase()}"]`);
+    if (row) {
+      row.dataset.status = 'assigned';
+      row.querySelector('.status-chip').className = 'status-chip assigned';
+      row.querySelector('.status-chip').textContent = 'Driver Assigned';
+      row.querySelector('.dt-actions').innerHTML =
+        `<button class="btn-view-sm" onclick="openOrderDetail('${currentOrderId}')" title="View"><i class="fas fa-eye"></i></button>`;
+    }
+  }).catch(() => showToast('Failed to assign driver.', 'error'));
 }
 
 function confirmReject() {
   const reason = document.getElementById('rejectReason').value;
   if (!reason) { showToast('Please select a rejection reason.', 'error'); return; }
-  closeModal('rejectModal');
-  showToast('Order rejected. Customer has been notified.', 'error');
+  fetch(`/provider/orders/${currentOrderId}/reject/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'reason=' + encodeURIComponent(reason),
+  }).then(() => {
+    closeModal('rejectModal');
+    showToast('Order rejected. Customer has been notified.', 'error');
+    const row = document.querySelector(`[data-search*="${currentOrderId.toLowerCase()}"]`);
+    if (row) {
+      row.dataset.status = 'cancelled';
+      row.querySelector('.status-chip').className = 'status-chip cancelled';
+      row.querySelector('.status-chip').textContent = 'Cancelled';
+      row.querySelector('.dt-actions').innerHTML =
+        `<button class="btn-view-sm" onclick="openOrderDetail('${currentOrderId}')" title="View"><i class="fas fa-eye"></i></button>`;
+    }
+  }).catch(() => showToast('Failed to reject order.', 'error'));
 }
 </script>
 {% endblock %}

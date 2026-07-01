@@ -30,7 +30,7 @@
   <div class="driver-card-full" data-status="{{ driver.status }}" data-name="{{ driver.name|lower }}">
     <div class="dcf-header">
       <div class="dcf-avatar">{{ driver.name|slice:":1" }}</div>
-      <div class="dcf-status-badge {{ driver.status }}">
+      <div class="dcf-status-badge {{ driver.status_css }}">
         <span class="sdot"></span> {{ driver.get_status_display }}
       </div>
     </div>

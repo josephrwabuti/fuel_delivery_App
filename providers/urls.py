@@ -47,4 +47,13 @@ urlpatterns = [
      
      path("station/update", views.provider_update_station,
          name="provider_update_station"),
+     
+     path("station/toggle-open/", views.provider_toggle_open,
+         name="provider_toggle_open"),
+     
+     path("orders/<int:id>/assign/", views.provider_assign_driver,
+         name="provider_assign_driver"),
+     
+     path("drivers/<int:id>/toggle/", views.provider_toggle_driver,
+         name="provider_toggle_driver"),
 ]

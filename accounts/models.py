@@ -45,10 +45,19 @@ class Station(models.Model):
     licence_no = models.CharField(max_length=100, blank=True)
     fuel_types = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    email = models.EmailField(max_length=254, blank=True)
+    delivery_radius = models.IntegerField(default=5)
+    opening_time = models.TimeField(null=True, blank=True)
+    closing_time = models.TimeField(null=True, blank=True)
+    description = models.TextField(blank=True)
 
     @property
     def is_approved(self):
         return self.status == "approved"
+
+    @property
+    def is_open(self):
+        return self.status == "open"
 
     def __str__(self):
         return self.name
@@ -95,6 +104,30 @@ class Driver(models.Model):
         'accounts.Station', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='drivers'
     )
+
+    @property
+    def total_deliveries(self):
+        from delivery.models import DeliveryLog
+        return DeliveryLog.objects.filter(driver=self).count()
+
+    @property
+    def on_time_pct(self):
+        from delivery.models import DeliveryLog
+        logs = DeliveryLog.objects.filter(driver=self)
+        total = logs.count()
+        if total == 0:
+            return 100
+        on_time = logs.filter(status='completed', completed_at__lte=models.F('order__delivered_at')).count()
+        return int((on_time / total) * 100)
+
+    @property
+    def is_active(self):
+        return self.status not in ('suspended', 'rejected')
+
+    @property
+    def current_order(self):
+        from orders.models import Order
+        return Order.objects.filter(driver=self, status__in=('assigned', 'out', 'delivered')).last()
 
     def __str__(self):
         return self.name

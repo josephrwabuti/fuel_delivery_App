@@ -19,7 +19,7 @@
         <div class="fg-group"><label class="fg-label">First Name</label><input type="text" name="first_name" class="fg-input-p" value="{{ request.user.first_name }}"/></div>
         <div class="fg-group"><label class="fg-label">Last Name</label><input type="text" name="last_name" class="fg-input-p" value="{{ request.user.last_name }}"/></div>
         <div class="fg-group"><label class="fg-label">Email</label><input type="email" name="email" class="fg-input-p" value="{{ request.user.email }}"/></div>
-        <div class="fg-group"><label class="fg-label">Phone</label><input type="tel" name="phone" class="fg-input-p" value="{{ request.user.profile.phone|default:'' }}" placeholder="+255 7XX XXX XXX"/></div>
+        <div class="fg-group"><label class="fg-label">Phone</label><input type="tel" name="phone" class="fg-input-p" value="{{ request.user.phone|default:'' }}" placeholder="+255 7XX XXX XXX"/></div>
       </div>
       <div class="settings-actions"><button type="submit" class="btn-save-settings"><i class="fas fa-save"></i> Save Changes</button></div>
     </form>

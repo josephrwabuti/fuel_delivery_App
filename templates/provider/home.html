@@ -191,7 +191,7 @@
         <div class="dml-avatar">{{ driver.name|slice:":1" }}</div>
         <div class="dml-info">
           <span class="dml-name">{{ driver.name }}</span>
-          <span class="dml-status {{ driver.status }}">{{ driver.get_status_display }}</span>
+          <span class="dml-status {{ driver.status_css }}">{{ driver.get_status_display }}</span>
         </div>
         <div class="dml-order">{% if driver.current_order %}#{{ driver.current_order.id }}{% else %}—{% endif %}</div>
       </div>
