@@ -274,11 +274,11 @@
           <div id="driverFields" style="display:none">
             <div class="input-group-fg">
               <span class="ig-icon"><i class="fas fa-id-card"></i></span>
-              <input type="text" name="licence_number" class="fg-field" placeholder="Driver Licence Number" required/>
+              <input type="text" name="licence_number" class="fg-field" placeholder="Driver Licence Number"/>
             </div>
             <div class="input-group-fg">
               <span class="ig-icon"><i class="fas fa-car"></i></span>
-              <select name="vehicle_type" class="fg-field" required>
+              <select name="vehicle_type" class="fg-field">
                 <option value="">Select Vehicle Type</option>
                 <option value="Motorcycle">Motorcycle</option>
                 <option value="Car">Car</option>
@@ -289,7 +289,7 @@
             </div>
             <div class="input-group-fg">
               <span class="ig-icon"><i class="fas fa-id-badge"></i></span>
-              <input type="text" name="plate_number" class="fg-field" placeholder="Vehicle Plate Number" required/>
+              <input type="text" name="plate_number" class="fg-field" placeholder="Vehicle Plate Number"/>
             </div>
           </div>
 
@@ -316,11 +316,11 @@
           </div>
           <div class="match-msg" id="matchMsg"></div>
 
-          <label class="fg-check terms-check">
-            <input type="checkbox" name="terms" required/>
-            <span class="checkmark"></span>
-            I agree to the <a href="#" class="text-orange-link">Terms of Service</a> &amp; <a href="#" class="text-orange-link">Privacy Policy</a>
-          </label>
+            <label class="fg-check terms-check">
+              <input type="checkbox" name="terms" id="termsCheckbox"/>
+              <span class="checkmark"></span>
+              I agree to the <a href="#" class="text-orange-link">Terms of Service</a> &amp; <a href="#" class="text-orange-link">Privacy Policy</a>
+            </label>
 
           <button type="submit" class="btn-submit" id="signupBtn">
             <span class="btn-text"><i class="fas fa-user-plus me-2"></i>Create Account</span>
