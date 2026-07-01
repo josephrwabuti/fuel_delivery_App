@@ -270,6 +270,29 @@
             </div>
           </div>
 
+          <!-- Driver extra fields (hidden by default) -->
+          <div id="driverFields" style="display:none">
+            <div class="input-group-fg">
+              <span class="ig-icon"><i class="fas fa-id-card"></i></span>
+              <input type="text" name="licence_number" class="fg-field" placeholder="Driver Licence Number" required/>
+            </div>
+            <div class="input-group-fg">
+              <span class="ig-icon"><i class="fas fa-car"></i></span>
+              <select name="vehicle_type" class="fg-field" required>
+                <option value="">Select Vehicle Type</option>
+                <option value="Motorcycle">Motorcycle</option>
+                <option value="Car">Car</option>
+                <option value="Pickup Truck">Pickup Truck</option>
+                <option value="Van">Van</option>
+                <option value="Truck">Truck</option>
+              </select>
+            </div>
+            <div class="input-group-fg">
+              <span class="ig-icon"><i class="fas fa-id-badge"></i></span>
+              <input type="text" name="plate_number" class="fg-field" placeholder="Vehicle Plate Number" required/>
+            </div>
+          </div>
+
           <div class="input-group-fg">
             <span class="ig-icon"><i class="fas fa-lock"></i></span>
             <input type="password" name="password1" id="signupPass" class="fg-field" placeholder="Password" required oninput="checkStrength(this.value)"/>

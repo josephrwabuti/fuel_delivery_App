@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
-from accounts.models import Station
+from accounts.models import Station, Driver
 
 User = get_user_model()
 
@@ -80,6 +80,19 @@ def register(request):
                 lng=float(lng),
                 phone=request.POST.get("phone"),
                 status="closed",
+            )
+
+        # Create driver record if driver
+        if role == "driver":
+            Driver.objects.create(
+                user=user,
+                name=f"{first_name} {last_name}",
+                phone=request.POST.get("phone", ""),
+                licence_number=request.POST.get("licence_number", ""),
+                vehicle_type=request.POST.get("vehicle_type", ""),
+                plate_number=request.POST.get("plate_number", ""),
+                status="pending",
+                is_approved=False,
             )
 
         messages.success(request, "Account created successfully")

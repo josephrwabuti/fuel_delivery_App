@@ -91,6 +91,12 @@ function switchRole(role) {
     providerFields.style.display = role === 'provider' ? 'block' : 'none';
   }
 
+  // Driver extra fields
+  const driverFields = document.getElementById('driverFields');
+  if (driverFields) {
+    driverFields.style.display = role === 'driver' ? 'block' : 'none';
+  }
+
   // No-signup note for admin
   const noSignupNote = document.getElementById('noSignupNote');
   if (noSignupNote) {
@@ -223,6 +229,18 @@ function validateProviderFields() {
   return true;
 }
 
+/* ---- Driver registration validation ---- */
+function validateDriverFields() {
+  if (currentRole !== 'driver') return true;
+  const licence   = document.querySelector('[name="licence_number"]')?.value?.trim();
+  const vehicle   = document.querySelector('[name="vehicle_type"]')?.value;
+  const plate     = document.querySelector('[name="plate_number"]')?.value?.trim();
+  if (!licence)   { showFormError('Please enter your driver licence number.'); return false; }
+  if (!vehicle)   { showFormError('Please select your vehicle type.'); return false; }
+  if (!plate)     { showFormError('Please enter your vehicle plate number.'); return false; }
+  return true;
+}
+
 function showFormError(msg) {
   let err = document.querySelector('.signup-form-error');
   if (!err) {
@@ -267,6 +285,8 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       // Provider fields guard
       if (!validateProviderFields()) { e.preventDefault(); return; }
+      // Driver fields guard
+      if (!validateDriverFields()) { e.preventDefault(); return; }
       setLoading('signupForm', 'signupBtn', true);
     });
   }
