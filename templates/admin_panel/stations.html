@@ -144,12 +144,7 @@
 <script>
 
 function approveStation(id, name) {
-  fetch(`/admin/station/approve/${id}/`, {
-    method: "GET",
-    headers: {
-      "X-Requested-With": "XMLHttpRequest"
-    }
-  })
+  fetch(`/admin/station/approve/${id}/`)
   .then(res => res.json())
   .then(data => {
     if (data.success) {
@@ -159,21 +154,11 @@ function approveStation(id, name) {
   });
 }
 
-function rejectEntity(type, id, name) {
-  fetch(`/admin/station/reject/${id}/`)
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      showToast(`${name} rejected`, 'error');
-      location.reload();
-    }
-  });
-}
-
 function openStationDetail(id) { openModal('stationDetailModal'); }
 function rejectEntity(type, id, name) {
   document.getElementById('rejectTitle').textContent = `Reject ${type === 'station' ? 'Station' : 'Driver'}`;
   document.getElementById('rejectEntityId').value = id;
+  document.getElementById('rejectForm').action = `/admin/station/reject/${id}/`;
   openModal('rejectModal');
 }
 function suspendEntity(type, id, name) {

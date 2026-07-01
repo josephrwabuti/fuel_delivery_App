@@ -183,21 +183,36 @@
 {% block extra_js %}
 <script>
 function approveDriver(id, name) {
-  showConfirm('Approve Driver', `Approve <strong>${name}</strong>? They will receive a notification and can start delivering.`, 'green', () => {
-    showToast(`${name} approved. They can now go On Duty.`, 'success');
-    updateDriverRow(id, 'approved');
-    closeModal('driverDetailModal');
-  });
+  fetch(`/admin/driver/approve/${id}/`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        showToast(`${name} approved. They can now go On Duty.`, 'success');
+        updateDriverRow(id, 'approved');
+        closeModal('driverDetailModal');
+      }
+    });
 }
 function rejectDriver(id, name) {
-  document.getElementById('rejectTitle') && (document.getElementById('rejectTitle').textContent = 'Reject Driver');
-  openModal('rejectModal');
+  fetch(`/admin/driver/reject/${id}/`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        showToast(`${name} rejected.`, 'error');
+        updateDriverRow(id, 'rejected');
+        closeModal('driverDetailModal');
+      }
+    });
 }
 function suspendDriver(id, name) {
-  showConfirm('Suspend Driver', `Suspend <strong>${name}</strong>? They will be unable to receive orders.`, 'red', () => {
-    showToast(`${name} has been suspended.`, 'error');
-    updateDriverRow(id, 'suspended');
-  });
+  fetch(`/admin/driver/suspend/${id}/`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        showToast(`${name} has been suspended.`, 'error');
+        updateDriverRow(id, 'suspended');
+      }
+    });
 }
 function openDriverDetail(id, name, licence, vehicle, plate, email, phone) {
   document.getElementById('ddInitial').textContent  = name.charAt(0);

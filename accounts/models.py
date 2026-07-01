@@ -23,6 +23,9 @@ class Station(models.Model):
     STATUS_CHOICES = [
         ("open", "Open"),
         ("closed", "Closed"),
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
     ]
     owner = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -39,7 +42,13 @@ class Station(models.Model):
     review_count = models.IntegerField(default=0)
     hours = models.CharField(max_length=100, default="24/7")
     phone = models.CharField(max_length=20, blank=True)
+    licence_no = models.CharField(max_length=100, blank=True)
+    fuel_types = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def is_approved(self):
+        return self.status == "approved"
 
     def __str__(self):
         return self.name
@@ -63,6 +72,13 @@ class FuelPrice(models.Model):
     
 
 class Driver(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+        ("suspended", "Suspended"),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, default="Unknown")
     phone = models.CharField(max_length=20)
@@ -71,7 +87,9 @@ class Driver(models.Model):
 
     licence_number = models.CharField(max_length=50, blank=True)
     plate_number = models.CharField(max_length=20, blank=True)
+    vehicle_type = models.CharField(max_length=50, blank=True)
     is_approved = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     on_duty = models.BooleanField(default=False)
     station = models.ForeignKey(
         'accounts.Station', on_delete=models.SET_NULL,
