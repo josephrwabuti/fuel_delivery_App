@@ -1,11 +1,12 @@
 from django.urls import path
 from . import views
+from delivery import views as delivery_views
 
 urlpatterns = [
     path("", views.home, name="home"),
     path('customer/dashboard/', views.customer_home, name='customer_home'),
     path('provider/dashboard/', views.provider_home, name='provider_home'),
-    path('driver/dashboard/', views.driver_home, name='driver_home'),
+    path('driver/dashboard/', delivery_views.driver_home, name='driver_home'),
     path('dashboard/admin/', views.admin_home, name='admin_home'),
 
     path("customer/stations/", views.stations_view, name="customer_stations"),
@@ -57,10 +58,5 @@ urlpatterns = [
     path('save-settings/', views.admin_save_settings, name='admin_save_settings'),
     path('update-profile/', views.admin_update_profile, name='admin_update_profile'),
     path('change-password/', views.admin_change_password, name='admin_change_password'),
-    
-    
-    
-
-    
     
 ]

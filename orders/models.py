@@ -27,10 +27,24 @@ class Order(models.Model):
     notes = models.TextField(blank=True, null=True)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
-
+    
+    
+    
+    payment_method = models.CharField(max_length=50, default="Cash")
+    landmark = models.CharField(max_length=255, blank=True)
+    customer_lat = models.FloatField(null=True, blank=True)
+    customer_lng = models.FloatField(null=True, blank=True)
+    driver_earning = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    picked_up_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
     driver_assigned_at = models.DateTimeField(null=True, blank=True)
+    
+    
+    @property
+    def assigned_at(self):
+        return self.driver_assigned_at
 
     def __str__(self):
         return f"Order {self.id}"

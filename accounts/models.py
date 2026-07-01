@@ -62,17 +62,24 @@ class FuelPrice(models.Model):
         return f"{self.station.name} - {self.type}"
     
 
-
 class Driver(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255, default="Unknown")
     phone = models.CharField(max_length=20)
-    plate = models.CharField(max_length=20)
+    plate = models.CharField(max_length=20, blank=True)
     rating = models.FloatField(default=5)
+
+    licence_number = models.CharField(max_length=50, blank=True)
+    plate_number = models.CharField(max_length=20, blank=True)
+    is_approved = models.BooleanField(default=False)
+    on_duty = models.BooleanField(default=False)
+    station = models.ForeignKey(
+        'accounts.Station', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='drivers'
+    )
 
     def __str__(self):
         return self.name
-
 
 class StationReview(models.Model):
     order = models.OneToOneField('orders.Order', on_delete=models.CASCADE, related_name="review")
