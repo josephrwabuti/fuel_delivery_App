@@ -557,6 +557,13 @@ def reject_driver(request, driver_id):
     driver.is_approved = False
     driver.status = "rejected"
     driver.save()
+
+    Notification.objects.create(
+        user=driver.user,
+        title="Account Rejected",
+        message="Your driver account has been rejected. Please contact support for more information.",
+    )
+
     return JsonResponse({"success": True})
 
 
@@ -567,6 +574,13 @@ def suspend_driver(request, driver_id):
     driver.status = "suspended"
     driver.is_approved = False
     driver.save()
+
+    Notification.objects.create(
+        user=driver.user,
+        title="Account Suspended",
+        message="Your driver account has been suspended. Please contact support for more information.",
+    )
+
     return JsonResponse({"success": True})
 
 

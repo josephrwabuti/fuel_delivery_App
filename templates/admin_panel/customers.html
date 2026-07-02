@@ -20,7 +20,7 @@
   <div class="data-table">
     <div class="dt-header cu-grid"><span>Customer</span><span>Email</span><span>Phone</span><span>Orders</span><span>Spent</span><span>Joined</span><span>Status</span><span>Actions</span></div>
     {% for customer in customers %}
-    <div class="dt-row cu-grid" data-status="{{ customer.status }}" data-search="{{ customer.get_full_name|lower }} {{ customer.email }}">
+    <div class="dt-row cu-grid" data-status="{{ customer.status }}" data-search="{{ customer.get_full_name|lower }} {{ customer.email }}" data-user-id="{{ customer.id }}">
       <span class="dt-name-cell"><div class="entity-init green">{{ customer.first_name|slice:":1" }}</div><div><div class="dt-main-name">{{ customer.get_full_name }}</div><div class="dt-sub">Customer</div></div></span>
       <span class="dt-sub-text">{{ customer.email }}</span>
       <span class="dt-sub-text">{{ customer.customerprofile.phone|default:"—" }}</span>
@@ -29,7 +29,7 @@
       <span class="dt-time">{{ customer.date_joined|date:"d M Y" }}</span>
       <span><div class="status-chip {{ customer.status|default:'active' }}">{{ customer.status|default:"Active"|title }}</div></span>
       <span class="dt-actions">
-        <button class="btn-view" onclick="openCustomerDetail({{ customer.id }})" title="View"><i class="fas fa-eye"></i></button>
+        <button class="btn-view" onclick="openCustomerDetail(this)" title="View"><i class="fas fa-eye"></i></button>
         <button class="btn-suspend" onclick="showConfirm('Suspend Customer','Suspend this customer?','red',()=>showToast('Customer suspended.','error'))" title="Suspend"><i class="fas fa-ban"></i></button>
       </span>
     </div>
@@ -38,10 +38,59 @@
     {% endfor %}
   </div>
 </div>
+
+<!-- Customer Detail Modal -->
+<div class="modal-overlay" id="customerDetailModal" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('customerDetailModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-hdr-entity">
+      <div class="mhe-init green" id="cdInitial">C</div>
+      <div>
+        <div class="mhe-name" id="cdName">—</div>
+        <div class="mhe-sub"><span class="status-chip active">Active</span></div>
+      </div>
+    </div>
+    <div class="detail-grid single">
+      <div class="dg-section">
+        <div class="dg-title">Customer Information</div>
+        <div class="dg-row"><span>Full Name</span><strong id="cdFullName">—</strong></div>
+        <div class="dg-row"><span>Email</span><strong id="cdEmail">—</strong></div>
+        <div class="dg-row"><span>Phone</span><strong id="cdPhone">—</strong></div>
+        <div class="dg-row"><span>Total Orders</span><strong id="cdOrders">—</strong></div>
+        <div class="dg-row"><span>Total Spent</span><strong id="cdSpent">—</strong></div>
+        <div class="dg-row"><span>Joined</span><strong id="cdJoined">—</strong></div>
+      </div>
+    </div>
+    <div class="modal-footer-btns">
+      <button class="btn-modal-cancel" onclick="closeModal('customerDetailModal')">Close</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 {% block extra_js %}
 <script>
 document.getElementById('custSearch')?.addEventListener('input',function(){const q=this.value.toLowerCase();document.querySelectorAll('.dt-row').forEach(r=>{r.style.display=(r.dataset.search||'').includes(q)?'':'none';});});
 document.querySelectorAll('.fchip').forEach(c=>{c.addEventListener('click',function(){document.querySelectorAll('.fchip').forEach(x=>x.classList.remove('active'));this.classList.add('active');const f=this.dataset.filter;document.querySelectorAll('.dt-row').forEach(r=>{r.style.display=(f==='all'||r.dataset.status===f)?'':'none';});});});
+function openCustomerDetail(btn) {
+  const row = btn.closest('.dt-row');
+  const data = {
+    name: row.querySelector('.dt-main-name')?.textContent || '—',
+    email: row.querySelector('.dt-sub-text')?.textContent || '—',
+    phone: row.cells?.[2]?.textContent || row.querySelectorAll('.dt-sub-text')[1]?.textContent || '—',
+    orders: row.querySelector('.fw-600')?.textContent || '0',
+    spent: row.querySelector('.dt-earn')?.textContent || 'TZS 0',
+    joined: row.querySelector('.dt-time')?.textContent || '—',
+  };
+  const cells = row.querySelectorAll('.dt-sub-text');
+  document.getElementById('cdInitial').textContent = data.name.charAt(0);
+  document.getElementById('cdName').textContent = data.name;
+  document.getElementById('cdFullName').textContent = data.name;
+  document.getElementById('cdEmail').textContent = cells[0]?.textContent || '—';
+  document.getElementById('cdPhone').textContent = cells[1]?.textContent || '—';
+  document.getElementById('cdOrders').textContent = data.orders;
+  document.getElementById('cdSpent').textContent = data.spent;
+  document.getElementById('cdJoined').textContent = data.joined;
+  openModal('customerDetailModal');
+}
 </script>
 {% endblock %}

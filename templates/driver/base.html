@@ -26,9 +26,9 @@
 
   <!-- Driver card -->
   <div class="sidebar-driver">
-    <div class="driver-avatar">{{ request.user.first_name|slice:":1"|default:"D" }}</div>
+    <div class="driver-avatar">{{ request.user.first_name|slice:":1" }}</div>
     <div class="driver-info">
-      <span class="driver-name">{{ request.user.get_full_name|default:"Driver" }}</span>
+      <span class="driver-name">{{ request.user.get_full_name|default:request.user.username }}</span>
       <span class="driver-status {% if request.user.driver.is_approved %}approved{% else %}pending{% endif %}">
         <i class="fas fa-circle"></i>
         {{ request.user.driver.is_approved|yesno:"Verified Driver,Pending Approval" }}
@@ -78,7 +78,7 @@
     </a>
     <a href="{% url 'driver_notifications' %}" class="nav-item {% block nav_notif %}{% endblock %}">
       <i class="fas fa-bell"></i><span>Notifications</span>
-      <span class="nav-badge">{{ notif_count|default:"2" }}</span>
+      {% if notif_count %}<span class="nav-badge">{{ notif_count }}</span>{% endif %}
     </a>
   </nav>
 
@@ -103,11 +103,11 @@
         <span class="adp-dot"></span> Delivery in Progress
       </a>
       {% endif %}
-      <button class="topbar-icon-btn" id="notifBell">
+      <button class="topbar-icon-btn" id="notifBell" data-notifs='{{ notifs_json }}'>
         <i class="fas fa-bell"></i>
-        <span class="icon-badge">{{ notif_count|default:"2" }}</span>
+        {% if notif_count %}<span class="icon-badge">{{ notif_count }}</span>{% endif %}
       </button>
-      <div class="topbar-avatar">{{ request.user.first_name|slice:":1"|default:"D" }}</div>
+      <div class="topbar-avatar">{{ request.user.first_name|slice:":1" }}</div>
     </div>
   </header>
 
@@ -126,7 +126,7 @@
   </main>
 </div>
 
-<script src="{% static 'js/driver.js' %}"></script>
+<script src="{% static 'js/driver.js' %}?v=2"></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

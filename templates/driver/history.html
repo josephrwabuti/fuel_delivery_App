@@ -35,10 +35,7 @@
       <span class="dt-rating"><i class="fas fa-star text-orange"></i> {{ d.rating|default:"—" }}</span>
     </div>
     {% empty %}
-    <div class="dt-row hist" data-status="delivered" data-search="fg-2045 kinondoni"><span class="dt-id">#FG-2045</span><span>Grace Ntare</span><span>Petrol 15L</span><span class="dt-addr">Kinondoni, Block 4</span><span><div class="status-chip delivered">Delivered</div></span><span class="dt-time">25 Jun 2026, 14:52</span><span class="dt-earn fw-600 text-green">TZS 5,200</span><span class="dt-rating"><i class="fas fa-star text-orange"></i> 5.0</span></div>
-    <div class="dt-row hist" data-status="delivered" data-search="fg-2041 kariakoo"><span class="dt-id">#FG-2041</span><span>Asha Mwangi</span><span>Petrol 20L</span><span class="dt-addr">Kariakoo Market</span><span><div class="status-chip delivered">Delivered</div></span><span class="dt-time">25 Jun 2026, 12:30</span><span class="dt-earn fw-600 text-green">TZS 6,800</span><span class="dt-rating"><i class="fas fa-star text-orange"></i> 4.8</span></div>
-    <div class="dt-row hist" data-status="delivered" data-search="fg-2038 msimbazi"><span class="dt-id">#FG-2038</span><span>John Kimaro</span><span>Diesel 30L</span><span class="dt-addr">Msimbazi Centre</span><span><div class="status-chip delivered">Delivered</div></span><span class="dt-time">24 Jun 2026, 16:10</span><span class="dt-earn fw-600 text-green">TZS 6,400</span><span class="dt-rating"><i class="fas fa-star text-orange"></i> 4.9</span></div>
-    <div class="dt-row hist" data-status="delivered" data-search="fg-2035 ubungo"><span class="dt-id">#FG-2035</span><span>Mary Thomas</span><span>Diesel 40L</span><span class="dt-addr">Ubungo, Main Rd</span><span><div class="status-chip delivered">Delivered</div></span><span class="dt-time">23 Jun 2026, 10:05</span><span class="dt-earn fw-600 text-green">TZS 8,000</span><span class="dt-rating"><i class="fas fa-star text-orange"></i> 4.7</span></div>
+    <div class="empty-state-row"><i class="fas fa-clock-rotate-left"></i><p>No delivery history yet</p></div>
     {% endfor %}
   </div>
 </div>

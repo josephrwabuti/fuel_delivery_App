@@ -37,7 +37,7 @@
     </div>
 
     {% for driver in drivers %}
-    <div class="dt-row dr-grid" data-status="{{ driver.status }}" data-search="{{ driver.get_full_name|lower }} {{ driver.phone }} {{ driver.driver.licence_number }}">
+    <div class="dt-row dr-grid" data-status="{{ driver.status }}" data-search="{{ driver.get_full_name|lower }} {{ driver.phone }} {{ driver.driver.licence_number }}" data-user-id="{{ driver.id }}" data-driver-id="{{ driver.driver.id }}">
       <span class="dt-name-cell">
         <div class="entity-init blue">{{ driver.first_name|slice:":1" }}</div>
         <div><div class="dt-main-name">{{ driver.get_full_name }}</div><div class="dt-sub">{{ driver.driver.vehicle_type }}</div></div>
@@ -50,12 +50,12 @@
       <span><div class="status-chip {{ driver.driver.status }}">{{ driver.driver.get_status_display }}</div></span>
       <span class="dt-actions">
         {% if driver.driver.status == 'pending' %}
-        <button class="btn-approve" onclick="approveDriver({{ driver.id }}, '{{ driver.get_full_name }}')" title="Approve"><i class="fas fa-check"></i></button>
-        <button class="btn-reject" onclick="rejectDriver({{ driver.id }}, '{{ driver.get_full_name }}')" title="Reject"><i class="fas fa-times"></i></button>
+        <button class="btn-approve" onclick="approveDriver(this, '{{ driver.get_full_name|escapejs }}')" title="Approve"><i class="fas fa-check"></i></button>
+        <button class="btn-reject" onclick="rejectDriver(this, '{{ driver.get_full_name|escapejs }}')" title="Reject"><i class="fas fa-times"></i></button>
         {% endif %}
-        <button class="btn-view" onclick="openDriverDetail('{{ driver.id }}', '{{ driver.get_full_name }}', '{{ driver.driver.licence_number }}', '{{ driver.driver.vehicle_type }}', '{{ driver.driver.plate_number }}', '{{ driver.email }}', '{{ driver.driver.phone }}')" title="View Detail"><i class="fas fa-eye"></i></button>
+        <button class="btn-view" onclick="openDriverDetail(this, '{{ driver.get_full_name|escapejs }}', '{{ driver.driver.licence_number|escapejs }}', '{{ driver.driver.vehicle_type|escapejs }}', '{{ driver.driver.plate_number|escapejs }}', '{{ driver.email|escapejs }}', '{{ driver.driver.phone|escapejs }}')" title="View Detail"><i class="fas fa-eye"></i></button>
         {% if driver.driver.status == 'approved' %}
-        <button class="btn-suspend" onclick="suspendDriver({{ driver.id }}, '{{ driver.get_full_name }}')" title="Suspend"><i class="fas fa-ban"></i></button>
+        <button class="btn-suspend" onclick="suspendDriver(this, '{{ driver.get_full_name|escapejs }}')" title="Suspend"><i class="fas fa-ban"></i></button>
         {% endif %}
       </span>
     </div>
@@ -99,39 +99,49 @@
 
 {% block extra_js %}
 <script>
-function approveDriver(id, name) {
-  fetch(`/dashboard/admin/driver/approve/${id}/`)
+function getDriverId(el) {
+  return el?.closest('.dt-row')?.dataset?.driverId;
+}
+function getUserId(el) {
+  return el?.closest('.dt-row')?.dataset?.userId;
+}
+function approveDriver(btn, name) {
+  const driverId = getDriverId(btn), userId = getUserId(btn);
+  fetch(`/dashboard/admin/driver/approve/${driverId}/`)
     .then(r => r.json())
     .then(data => {
       if (data.success) {
         showToast(`${name} approved. They can now go On Duty.`, 'success');
-        updateDriverRow(id, 'approved');
+        updateDriverRow(userId, 'approved');
         closeModal('driverDetailModal');
       }
     });
 }
-function rejectDriver(id, name) {
-  fetch(`/dashboard/admin/driver/reject/${id}/`)
+function rejectDriver(btn, name) {
+  const driverId = getDriverId(btn), userId = getUserId(btn);
+  fetch(`/dashboard/admin/driver/reject/${driverId}/`)
     .then(r => r.json())
     .then(data => {
       if (data.success) {
         showToast(`${name} rejected.`, 'error');
-        updateDriverRow(id, 'rejected');
+        updateDriverRow(userId, 'rejected');
         closeModal('driverDetailModal');
       }
     });
 }
-function suspendDriver(id, name) {
-  fetch(`/dashboard/admin/driver/suspend/${id}/`)
+function suspendDriver(btn, name) {
+  const driverId = getDriverId(btn), userId = getUserId(btn);
+  fetch(`/dashboard/admin/driver/suspend/${driverId}/`)
     .then(r => r.json())
     .then(data => {
       if (data.success) {
         showToast(`${name} has been suspended.`, 'error');
-        updateDriverRow(id, 'suspended');
+        updateDriverRow(userId, 'suspended');
       }
     });
 }
-function openDriverDetail(id, name, licence, vehicle, plate, email, phone) {
+function openDriverDetail(btn, name, licence, vehicle, plate, email, phone) {
+  const userId = getUserId(btn), driverId = getDriverId(btn);
   document.getElementById('ddInitial').textContent  = name.charAt(0);
   document.getElementById('ddName').textContent     = name;
   document.getElementById('ddFullName').textContent = name;
@@ -140,19 +150,21 @@ function openDriverDetail(id, name, licence, vehicle, plate, email, phone) {
   document.getElementById('ddLicence').textContent  = licence;
   document.getElementById('ddVehicle').textContent  = vehicle;
   document.getElementById('ddPlate').textContent    = plate;
-  document.getElementById('ddApproveBtn').onclick   = () => approveDriver(id, name);
-  document.getElementById('ddRejectBtn').onclick    = () => { closeModal('driverDetailModal'); rejectDriver(id, name); };
+  document.getElementById('ddApproveBtn').onclick   = () => { const r = document.querySelector(`.dt-row[data-user-id="${userId}"]`); const b = r?.querySelector('.btn-approve'); if (b) approveDriver(b, name); };
+  document.getElementById('ddRejectBtn').onclick    = () => { closeModal('driverDetailModal'); const r = document.querySelector(`.dt-row[data-user-id="${userId}"]`); const b = r?.querySelector('.btn-reject'); if (b) rejectDriver(b, name); };
   openModal('driverDetailModal');
 }
-function updateDriverRow(id, status) {
-  document.querySelectorAll('.dt-row.dr-grid, .dt-row[data-search]').forEach(row => {
-    if (row.innerHTML.includes('openDriverDetail(' + id + ',')) {
-      row.dataset.status = status;
-      const chip = row.querySelector('.status-chip');
-      if (chip) { chip.className = 'status-chip ' + status; chip.textContent = status.charAt(0).toUpperCase() + status.slice(1); }
-      const actions = row.querySelector('.dt-actions');
-      if (actions && status === 'approved') {
-        actions.innerHTML = `<button class="btn-view" onclick="openDriverDetail(${id},'','','','','','')" title="View"><i class="fas fa-eye"></i></button><button class="btn-suspend" onclick="suspendDriver(${id},'')" title="Suspend"><i class="fas fa-ban"></i></button>`;
+function updateDriverRow(userId, status) {
+  document.querySelectorAll(`.dt-row[data-user-id="${userId}"]`).forEach(row => {
+    row.dataset.status = status;
+    const chip = row.querySelector('.status-chip');
+    if (chip) { chip.className = 'status-chip ' + status; chip.textContent = status.charAt(0).toUpperCase() + status.slice(1); }
+    const actions = row.querySelector('.dt-actions');
+    if (actions) {
+      if (status === 'approved') {
+        actions.innerHTML = `<button class="btn-view" onclick="openDriverDetail(this,'','','','','','')" title="View"><i class="fas fa-eye"></i></button><button class="btn-suspend" onclick="suspendDriver(this,'')" title="Suspend"><i class="fas fa-ban"></i></button>`;
+      } else if (status === 'rejected' || status === 'suspended') {
+        actions.innerHTML = `<button class="btn-view" onclick="openDriverDetail(this,'','','','','','')" title="View"><i class="fas fa-eye"></i></button>`;
       }
     }
   });

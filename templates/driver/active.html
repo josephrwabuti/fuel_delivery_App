@@ -260,7 +260,7 @@
 
       {% if active_order.status == 'assigned' or not active_order.status %}
       <div class="ss-note">Go to the station and confirm when you have collected the fuel</div>
-      <form method="POST" action="{% url 'driver_update_status' active_order.id|default:1 %}">
+      <form method="POST" action="{% url 'driver_update_status' active_order.id %}">
         {% csrf_token %}<input type="hidden" name="status" value="picked_up"/>
         <button type="submit" class="ss-btn pickup" id="btnPickup">
           <i class="fas fa-gas-pump"></i> Confirm Fuel Collected at Station
@@ -269,7 +269,7 @@
 
       {% elif active_order.status == 'picked_up' %}
       <div class="ss-note">Head to the customer's location</div>
-      <form method="POST" action="{% url 'driver_update_status' active_order.id|default:1 %}">
+      <form method="POST" action="{% url 'driver_update_status' active_order.id %}">
         {% csrf_token %}<input type="hidden" name="status" value="delivering"/>
         <button type="submit" class="ss-btn enroute" id="btnEnroute">
           <i class="fas fa-truck-fast"></i> Start Delivery to Customer
@@ -278,7 +278,7 @@
 
       {% elif active_order.status == 'delivering' %}
       <div class="ss-note">Arrive at the customer, hand over fuel, then confirm</div>
-      <form method="POST" action="{% url 'driver_update_status' active_order.id|default:1 %}">
+      <form method="POST" action="{% url 'driver_update_status' active_order.id %}">
         {% csrf_token %}<input type="hidden" name="status" value="delivered"/>
         <button type="submit" class="ss-btn deliver" id="btnDeliver">
           <i class="fas fa-circle-check"></i> Confirm Fuel Delivered to Customer
@@ -286,11 +286,7 @@
       </form>
 
       {% else %}
-      <!-- Demo buttons for UI preview -->
-      <div class="ss-note">Go to the station and confirm when you have collected the fuel</div>
-      <button class="ss-btn pickup" id="btnPickup" onclick="doStatusUpdate('pickup')">
-        <i class="fas fa-gas-pump"></i> Confirm Fuel Collected at Station
-      </button>
+      <div class="ss-note">Delivery in progress — status: {{ active_order.status }}</div>
       {% endif %}
 
     </div>
@@ -298,19 +294,19 @@
     <!-- Customer call/SMS -->
     <div class="customer-card" style="margin-top:14px">
       <div class="cc-header">
-        <div class="cc-avatar">{{ active_order.customer.first_name|slice:":1"|default:"B" }}</div>
+        <div class="cc-avatar">{{ active_order.customer.first_name|slice:":1" }}</div>
         <div class="cc-info">
-          <div class="cc-name">{{ active_order.customer.get_full_name|default:"Baraka Juma" }}</div>
+          <div class="cc-name">{{ active_order.customer.get_full_name }}</div>
           <div class="cc-sub"><i class="fas fa-map-marker-alt" style="color:var(--green)"></i>
-            {{ active_order.delivery_address|default:"Ilala, Lumumba St, Block 4" }}
+            {{ active_order.delivery_address }}
           </div>
         </div>
       </div>
       <div class="cc-contact">
-        <a href="tel:{{ active_order.customer.phone|default:'+255712000020' }}" class="cc-btn call">
+        <a href="tel:{{ active_order.customer.phone }}" class="cc-btn call">
           <i class="fas fa-phone"></i> Call Customer
         </a>
-        <a href="sms:{{ active_order.customer.phone|default:'+255712000020' }}" class="cc-btn sms">
+        <a href="sms:{{ active_order.customer.phone }}" class="cc-btn sms">
           <i class="fas fa-comment-sms"></i> SMS
         </a>
       </div>
@@ -328,14 +324,14 @@
     <!-- Order card -->
     <div class="side-order-detail">
       <div class="sod-title">Order Details</div>
-      <div class="sod-row"><span>Order ID</span><strong>#{{ active_order.id|default:"FG-2044" }}</strong></div>
-      <div class="sod-row"><span>Station</span><strong>{{ active_order.station.name|default:"Total Energies" }}</strong></div>
-      <div class="sod-row"><span>Fuel</span><strong>{{ active_order.fuel_type|default:"Petrol" }}</strong></div>
-      <div class="sod-row"><span>Quantity</span><strong>{{ active_order.quantity|default:"25" }}L</strong></div>
-      <div class="sod-row"><span>Payment</span><strong>{{ active_order.payment_method|default:"Tigo Pesa" }}</strong></div>
+      <div class="sod-row"><span>Order ID</span><strong>#{{ active_order.id }}</strong></div>
+      <div class="sod-row"><span>Station</span><strong>{{ active_order.station.name }}</strong></div>
+      <div class="sod-row"><span>Fuel</span><strong>{{ active_order.fuel_type }}</strong></div>
+      <div class="sod-row"><span>Quantity</span><strong>{{ active_order.quantity }}L</strong></div>
+      <div class="sod-row"><span>Payment</span><strong>{{ active_order.payment_method }}</strong></div>
       <div class="sod-divider"></div>
-      <div class="sod-row total"><span>Order Value</span><strong class="text-orange">TZS {{ active_order.total_amount|default:"73,250" }}</strong></div>
-      <div class="sod-row"><span>Your Earnings</span><strong class="text-green">TZS {{ active_order.driver_earning|default:"7,325" }}</strong></div>
+      <div class="sod-row total"><span>Order Value</span><strong class="text-orange">TZS {{ active_order.total_amount }}</strong></div>
+      <div class="sod-row"><span>Your Earnings</span><strong class="text-green">TZS {{ active_order.driver_earning }}</strong></div>
     </div>
 
     <!-- Coordinates card -->
@@ -354,7 +350,7 @@
   <div class="modal-box narrow">
     <button class="modal-close" onclick="closeModal('issueModal')"><i class="fas fa-times"></i></button>
     <div class="modal-hdr"><i class="fas fa-triangle-exclamation text-orange"></i> Report an Issue</div>
-    <form method="POST" action="{% url 'driver_report_issue' active_order.id|default:1 %}">
+    <form method="POST" action="{% url 'driver_report_issue' active_order.id %}">
       {% csrf_token %}
       <div class="fg-group" style="margin-bottom:12px">
         <label class="fg-label">Issue Type</label>
@@ -398,17 +394,16 @@
    - Status stepper updates on button click
    ===================================================================== */
 
-// ---- Order data (replace with Django template vars in production) ----
 const ORDER = {
-  id:          '{{ active_order.id|default:"FG-2044" }}',
-  status:      '{{ active_order.status|default:"assigned" }}',
-  stationLat:  {{ active_order.station.lat|default:"-6.8160" }},
-  stationLng:  {{ active_order.station.lng|default:"39.2803" }},
-  stationName: '{{ active_order.station.name|default:"Total Energies – Kariakoo" }}',
-  customerLat: {{ active_order.customer_lat|default:"-6.8250" }},
-  customerLng: {{ active_order.customer_lng|default:"39.2820" }},
-  customerName:'{{ active_order.customer.get_full_name|default:"Baraka Juma" }}',
-  deliveryAddr:'{{ active_order.delivery_address|default:"Ilala, Lumumba St, Block 4" }}',
+  id:          '{{ active_order.id }}',
+  status:      '{{ active_order.status }}',
+  stationLat:  {{ active_order.station.lat|default_if_none:"0" }},
+  stationLng:  {{ active_order.station.lng|default_if_none:"0" }},
+  stationName: '{{ active_order.station.name }}',
+  customerLat: {{ active_order.customer_lat|default_if_none:"null" }},
+  customerLng: {{ active_order.customer_lng|default_if_none:"null" }},
+  customerName:'{{ active_order.customer.get_full_name }}',
+  deliveryAddr:'{{ active_order.delivery_address }}',
 };
 
 let map, driverMarker, stationMarker, customerMarker;

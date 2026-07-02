@@ -10,16 +10,16 @@
   <!-- LEFT -->
   <div class="profile-left">
     <div class="profile-card">
-      <div class="pc-avatar">{{ request.user.first_name|slice:":1"|default:"D" }}</div>
-      <div class="pc-name">{{ request.user.get_full_name|default:"Driver Name" }}</div>
+      <div class="pc-avatar">{{ request.user.first_name|slice:":1" }}</div>
+      <div class="pc-name">{{ request.user.get_full_name }}</div>
       <div class="pc-role"><i class="fas fa-id-badge text-orange"></i> Verified Driver</div>
-      <div class="pc-licence"><i class="fas fa-id-card text-blue"></i> Licence: <strong>{{ request.user.driver.licence_number|default:"12345678901" }}</strong></div>
+      <div class="pc-licence"><i class="fas fa-id-card text-blue"></i> Licence: <strong>{{ request.user.driver.licence_number|default:"—" }}</strong></div>
       <div class="pc-stats">
-        <div class="pcs-item"><div class="pcs-num">{{ total_deliveries|default:"148" }}</div><div class="pcs-lbl">Deliveries</div></div>
+        <div class="pcs-item"><div class="pcs-num">{{ total_deliveries|default:"0" }}</div><div class="pcs-lbl">Deliveries</div></div>
         <div class="pcs-div"></div>
-        <div class="pcs-item"><div class="pcs-num"><i class="fas fa-star text-orange"></i> {{ rating|default:"4.8" }}</div><div class="pcs-lbl">Rating</div></div>
+        <div class="pcs-item"><div class="pcs-num"><i class="fas fa-star text-orange"></i> {{ rating|default:"—" }}</div><div class="pcs-lbl">Rating</div></div>
         <div class="pcs-div"></div>
-        <div class="pcs-item"><div class="pcs-num">{{ on_time_pct|default:"96" }}%</div><div class="pcs-lbl">On Time</div></div>
+        <div class="pcs-item"><div class="pcs-num">{{ on_time_pct|default:"0" }}%</div><div class="pcs-lbl">On Time</div></div>
       </div>
     </div>
     <div class="profile-quick-links">
@@ -41,7 +41,7 @@
           <div class="fg-group"><label class="fg-label">Last Name</label><input type="text" name="last_name" class="fg-input-d" value="{{ request.user.last_name }}"/></div>
           <div class="fg-group"><label class="fg-label">Email Address</label><input type="email" name="email" class="fg-input-d" value="{{ request.user.email }}"/></div>
           <div class="fg-group"><label class="fg-label">Phone Number</label><input type="tel" name="phone" class="fg-input-d" value="{{ request.user.driver.phone|default:'' }}" placeholder="+255 7XX XXX XXX"/></div>
-          <div class="fg-group"><label class="fg-label">Driver Licence No. <span class="lbl-hint">(11 digits — read only)</span></label><input type="text" class="fg-input-d" value="{{ request.user.driver.licence_number|default:'12345678901' }}" readonly style="opacity:0.6;cursor:not-allowed"/></div>
+           <div class="fg-group"><label class="fg-label">Driver Licence No. <span class="lbl-hint">(read only)</span></label><input type="text" class="fg-input-d" value="{{ request.user.driver.licence_number|default:'' }}" readonly style="opacity:0.6;cursor:not-allowed"/></div>
           <div class="fg-group"><label class="fg-label">Vehicle Plate</label><input type="text" name="plate_number" class="fg-input-d" value="{{ request.user.driver.plate_number|default:'' }}" placeholder="T 123 ABC"/></div>
         </div>
         <div class="settings-actions"><button type="submit" class="btn-save"><i class="fas fa-save"></i> Save Changes</button></div>

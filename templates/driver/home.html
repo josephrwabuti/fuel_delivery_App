@@ -1,7 +1,7 @@
 {% extends 'driver/base.html' %}
 {% load static %}
 {% block title %}FuelGo – Driver Overview{% endblock %}
-{% block page_title %}Good {{ time_of_day }}, {{ request.user.first_name|default:"Driver" }} 👋{% endblock %}
+{% block page_title %}Good {{ time_of_day }}, {{ request.user.first_name }} 👋{% endblock %}
 {% block nav_home %}active{% endblock %}
 
 {% block content %}
@@ -11,34 +11,30 @@
   <div class="kpi-card">
     <div class="kpi-icon orange"><i class="fas fa-truck-fast"></i></div>
     <div class="kpi-body">
-      <div class="kpi-num">{{ today_deliveries|default:"3" }}</div>
+      <div class="kpi-num">{{ today_deliveries }}</div>
       <div class="kpi-label">Today's Deliveries</div>
     </div>
-    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> On track</div>
   </div>
   <div class="kpi-card">
     <div class="kpi-icon blue"><i class="fas fa-receipt"></i></div>
     <div class="kpi-body">
-      <div class="kpi-num">{{ total_deliveries|default:"148" }}</div>
+      <div class="kpi-num">{{ total_deliveries }}</div>
       <div class="kpi-label">Total Deliveries</div>
     </div>
-    <div class="kpi-trend up"><i class="fas fa-award text-orange"></i> Top Driver</div>
   </div>
   <div class="kpi-card">
     <div class="kpi-icon purple"><i class="fas fa-star"></i></div>
     <div class="kpi-body">
-      <div class="kpi-num">{{ rating|default:"4.8" }}</div>
+      <div class="kpi-num">{{ rating }}</div>
       <div class="kpi-label">My Rating</div>
     </div>
-    <div class="kpi-trend up"><i class="fas fa-thumbs-up text-green"></i> Excellent</div>
   </div>
   <div class="kpi-card">
     <div class="kpi-icon orange"><i class="fas fa-coins"></i></div>
     <div class="kpi-body">
-      <div class="kpi-num">TZS {{ today_earnings|default:"18,400" }}</div>
+      <div class="kpi-num">TZS {{ today_earnings }}</div>
       <div class="kpi-label">Today's Earnings</div>
     </div>
-    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +12% this week</div>
   </div>
 </div>
 
@@ -87,22 +83,6 @@
       {% endfor %}
     </div>
     {% else %}
-    <!-- Demo orders -->
-    <div class="assigned-orders-list">
-      <div class="ao-item">
-        <div class="ao-left">
-          <div class="ao-order-id">#FG-2044</div>
-          <div class="ao-details">
-            <span><i class="fas fa-fire-flame-curved text-orange"></i> Petrol · 25L</span>
-            <span><i class="fas fa-location-dot text-orange"></i> Ilala, Lumumba St, Block 4</span>
-            <span><i class="fas fa-clock text-blue"></i> Assigned 8 min ago</span>
-          </div>
-        </div>
-        <div class="ao-actions">
-          <a href="{% url 'driver_active' %}" class="btn-start-delivery"><i class="fas fa-play"></i> Start</a>
-        </div>
-      </div>
-    </div>
     <div class="empty-assigned">
       <i class="fas fa-inbox"></i>
       <p>No new orders assigned. Stay on duty to receive deliveries.</p>
@@ -118,23 +98,21 @@
     <div class="perf-stats">
       <div class="ps-item">
         <div class="ps-label">Orders Completed</div>
-        <div class="ps-bar"><div class="ps-fill blue" style="width:60%"></div></div>
-        <div class="ps-val">3 / 5 target</div>
+        <div class="ps-val">{{ today_deliveries }} today</div>
       </div>
       <div class="ps-item">
         <div class="ps-label">On-Time Rate</div>
-        <div class="ps-bar"><div class="ps-fill green" style="width:96%"></div></div>
-        <div class="ps-val">96%</div>
+        <div class="ps-bar"><div class="ps-fill green" style="width:{{ on_time_pct }}%"></div></div>
+        <div class="ps-val">{{ on_time_pct }}%</div>
       </div>
       <div class="ps-item">
-        <div class="ps-label">Avg. Delivery Time</div>
-        <div class="ps-bar"><div class="ps-fill orange" style="width:72%"></div></div>
-        <div class="ps-val">14 min avg</div>
+        <div class="ps-label">Total Deliveries</div>
+        <div class="ps-val">{{ total_deliveries }} all time</div>
       </div>
       <div class="ps-item">
-        <div class="ps-label">Customer Rating Today</div>
-        <div class="ps-bar"><div class="ps-fill purple" style="width:96%"></div></div>
-        <div class="ps-val"><i class="fas fa-star text-orange"></i> 4.8 / 5.0</div>
+        <div class="ps-label">Customer Rating</div>
+        <div class="ps-bar"><div class="ps-fill purple" style="width:{% widthratio rating|default:5 5 100 %}%"></div></div>
+        <div class="ps-val"><i class="fas fa-star text-orange"></i> {{ rating }} / 5.0</div>
       </div>
     </div>
   </div>
@@ -147,17 +125,13 @@
     </div>
     <div class="earnings-mini">
       <div class="em-bars">
-        <div class="em-col"><div class="em-bar" style="height:45%"></div><span>Mon</span></div>
-        <div class="em-col"><div class="em-bar" style="height:60%"></div><span>Tue</span></div>
-        <div class="em-col"><div class="em-bar" style="height:50%"></div><span>Wed</span></div>
-        <div class="em-col"><div class="em-bar high" style="height:85%"></div><span>Thu</span></div>
-        <div class="em-col"><div class="em-bar high" style="height:100%"></div><span>Fri</span></div>
-        <div class="em-col"><div class="em-bar" style="height:70%"></div><span>Sat</span></div>
-        <div class="em-col"><div class="em-bar today" style="height:32%"></div><span>Today</span></div>
+        {% for d in earnings_data %}
+        <div class="em-col"><div class="em-bar{% if forloop.counter == 7 %} today{% endif %}" style="height:{{ d.pct }}%"></div><span>{{ d.day }}</span></div>
+        {% endfor %}
       </div>
       <div class="em-total">
         <span class="em-total-lbl">Weekly Total</span>
-        <span class="em-total-val">TZS {{ weekly_earnings|default:"112,400" }}</span>
+        <span class="em-total-val">TZS {{ weekly_earnings }}</span>
       </div>
     </div>
   </div>
@@ -180,21 +154,7 @@
         <span class="rdt-earn">TZS {{ d.driver_earning }}</span>
       </div>
       {% empty %}
-      <div class="rdt-row">
-        <span class="rdt-id">#FG-2045</span><span>Petrol 15L</span><span class="rdt-addr">Kinondoni, Block 4</span>
-        <span><div class="status-chip delivered">Delivered</div></span>
-        <span class="rdt-time">22 min ago</span><span class="rdt-earn">TZS 5,200</span>
-      </div>
-      <div class="rdt-row">
-        <span class="rdt-id">#FG-2041</span><span>Petrol 20L</span><span class="rdt-addr">Kariakoo Market</span>
-        <span><div class="status-chip delivered">Delivered</div></span>
-        <span class="rdt-time">2 hr ago</span><span class="rdt-earn">TZS 6,800</span>
-      </div>
-      <div class="rdt-row">
-        <span class="rdt-id">#FG-2038</span><span>Diesel 30L</span><span class="rdt-addr">Msimbazi Centre</span>
-        <span><div class="status-chip delivered">Delivered</div></span>
-        <span class="rdt-time">4 hr ago</span><span class="rdt-earn">TZS 6,400</span>
-      </div>
+      <div class="rdt-empty"><span>No deliveries yet</span></div>
       {% endfor %}
     </div>
   </div>

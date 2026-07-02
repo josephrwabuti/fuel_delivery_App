@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
+from django.utils.timesince import timesince
 from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
@@ -22,11 +23,25 @@ def get_base_context(request):
     ).select_related("station", "customer").first()
     new_orders_count = Order.objects.filter(driver=driver, status="assigned").count()
     notif_count = Notification.objects.filter(user=request.user, is_read=False).count()
+
+    notifications = Notification.objects.filter(user=request.user).order_by("-created_at")[:5]
+    notifs_list = []
+    for n in notifications:
+        notifs_list.append({
+            "id": n.id,
+            "title": n.title,
+            "message": n.message,
+            "is_read": n.is_read,
+            "time": timesince(n.created_at) + " ago",
+        })
+    notifs_json = json.dumps(notifs_list)
+
     return {
         "driver": driver,
         "active_order": active_order,
         "new_orders_count": new_orders_count,
         "notif_count": notif_count,
+        "notifs_json": notifs_json,
     }
 
 
@@ -68,6 +83,26 @@ def driver_home(request):
     else:
         time_of_day = "Evening"
 
+    day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    earnings_by_day_list = []
+    for i in range(7):
+        day = week_start + timezone.timedelta(days=i)
+        total = DeliveryLog.objects.filter(driver=driver, created_at__date=day).aggregate(total=Sum('driver_earning'))['total'] or 0
+        earnings_by_day_list.append(int(total))
+    max_val = max(earnings_by_day_list) if any(earnings_by_day_list) else 1
+    earnings_data = []
+    for i, amt in enumerate(earnings_by_day_list):
+        earnings_data.append({
+            'day': day_names[i],
+            'amount': amt,
+            'pct': round(amt / max_val * 100),
+        })
+
+    # On-time rate for performance section
+    today_deliveries_total = DeliveryLog.objects.filter(driver=driver, created_at__date=today).count()
+    on_time_today = DeliveryLog.objects.filter(driver=driver, created_at__date=today, status="delivered").count()
+    on_time_pct = round((on_time_today / today_deliveries_total * 100)) if today_deliveries_total > 0 else 100
+
     ctx.update({
         "time_of_day": time_of_day,
         "today_deliveries": today_deliveries,
@@ -77,6 +112,8 @@ def driver_home(request):
         "weekly_earnings": int(weekly_earnings),
         "assigned_orders": assigned_orders,
         "recent_deliveries": recent_deliveries,
+        "earnings_data": earnings_data,
+        "on_time_pct": on_time_pct,
     })
 
     return render(request, "driver/home.html", ctx)
@@ -135,11 +172,27 @@ def driver_earnings(request):
 
     total_deliveries = DeliveryLog.objects.filter(driver=driver).count()
 
+    day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    earnings_by_day_list = []
+    for i in range(7):
+        day = week_start + timezone.timedelta(days=i)
+        total = DeliveryLog.objects.filter(driver=driver, created_at__date=day).aggregate(total=Sum('driver_earning'))['total'] or 0
+        earnings_by_day_list.append(int(total))
+    max_val = max(earnings_by_day_list) if any(earnings_by_day_list) else 1
+    earnings_data = []
+    for i, amt in enumerate(earnings_by_day_list):
+        earnings_data.append({
+            'day': day_names[i],
+            'amount': amt,
+            'pct': round(amt / max_val * 100),
+        })
+
     ctx.update({
         "today_earnings": int(today_earnings),
         "weekly_earnings": int(weekly_earnings),
         "monthly_earnings": int(monthly_earnings),
         "total_deliveries": total_deliveries,
+        "earnings_data": earnings_data,
     })
     return render(request, "driver/earnings.html", ctx)
 
@@ -183,7 +236,9 @@ def driver_profile(request):
 def driver_notifications(request):
     ctx = get_base_context(request)
     notifications = Notification.objects.filter(user=request.user)
+    unread_count = notifications.filter(is_read=False).count()
     ctx["notifications"] = notifications
+    ctx["unread_count"] = unread_count
     return render(request, "driver/notifications.html", ctx)
 
 
