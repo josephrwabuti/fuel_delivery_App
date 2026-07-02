@@ -25,24 +25,8 @@
     {% if fuel.pct < 25 %}<div class="skc-alert"><i class="fas fa-triangle-exclamation"></i> Low stock — restock urgently</div>{% endif %}
   </div>
   {% empty %}
-  <div class="stock-kpi-card">
-    <div class="skc-top"><div class="skc-name">Petrol (RON 91)</div><div class="skc-pct text-green">64%</div></div>
-    <div class="skc-bar"><div class="skc-fill good" style="width:64%"></div></div>
-    <div class="skc-details"><span>3,200L available</span><span>/ 5,000L capacity</span></div>
-    <div class="skc-price">TZS 2,850/L</div>
-  </div>
-  <div class="stock-kpi-card warning">
-    <div class="skc-top"><div class="skc-name">Diesel</div><div class="skc-pct text-yellow">20%</div></div>
-    <div class="skc-bar"><div class="skc-fill low" style="width:20%"></div></div>
-    <div class="skc-details"><span>800L available</span><span>/ 4,000L capacity</span></div>
-    <div class="skc-price">TZS 2,700/L</div>
-  </div>
-  <div class="stock-kpi-card alert">
-    <div class="skc-top"><div class="skc-name">Premium Petrol</div><div class="skc-pct text-red">6%</div></div>
-    <div class="skc-bar"><div class="skc-fill critical" style="width:6%"></div></div>
-    <div class="skc-details"><span>120L available</span><span>/ 2,000L capacity</span></div>
-    <div class="skc-price">TZS 3,100/L</div>
-    <div class="skc-alert"><i class="fas fa-triangle-exclamation"></i> Low stock — restock urgently</div>
+  <div class="stock-kpi-card" style="justify-content:center;padding:40px;color:var(--text-m);text-align:center;grid-column:1/-1">
+    <span>No stock data yet. <a href="#" onclick="openModal('addStockModal');return false" style="color:var(--orange)">Add fuel stock</a></span>
   </div>
   {% endfor %}
 </div>
@@ -80,7 +64,7 @@
         <span class="ib-pct">{{ fuel.pct }}%</span>
       </span>
       <span class="dt-price fw-600">{{ fuel.price }}</span>
-      <span class="dt-time">{{ fuel.updated_at|date:"d M, H:i"|default:"24 Jun, 09:14" }}</span>
+      <span class="dt-time">{{ fuel.updated_at|date:"d M, H:i"|default:"—" }}</span>
       <span>
         {% if fuel.litres_available > 0 %}
         <div class="status-chip delivered">Available</div>
@@ -94,41 +78,8 @@
       </span>
     </div>
     {% empty %}
-    <div class="dt-row">
-      <span><span class="fuel-badge petrol">Petrol (RON 91)</span></span>
-      <span class="fw-600">3,200L</span><span class="text-s">5,000L</span>
-      <span><div class="inline-bar"><div class="ib-fill good" style="width:64%"></div></div><span class="ib-pct">64%</span></span>
-      <span class="dt-price fw-600">2,850</span>
-      <span class="dt-time">24 Jun, 09:14</span>
-      <span><div class="status-chip delivered">Available</div></span>
-      <span class="dt-actions">
-        <button class="btn-edit-sm" onclick="openEditStock(1,'Petrol',3200,2850)" title="Edit"><i class="fas fa-pen"></i></button>
-        <button class="btn-view-sm" onclick="openRestockModal('Petrol')" title="Restock"><i class="fas fa-plus"></i></button>
-      </span>
-    </div>
-    <div class="dt-row">
-      <span><span class="fuel-badge diesel">Diesel</span></span>
-      <span class="fw-600">800L</span><span class="text-s">4,000L</span>
-      <span><div class="inline-bar"><div class="ib-fill low" style="width:20%"></div></div><span class="ib-pct">20%</span></span>
-      <span class="dt-price fw-600">2,700</span>
-      <span class="dt-time">23 Jun, 16:40</span>
-      <span><div class="status-chip pending">Low Stock</div></span>
-      <span class="dt-actions">
-        <button class="btn-edit-sm" onclick="openEditStock(2,'Diesel',800,2700)" title="Edit"><i class="fas fa-pen"></i></button>
-        <button class="btn-view-sm" onclick="openRestockModal('Diesel')" title="Restock"><i class="fas fa-plus"></i></button>
-      </span>
-    </div>
-    <div class="dt-row">
-      <span><span class="fuel-badge premium">Premium Petrol</span></span>
-      <span class="fw-600 text-red">120L</span><span class="text-s">2,000L</span>
-      <span><div class="inline-bar"><div class="ib-fill critical" style="width:6%"></div></div><span class="ib-pct text-red">6%</span></span>
-      <span class="dt-price fw-600">3,100</span>
-      <span class="dt-time">22 Jun, 11:05</span>
-      <span><div class="status-chip rejected">Critical</div></span>
-      <span class="dt-actions">
-        <button class="btn-edit-sm" onclick="openEditStock(3,'Premium Petrol',120,3100)" title="Edit"><i class="fas fa-pen"></i></button>
-        <button class="btn-view-sm" onclick="openRestockModal('Premium Petrol')" title="Restock"><i class="fas fa-plus"></i></button>
-      </span>
+    <div class="dt-row" style="justify-content:center;color:var(--text-m);padding:32px;grid-column:1/-1">
+      <span>No fuel entries yet. <a href="#" onclick="openModal('addStockModal');return false" style="color:var(--orange)">Add your first fuel stock</a></span>
     </div>
     {% endfor %}
   </div>

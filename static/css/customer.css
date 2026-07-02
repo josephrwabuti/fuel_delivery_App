@@ -280,6 +280,7 @@ a{text-decoration:none;color:inherit}
   font-size:0.82rem;font-weight:700;transition:all var(--tr);
 }
 .btn-order-now:hover{background:var(--orange-light);color:#fff;transform:translateY(-1px)}
+.btn-order-now.disabled{background:var(--navy-600);color:var(--text-m);pointer-events:none}
 
 /* ===== RECENT ORDERS TABLE ===== */
 .recent-orders-table{background:var(--glass-l);border:1px solid var(--border-s);border-radius:var(--radius);overflow:hidden}

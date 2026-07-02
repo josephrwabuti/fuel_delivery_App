@@ -138,14 +138,31 @@ document.addEventListener('DOMContentLoaded', function () {
       dropdown = document.createElement('div');
       dropdown.id = 'notifDropdown';
       dropdown.className = 'notif-dropdown';
+
+      let notifs;
+      try { notifs = JSON.parse(this.dataset.notifs || '[]'); } catch { notifs = []; }
+      const itemsHtml = notifs.length
+        ? notifs.map(n => `
+            <div class="nd-item${n.is_read ? '' : ' unread'}">
+              <div class="nd-icon ${n.is_read ? 'blue' : 'orange'}"><i class="fas fa-bell"></i></div>
+              <div class="nd-body"><div class="nd-title">${n.title}</div><div class="nd-time">${n.time}</div></div>
+            </div>`).join('')
+        : '<div class="nd-item" style="justify-content:center;color:var(--text-m);font-size:.8rem;padding:20px">No notifications</div>';
+
+      const csrf = document.cookie.split('; ').find(r => r.startsWith('csrftoken='))?.split('=')[1] || '';
       dropdown.innerHTML = `
-        <div class="nd-header"><span>Notifications</span><button class="nd-mark-all" onclick="this.closest('.notif-dropdown').querySelectorAll('.nd-item.unread').forEach(i=>i.classList.remove('unread'))">Mark all read</button></div>
-        <div class="nd-item unread"><div class="nd-icon orange"><i class="fas fa-receipt"></i></div><div class="nd-body"><div class="nd-title">New order from Asha Mwangi — 20L Petrol</div><div class="nd-time">3 minutes ago</div></div></div>
-        <div class="nd-item unread"><div class="nd-icon red"><i class="fas fa-triangle-exclamation"></i></div><div class="nd-body"><div class="nd-title">Low stock alert: Premium Petrol at 6%</div><div class="nd-time">1 hour ago</div></div></div>
-        <div class="nd-item"><div class="nd-icon green"><i class="fas fa-circle-check"></i></div><div class="nd-body"><div class="nd-title">Order #FG-2043 delivered successfully</div><div class="nd-time">2 hours ago</div></div></div>
+        <div class="nd-header"><span>Notifications</span><button class="nd-mark-all">Mark all read</button></div>
+        ${itemsHtml}
         <div class="nd-footer"><a href="#">View all notifications</a></div>`;
+
       bellBtn.parentElement.style.position = 'relative';
       bellBtn.parentElement.appendChild(dropdown);
+
+      dropdown.querySelector('.nd-mark-all')?.addEventListener('click', () => {
+        fetch('/notifications/mark-all-read/', { method: 'POST', headers: {'X-CSRFToken': csrf} });
+        dropdown.querySelectorAll('.nd-item.unread').forEach(i => i.classList.remove('unread'));
+      });
+
       setTimeout(() => {
         document.addEventListener('click', function h(e) {
           if (!dropdown.contains(e.target) && e.target !== bellBtn) { dropdown.remove(); document.removeEventListener('click', h); }

@@ -99,9 +99,9 @@
         <span>{{ pending_count }} order{{ pending_count|pluralize }} waiting</span>
       </div>
       {% endif %}
-      <button class="topbar-icon-btn" id="notifBell" title="Notifications">
+      <button class="topbar-icon-btn" id="notifBell" title="Notifications" data-notifs='{{ notifs_json }}'>
         <i class="fas fa-bell"></i>
-        <span class="icon-badge">{{ notif_count|default:"2" }}</span>
+        {% if notif_count %}<span class="icon-badge">{{ notif_count }}</span>{% endif %}
       </button>
       <div class="topbar-avatar">{{ request.user.station.name|slice:":1"|default:"S" }}</div>
     </div>
@@ -121,7 +121,7 @@
   </main>
 </div>
 
-<script src="{% static 'js/provider.js' %}"></script>
+<script src="{% static 'js/provider.js' %}?v=2"></script>
 {% csrf_token %}
 {% block extra_js %}{% endblock %}
 </body>

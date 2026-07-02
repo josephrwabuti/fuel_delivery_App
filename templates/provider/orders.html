@@ -14,7 +14,7 @@
   </div>
   <div class="filter-chips">
     <button class="fchip active" data-filter="all">All</button>
-    <button class="fchip" data-filter="pending">Pending <span class="fc-count">2</span></button>
+    <button class="fchip" data-filter="pending">Pending {% if pending_count %}<span class="fc-count">{{ pending_count }}</span>{% endif %}</button>
     <button class="fchip" data-filter="confirmed">Confirmed</button>
     <button class="fchip" data-filter="delivering">Delivering</button>
     <button class="fchip" data-filter="delivered">Delivered</button>
@@ -76,95 +76,8 @@
       </span>
     </div>
     {% empty %}
-    <!-- Demo rows -->
-    <div class="dt-row" data-status="pending" data-search="fg-2047 asha mwangi">
-      <span class="dt-id">#FG-2047</span>
-      <span><div class="cust-mini"><div class="cust-init">A</div><span>Asha Mwangi</span></div></span>
-      <span><span class="fuel-badge petrol">Petrol</span></span>
-      <span class="dt-qty">20L</span>
-      <span class="dt-total">TZS 59,000</span>
-      <span class="dt-addr" title="Kariakoo Market, Block C">Kariakoo Market…</span>
-      <span><span class="pay-badge">Cash</span></span>
-      <span><div class="status-chip pending">Pending</div></span>
-      <span class="dt-time">3 min ago</span>
-      <span class="dt-actions">
-        <button class="btn-accept-sm" onclick="quickAction('accept','FG-2047')" title="Accept"><i class="fas fa-check"></i></button>
-        <button class="btn-reject-sm" onclick="openRejectModal('FG-2047')" title="Reject"><i class="fas fa-times"></i></button>
-        <button class="btn-view-sm" onclick="openOrderDetail('FG-2047')" title="View"><i class="fas fa-eye"></i></button>
-      </span>
-    </div>
-    <div class="dt-row" data-status="pending" data-search="fg-2046 john kimaro">
-      <span class="dt-id">#FG-2046</span>
-      <span><div class="cust-mini"><div class="cust-init">J</div><span>John Kimaro</span></div></span>
-      <span><span class="fuel-badge diesel">Diesel</span></span>
-      <span class="dt-qty">30L</span>
-      <span class="dt-total">TZS 83,000</span>
-      <span class="dt-addr" title="Msimbazi Centre">Msimbazi Centre…</span>
-      <span><span class="pay-badge">M-Pesa</span></span>
-      <span><div class="status-chip pending">Pending</div></span>
-      <span class="dt-time">8 min ago</span>
-      <span class="dt-actions">
-        <button class="btn-accept-sm" onclick="quickAction('accept','FG-2046')" title="Accept"><i class="fas fa-check"></i></button>
-        <button class="btn-reject-sm" onclick="openRejectModal('FG-2046')" title="Reject"><i class="fas fa-times"></i></button>
-        <button class="btn-view-sm" onclick="openOrderDetail('FG-2046')" title="View"><i class="fas fa-eye"></i></button>
-      </span>
-    </div>
-    <div class="dt-row" data-status="delivering" data-search="fg-2045 grace ntare">
-      <span class="dt-id">#FG-2045</span>
-      <span><div class="cust-mini"><div class="cust-init">G</div><span>Grace Ntare</span></div></span>
-      <span><span class="fuel-badge petrol">Petrol</span></span>
-      <span class="dt-qty">15L</span>
-      <span class="dt-total">TZS 44,750</span>
-      <span class="dt-addr" title="Kinondoni, Block 4">Kinondoni, Block 4…</span>
-      <span><span class="pay-badge">Cash</span></span>
-      <span><div class="status-chip delivering">Delivering</div></span>
-      <span class="dt-time">22 min ago</span>
-      <span class="dt-actions">
-        <button class="btn-view-sm" onclick="openOrderDetail('FG-2045')" title="View"><i class="fas fa-eye"></i></button>
-      </span>
-    </div>
-    <div class="dt-row" data-status="confirmed" data-search="fg-2044 baraka juma">
-      <span class="dt-id">#FG-2044</span>
-      <span><div class="cust-mini"><div class="cust-init">B</div><span>Baraka Juma</span></div></span>
-      <span><span class="fuel-badge petrol">Petrol</span></span>
-      <span class="dt-qty">25L</span>
-      <span class="dt-total">TZS 73,250</span>
-      <span class="dt-addr" title="Ilala, Lumumba St">Ilala, Lumumba St…</span>
-      <span><span class="pay-badge">Tigo Pesa</span></span>
-      <span><div class="status-chip confirmed">Confirmed</div></span>
-      <span class="dt-time">35 min ago</span>
-      <span class="dt-actions">
-        <button class="btn-assign-sm" onclick="openAssignModal('FG-2044')" title="Assign Driver"><i class="fas fa-id-badge"></i></button>
-        <button class="btn-view-sm" onclick="openOrderDetail('FG-2044')" title="View"><i class="fas fa-eye"></i></button>
-      </span>
-    </div>
-    <div class="dt-row" data-status="delivered" data-search="fg-2043 mary thomas">
-      <span class="dt-id">#FG-2043</span>
-      <span><div class="cust-mini"><div class="cust-init">M</div><span>Mary Thomas</span></div></span>
-      <span><span class="fuel-badge diesel">Diesel</span></span>
-      <span class="dt-qty">40L</span>
-      <span class="dt-total">TZS 110,000</span>
-      <span class="dt-addr" title="Ubungo, Main Rd">Ubungo, Main Rd…</span>
-      <span><span class="pay-badge">Cash</span></span>
-      <span><div class="status-chip delivered">Delivered</div></span>
-      <span class="dt-time">1 hr ago</span>
-      <span class="dt-actions">
-        <button class="btn-view-sm" onclick="openOrderDetail('FG-2043')" title="View"><i class="fas fa-eye"></i></button>
-      </span>
-    </div>
-    <div class="dt-row" data-status="rejected" data-search="fg-2040 david mushi">
-      <span class="dt-id">#FG-2040</span>
-      <span><div class="cust-mini"><div class="cust-init">D</div><span>David Mushi</span></div></span>
-      <span><span class="fuel-badge petrol">Petrol</span></span>
-      <span class="dt-qty">10L</span>
-      <span class="dt-total">TZS 30,500</span>
-      <span class="dt-addr" title="Temeke, Chang'ombe">Temeke, Chang'ombe</span>
-      <span><span class="pay-badge">Cash</span></span>
-      <span><div class="status-chip rejected">Rejected</div></span>
-      <span class="dt-time">3 hr ago</span>
-      <span class="dt-actions">
-        <button class="btn-view-sm" onclick="openOrderDetail('FG-2040')" title="View"><i class="fas fa-eye"></i></button>
-      </span>
+    <div class="dt-row" style="justify-content:center;color:var(--text-m);padding:40px;grid-column:1/-1">
+      <span>No orders yet.</span>
     </div>
     {% endfor %}
   </div>
@@ -187,7 +100,7 @@
         <div class="dsl-avatar">{{ driver.name|slice:":1" }}</div>
         <div class="dsl-info">
           <strong>{{ driver.name }}</strong>
-          <span><i class="fas fa-star text-orange"></i> {{ driver.rating|default:"5.0" }} · <span class="dml-status available">Available</span></span>
+          <span><i class="fas fa-star text-orange"></i> {{ driver.rating|default:"—" }} · <span class="dml-status available">Available</span></span>
         </div>
         <div class="dsl-check"><i class="fas fa-circle-check"></i></div>
       </div>
@@ -253,41 +166,38 @@
     <div class="modal-header-simple">
       <div class="mhs-icon orange"><i class="fas fa-receipt"></i></div>
       <div>
-        <div class="mhs-title" id="detailOrderId">Order #FG-2047</div>
-        <div class="mhs-sub"><div class="status-chip pending" id="detailStatus">Pending</div></div>
+        <div class="mhs-title" id="detailOrderId">Order #—</div>
+        <div class="mhs-sub"><div class="status-chip" id="detailStatus">—</div></div>
       </div>
     </div>
     <div class="order-detail-grid">
       <div class="odg-section">
         <div class="odg-title">Customer</div>
-        <div class="odg-val"><i class="fas fa-user text-orange"></i> Asha Mwangi</div>
-        <div class="odg-val"><i class="fas fa-phone text-orange"></i> +255 712 000 010</div>
-        <div class="odg-val"><i class="fas fa-location-dot text-orange"></i> Kariakoo Market, Block C</div>
+        <div class="odg-val" id="detailCustName"><i class="fas fa-user text-orange"></i> —</div>
+        <div class="odg-val" id="detailCustPhone"><i class="fas fa-phone text-orange"></i> —</div>
+        <div class="odg-val" id="detailCustAddr"><i class="fas fa-location-dot text-orange"></i> —</div>
       </div>
       <div class="odg-section">
         <div class="odg-title">Order Details</div>
-        <div class="odg-val"><i class="fas fa-fire-flame-curved text-orange"></i> Petrol (RON 91)</div>
-        <div class="odg-val"><i class="fas fa-droplet text-blue"></i> 20 Litres</div>
-        <div class="odg-val"><i class="fas fa-wallet text-orange"></i> Cash on Delivery</div>
-        <div class="odg-val"><i class="fas fa-clock text-orange"></i> As soon as possible</div>
+        <div class="odg-val" id="detailFuel"><i class="fas fa-fire-flame-curved text-orange"></i> —</div>
+        <div class="odg-val" id="detailQty"><i class="fas fa-droplet text-blue"></i> —</div>
+        <div class="odg-val" id="detailPayment"><i class="fas fa-wallet text-orange"></i> —</div>
+        <div class="odg-val" id="detailDelivery"><i class="fas fa-clock text-orange"></i> —</div>
       </div>
       <div class="odg-section">
         <div class="odg-title">Payment</div>
-        <div class="omt-row flat"><span>Fuel (20L × TZS 2,850)</span><span>TZS 57,000</span></div>
-        <div class="omt-row flat"><span>Delivery fee</span><span>TZS 2,000</span></div>
-        <div class="omt-row flat total"><span><strong>Total</strong></span><span><strong>TZS 59,000</strong></span></div>
+        <div class="omt-row flat total"><span><strong>Total</strong></span><span><strong id="detailTotal">TZS —</strong></span></div>
       </div>
       <div class="odg-section">
         <div class="odg-title">Timeline</div>
-        <div class="odg-timeline">
-          <div class="odt-item done"><i class="fas fa-circle-check"></i> Order placed · 14:18</div>
-          <div class="odt-item pending-t"><i class="fas fa-clock"></i> Awaiting station response</div>
+        <div class="odg-timeline" id="detailTimeline">
+          <div class="odt-item pending-t"><i class="fas fa-clock"></i> Loading...</div>
         </div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn-modal-cancel" onclick="closeModal('orderDetailModal')">Close</button>
-      <button class="btn-modal-confirm" onclick="closeModal('orderDetailModal');openAssignModal('FG-2047')">
+      <button class="btn-modal-confirm" id="detailAssignBtn" onclick="closeModal('orderDetailModal');openAssignModal(currentOrderId)" style="display:none">
         <i class="fas fa-id-badge"></i> Assign Driver
       </button>
     </div>
@@ -298,6 +208,7 @@
 
 {% block extra_js %}
 <script>
+const ORDERS_DATA = {{ orders_json|safe }};
 let currentOrderId = null;
 
 function getCSRF() {
@@ -339,7 +250,25 @@ function openRejectModal(orderId) {
 }
 
 function openOrderDetail(orderId) {
+  const order = ORDERS_DATA.find(o => String(o.id) === String(orderId));
   document.getElementById('detailOrderId').textContent = 'Order #' + orderId;
+  if (order) {
+    document.getElementById('detailStatus').textContent = order.status_display;
+    document.getElementById('detailStatus').className = 'status-chip ' + order.status;
+    document.getElementById('detailCustName').innerHTML = '<i class="fas fa-user text-orange"></i> ' + order.customer_name;
+    document.getElementById('detailCustPhone').innerHTML = '<i class="fas fa-phone text-orange"></i> ' + order.customer_phone;
+    document.getElementById('detailCustAddr').innerHTML = '<i class="fas fa-location-dot text-orange"></i> ' + order.delivery_address;
+    document.getElementById('detailFuel').innerHTML = '<i class="fas fa-fire-flame-curved text-orange"></i> ' + order.fuel_type;
+    document.getElementById('detailQty').innerHTML = '<i class="fas fa-droplet text-blue"></i> ' + order.quantity + ' Litres';
+    document.getElementById('detailPayment').innerHTML = '<i class="fas fa-wallet text-orange"></i> ' + order.payment_method;
+    document.getElementById('detailDelivery').innerHTML = '<i class="fas fa-clock text-orange"></i> ' + order.created_at;
+    document.getElementById('detailTotal').textContent = 'TZS ' + order.total_amount;
+    const isConfirmed = order.status === 'confirmed';
+    document.getElementById('detailAssignBtn').style.display = isConfirmed ? '' : 'none';
+    document.getElementById('detailTimeline').innerHTML =
+      '<div class="odt-item done"><i class="fas fa-circle-check"></i> Order placed</div>' +
+      '<div class="odt-item ' + (order.status === 'pending' ? 'pending-t' : 'done') + '"><i class="fas fa-' + (order.status === 'pending' ? 'clock' : 'circle-check') + '"></i> ' + order.status_display + '</div>';
+  }
   document.getElementById('orderDetailModal').style.display = 'flex';
 }
 

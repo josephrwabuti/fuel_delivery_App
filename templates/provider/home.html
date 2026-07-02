@@ -11,15 +11,15 @@
   <div class="kpi-card">
     <div class="kpi-icon orange"><i class="fas fa-receipt"></i></div>
     <div class="kpi-body">
-      <div class="kpi-num">{{ today_orders|default:"7" }}</div>
+      <div class="kpi-num">{{ today_orders }}</div>
       <div class="kpi-label">Today's Orders</div>
     </div>
-    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +3 vs yesterday</div>
+    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> Today</div>
   </div>
   <div class="kpi-card">
     <div class="kpi-icon blue"><i class="fas fa-truck-fast"></i></div>
     <div class="kpi-body">
-      <div class="kpi-num">{{ active_orders|default:"2" }}</div>
+      <div class="kpi-num">{{ active_orders }}</div>
       <div class="kpi-label">Active Deliveries</div>
     </div>
     <div class="kpi-trend"><span class="live-dot"></span> Live now</div>
@@ -27,15 +27,15 @@
   <div class="kpi-card">
     <div class="kpi-icon purple"><i class="fas fa-droplet"></i></div>
     <div class="kpi-body">
-      <div class="kpi-num">{{ total_litres_today|default:"480" }}L</div>
+      <div class="kpi-num">{{ total_litres_today }}L</div>
       <div class="kpi-label">Litres Sold Today</div>
     </div>
-    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +12% this week</div>
+    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> This week</div>
   </div>
   <div class="kpi-card">
     <div class="kpi-icon orange"><i class="fas fa-coins"></i></div>
     <div class="kpi-body">
-      <div class="kpi-num">TZS {{ revenue_today|default:"1.4M" }}</div>
+      <div class="kpi-num">TZS {{ revenue_today }}</div>
       <div class="kpi-label">Revenue Today</div>
     </div>
     <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> On track</div>
@@ -49,22 +49,6 @@
     <div class="pob-pulse"></div>
     <div>
       <div class="pob-title">{{ pending_orders|length }} Order{{ pending_orders|length|pluralize }} Waiting for Your Response</div>
-      <div class="pob-sub">Accept or reject incoming orders before they time out</div>
-    </div>
-  </div>
-  <a href="{% url 'provider_orders' %}?filter=pending" class="btn-view-pending">
-    <i class="fas fa-eye"></i> Review Orders
-  </a>
-</div>
-{% endif %}
-
-<!-- ===== DEMO PENDING BANNER ===== -->
-{% if not pending_orders %}
-<div class="pending-orders-banner">
-  <div class="pob-left">
-    <div class="pob-pulse"></div>
-    <div>
-      <div class="pob-title">2 Orders Waiting for Your Response</div>
       <div class="pob-sub">Accept or reject incoming orders before they time out</div>
     </div>
   </div>
@@ -105,32 +89,8 @@
         </span>
       </div>
       {% empty %}
-      <!-- Demo rows -->
-      <div class="omt-row">
-        <span class="omt-id">#FG-2047</span><span>Asha Mwangi</span><span>Petrol</span><span>20L</span>
-        <span><div class="status-chip pending">Pending</div></span>
-        <span><div class="omt-actions">
-          <button class="btn-accept-sm" onclick="quickAction('accept','FG-2047')"><i class="fas fa-check"></i></button>
-          <button class="btn-reject-sm" onclick="quickAction('reject','FG-2047')"><i class="fas fa-times"></i></button>
-        </div></span>
-      </div>
-      <div class="omt-row">
-        <span class="omt-id">#FG-2046</span><span>John Kimaro</span><span>Diesel</span><span>30L</span>
-        <span><div class="status-chip pending">Pending</div></span>
-        <span><div class="omt-actions">
-          <button class="btn-accept-sm" onclick="quickAction('accept','FG-2046')"><i class="fas fa-check"></i></button>
-          <button class="btn-reject-sm" onclick="quickAction('reject','FG-2046')"><i class="fas fa-times"></i></button>
-        </div></span>
-      </div>
-      <div class="omt-row">
-        <span class="omt-id">#FG-2045</span><span>Grace Ntare</span><span>Petrol</span><span>15L</span>
-        <span><div class="status-chip delivering">Delivering</div></span>
-        <span><a href="#" class="btn-view-sm"><i class="fas fa-eye"></i></a></span>
-      </div>
-      <div class="omt-row">
-        <span class="omt-id">#FG-2044</span><span>Baraka Juma</span><span>Petrol</span><span>25L</span>
-        <span><div class="status-chip delivered">Delivered</div></span>
-        <span><a href="#" class="btn-view-sm"><i class="fas fa-eye"></i></a></span>
+      <div class="omt-row" style="justify-content:center;padding:24px;color:var(--text-s);grid-column:1/-1">
+        <span>No orders yet.</span>
       </div>
       {% endfor %}
     </div>
@@ -158,21 +118,8 @@
         </div>
       </div>
       {% empty %}
-      <!-- Demo stock -->
-      <div class="stock-item">
-        <div class="si-top"><span class="si-name">Petrol (RON 91)</span><span class="si-vol">3,200L / 5,000L</span></div>
-        <div class="si-bar"><div class="si-fill good" style="width:64%"></div></div>
-        <div class="si-bottom"><span class="si-pct text-green">64% remaining</span><span class="si-price">TZS 2,850/L</span></div>
-      </div>
-      <div class="stock-item">
-        <div class="si-top"><span class="si-name">Diesel</span><span class="si-vol">800L / 4,000L</span></div>
-        <div class="si-bar"><div class="si-fill low" style="width:20%"></div></div>
-        <div class="si-bottom"><span class="si-pct text-yellow">20% remaining</span><span class="si-price">TZS 2,700/L</span></div>
-      </div>
-      <div class="stock-item">
-        <div class="si-top"><span class="si-name">Premium Petrol</span><span class="si-vol">120L / 2,000L</span></div>
-        <div class="si-bar"><div class="si-fill critical" style="width:6%"></div></div>
-        <div class="si-bottom"><span class="si-pct text-red">6% — Restock now!</span><span class="si-price">TZS 3,100/L</span></div>
+      <div class="stock-item" style="justify-content:center;padding:20px;color:var(--text-s)">
+        <span>No stock data. <a href="{% url 'provider_stock' %}" style="color:var(--orange)">Add fuel stock</a></span>
       </div>
       {% endfor %}
     </div>
@@ -196,25 +143,8 @@
         <div class="dml-order">{% if driver.current_order %}#{{ driver.current_order.id }}{% else %}—{% endif %}</div>
       </div>
       {% empty %}
-      <div class="dml-item">
-        <div class="dml-avatar">J</div>
-        <div class="dml-info"><span class="dml-name">John Mwalimu</span><span class="dml-status busy">On Delivery</span></div>
-        <div class="dml-order">#FG-2045</div>
-      </div>
-      <div class="dml-item">
-        <div class="dml-avatar">A</div>
-        <div class="dml-info"><span class="dml-name">Amina Said</span><span class="dml-status available">Available</span></div>
-        <div class="dml-order">—</div>
-      </div>
-      <div class="dml-item">
-        <div class="dml-avatar">P</div>
-        <div class="dml-info"><span class="dml-name">Peter Mtui</span><span class="dml-status available">Available</span></div>
-        <div class="dml-order">—</div>
-      </div>
-      <div class="dml-item">
-        <div class="dml-avatar">F</div>
-        <div class="dml-info"><span class="dml-name">Fatuma Ally</span><span class="dml-status offline">Off Duty</span></div>
-        <div class="dml-order">—</div>
+      <div class="dml-item" style="justify-content:center;padding:20px;color:var(--text-s)">
+        <span>No drivers on duty.</span>
       </div>
       {% endfor %}
     </div>
@@ -228,17 +158,18 @@
     </div>
     <div class="mini-chart">
       <div class="mc-bars">
-        <div class="mc-col"><div class="mc-bar" style="height:45%"><span class="mc-val">8</span></div><span class="mc-day">Mon</span></div>
-        <div class="mc-col"><div class="mc-bar" style="height:60%"><span class="mc-val">11</span></div><span class="mc-day">Tue</span></div>
-        <div class="mc-col"><div class="mc-bar" style="height:50%"><span class="mc-val">9</span></div><span class="mc-day">Wed</span></div>
-        <div class="mc-col"><div class="mc-bar highlight" style="height:88%"><span class="mc-val">16</span></div><span class="mc-day">Thu</span></div>
-        <div class="mc-col"><div class="mc-bar highlight" style="height:100%"><span class="mc-val">18</span></div><span class="mc-day">Fri</span></div>
-        <div class="mc-col"><div class="mc-bar" style="height:72%"><span class="mc-val">13</span></div><span class="mc-day">Sat</span></div>
-        <div class="mc-col"><div class="mc-bar today" style="height:38%"><span class="mc-val">7</span></div><span class="mc-day">Today</span></div>
+        {% for day in orders_by_day %}
+        <div class="mc-col">
+          <div class="mc-bar{% if forloop.last %} today{% endif %}" style="height:{{ day.pct }}%">
+            <span class="mc-val">{{ day.count }}</span>
+          </div>
+          <span class="mc-day">{{ day.label }}</span>
+        </div>
+        {% endfor %}
       </div>
       <div class="mc-legend">
         <span><span class="mc-dot orange"></span> Orders</span>
-        <span class="mc-total">Total this week: <strong>82 orders</strong></span>
+        <span class="mc-total">Total this week: <strong>{{ week_total }} orders</strong></span>
       </div>
     </div>
   </div>

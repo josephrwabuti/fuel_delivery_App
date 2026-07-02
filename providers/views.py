@@ -12,6 +12,7 @@ from orders.models import Order
 from providers.models import StationStock
 from delivery.models import DeliveryLog
 from core.models import Notification
+from django.utils.timesince import timesince
 import json
 from datetime import timedelta, date, datetime
 
@@ -29,12 +30,23 @@ def map_status_tag(qs):
 def get_context_base(request):
     station = request.user.station
     pending_count = Order.objects.filter(station=station, status='pending').count()
-    notif_count = Notification.objects.filter(
-        user=request.user, is_read=False
-    ).count()
+    user_notifs = Notification.objects.filter(
+        user=request.user
+    ).order_by('-created_at')[:5]
+    notif_count = sum(1 for n in user_notifs if not n.is_read)
+    notifs_json = []
+    for n in user_notifs:
+        notifs_json.append({
+            'id': n.id,
+            'title': n.title,
+            'message': n.message,
+            'is_read': n.is_read,
+            'time': timesince(n.created_at) + ' ago',
+        })
     return {
         'pending_count': pending_count,
         'notif_count': notif_count,
+        'notifs_json': json.dumps(notifs_json),
     }
 
 
@@ -72,15 +84,43 @@ def provider_home(request):
     for d in active_drivers:
         d.status_css = 'busy' if d.current_order else 'available'
 
+    start_of_week = today - timedelta(days=today.weekday())
+    orders_by_day = []
+    week_total = 0
+    for i in range(7):
+        day = start_of_week + timedelta(days=i)
+        count = Order.objects.filter(station=station, created_at__date=day).count()
+        week_total += count
+        orders_by_day.append({
+            'count': count,
+            'label': day.strftime('%a'),
+        })
+
+    if orders_by_day and max(o['count'] for o in orders_by_day) > 0:
+        max_count = max(o['count'] for o in orders_by_day)
+        for o in orders_by_day:
+            o['pct'] = max(int((o['count'] / max_count) * 100), 5)
+    else:
+        for o in orders_by_day:
+            o['pct'] = 0
+
+    def fmt(n):
+        try:
+            return f"{int(n):,}"
+        except (TypeError, ValueError):
+            return "0"
+
     context = {
         'today_orders': today_orders,
         'active_orders': active_orders,
         'total_litres_today': total_litres_today,
-        'revenue_today': revenue_today,
+        'revenue_today': fmt(revenue_today),
         'pending_orders': pending_orders,
         'recent_orders': recent_orders,
         'stock_levels': stock_levels,
         'active_drivers': active_drivers,
+        'orders_by_day': orders_by_day,
+        'week_total': week_total,
     }
     context.update(get_context_base(request))
     return render(request, "provider/home.html", context)
@@ -100,8 +140,25 @@ def provider_orders(request):
         order__status__in=('assigned', 'out')
     )
 
+    orders_json = []
+    for o in orders:
+        orders_json.append({
+            'id': o.id,
+            'status': o.status,
+            'status_display': o.get_status_display(),
+            'customer_name': o.customer.get_full_name() or o.customer.username,
+            'customer_phone': o.customer.phone or '',
+            'delivery_address': o.delivery_address or '',
+            'fuel_type': o.fuel_type,
+            'quantity': o.quantity,
+            'total_amount': str(o.total_amount),
+            'payment_method': o.payment_method,
+            'created_at': timesince(o.created_at) + ' ago',
+        })
+
     context = {
         'orders': orders,
+        'orders_json': json.dumps(orders_json),
         'available_drivers': available_drivers,
     }
     context.update(get_context_base(request))
@@ -346,12 +403,62 @@ def provider_reports(request):
         for o in orders_by_day:
             o['pct'] = max(int((o['count'] / max_count) * 100), 5) if max_count else 0
 
+    fuel_totals = orders_qs.values('fuel_type').annotate(total=Sum('quantity')).order_by('-total')
+    total_fuel_qty = sum(f['total'] for f in fuel_totals)
+    fuel_mix = []
+    for f in fuel_totals:
+        pct = round((f['total'] / total_fuel_qty) * 100) if total_fuel_qty else 0
+        fuel_mix.append({'type': f['fuel_type'].title(), 'pct': pct, 'litres': f['total']})
+
+    top_drivers_qs = DeliveryLog.objects.filter(
+        order__station=station, order__created_at__gte=since
+    ).values('driver__name').annotate(
+        deliveries=Count('id'),
+        total_rating=Sum('rating')
+    ).order_by('-deliveries')[:5]
+    top_drivers = []
+    for d in top_drivers_qs:
+        top_drivers.append({
+            'name': d['driver__name'] or 'Unknown',
+            'deliveries': d['deliveries'],
+            'rating': d['total_rating'] / d['deliveries'] if d['total_rating'] and d['deliveries'] else 0,
+        })
+
+    top_customers_qs = orders_qs.values(
+        'customer__first_name', 'customer__last_name'
+    ).annotate(
+        orders=Count('id'),
+        litres=Sum('quantity'),
+        revenue=Sum('total_amount')
+    ).order_by('-revenue')[:5]
+    top_customers = []
+    for c in top_customers_qs:
+        rev = c['revenue'] or 0
+        top_customers.append({
+            'name': f"{c['customer__first_name'] or ''} {c['customer__last_name'] or ''}".strip() or 'Unknown',
+            'orders': c['orders'],
+            'litres': c['litres'] or 0,
+            'revenue': rev,
+            'revenue_fmt': fmt(rev),
+        })
+
+    def fmt(n):
+        try:
+            return f"{int(n):,}"
+        except (TypeError, ValueError):
+            return "0"
+
     context = {
         'total_orders': total_orders,
         'total_litres': total_litres,
+        'total_litres_fmt': fmt(total_litres),
         'revenue': revenue,
+        'revenue_fmt': fmt(revenue),
         'avg_delivery_time': avg_delivery_time,
         'orders_by_day': orders_by_day,
+        'fuel_mix': fuel_mix,
+        'top_drivers': top_drivers,
+        'top_customers': top_customers,
         'period': period,
     }
     context.update(get_context_base(request))
