@@ -59,7 +59,7 @@
       <div class="sc-num">{{ total_orders|default:'0' }}</div>
       <div class="sc-label">Total Orders</div>
     </div>
-    <div class="sc-trend up"><i class="fas fa-arrow-trend-up"></i> +2 this week</div>
+    <div class="sc-trend up"><i class="fas fa-arrow-trend-up"></i> All time</div>
   </div>
   <div class="stat-card">
     <div class="sc-icon blue"><i class="fas fa-truck-fast"></i></div>
@@ -67,7 +67,7 @@
       <div class="sc-num">{{ delivered_orders|default:'0' }}</div>
       <div class="sc-label">Delivered</div>
     </div>
-    <div class="sc-trend up"><i class="fas fa-circle-check text-green"></i> 100% success</div>
+    <div class="sc-trend up"><i class="fas fa-circle-check text-green"></i> Completed orders</div>
   </div>
   <div class="stat-card">
     <div class="sc-icon purple"><i class="fas fa-gas-pump"></i></div>
@@ -80,7 +80,7 @@
   <div class="stat-card">
     <div class="sc-icon orange"><i class="fas fa-clock"></i></div>
     <div class="sc-body">
-      <div class="sc-num">{{ avg_delivery_time|default:'~18' }} min</div>
+      <div class="sc-num">{{ avg_delivery_time|default:'—' }} min</div>
       <div class="sc-label">Avg. Delivery</div>
     </div>
     <div class="sc-trend up"><i class="fas fa-bolt"></i> Fast & reliable</div>
@@ -138,12 +138,12 @@
       <div class="smc-status {% if station.is_open %}open{% else %}closed{% endif %}">
         {{ station.is_open|yesno:"Open,Closed" }}
       </div>
-      <div class="smc-rating"><i class="fas fa-star"></i> {{ station.rating|default:'4.8' }}</div>
+      <div class="smc-rating"><i class="fas fa-star"></i> {{ station.rating|default:'—' }}</div>
     </div>
     <div class="smc-name">{{ station.name }}</div>
     <div class="smc-address"><i class="fas fa-location-dot"></i> {{ station.address }}</div>
     <div class="smc-fuels">
-      {% for fuel in station.fuels %}
+      {% for fuel in station.fuels.all %}
       <span class="fuel-chip">{{ fuel.type }}: <strong>TZS {{ fuel.price }}/L</strong></span>
       {% empty %}
       <span class="fuel-chip">Petrol: <strong>TZS 2,850/L</strong></span>
@@ -151,64 +151,17 @@
       {% endfor %}
     </div>
     <div class="smc-meta">
-      <span><i class="fas fa-route"></i> {{ station.distance|default:'1.2' }} km</span>
-      <span><i class="fas fa-clock"></i> ~{{ station.eta|default:'12' }} min</span>
+      <span><i class="fas fa-route"></i> {{ station.distance|default:'—' }} km</span>
+      <span><i class="fas fa-clock"></i> ~{{ station.eta|default:'—' }} min</span>
     </div>
     <a href="{% url 'customer_order' %}?station={{ station.id }}" class="btn-order-now">
       <i class="fas fa-bolt"></i> Order Now
     </a>
   </div>
   {% empty %}
-  <!-- Demo cards when no DB data -->
-  <div class="station-mini-card">
-    <div class="smc-header">
-      <div class="smc-status open">Open</div>
-      <div class="smc-rating"><i class="fas fa-star"></i> 4.9</div>
-    </div>
-    <div class="smc-name">Total Energies – Kariakoo</div>
-    <div class="smc-address"><i class="fas fa-location-dot"></i> Kariakoo, Dar es Salaam</div>
-    <div class="smc-fuels">
-      <span class="fuel-chip">Petrol: <strong>TZS 2,850/L</strong></span>
-      <span class="fuel-chip">Diesel: <strong>TZS 2,700/L</strong></span>
-    </div>
-    <div class="smc-meta">
-      <span><i class="fas fa-route"></i> 0.8 km</span>
-      <span><i class="fas fa-clock"></i> ~8 min</span>
-    </div>
-    <a href="{% url 'customer_order' %}?station=1" class="btn-order-now"><i class="fas fa-bolt"></i> Order Now</a>
-  </div>
-  <div class="station-mini-card">
-    <div class="smc-header">
-      <div class="smc-status open">Open</div>
-      <div class="smc-rating"><i class="fas fa-star"></i> 4.7</div>
-    </div>
-    <div class="smc-name">Puma Energy – Msimbazi</div>
-    <div class="smc-address"><i class="fas fa-location-dot"></i> Msimbazi, Dar es Salaam</div>
-    <div class="smc-fuels">
-      <span class="fuel-chip">Petrol: <strong>TZS 2,830/L</strong></span>
-      <span class="fuel-chip">Diesel: <strong>TZS 2,680/L</strong></span>
-    </div>
-    <div class="smc-meta">
-      <span><i class="fas fa-route"></i> 1.4 km</span>
-      <span><i class="fas fa-clock"></i> ~14 min</span>
-    </div>
-    <a href="{% url 'customer_order' %}?station=2" class="btn-order-now"><i class="fas fa-bolt"></i> Order Now</a>
-  </div>
-  <div class="station-mini-card">
-    <div class="smc-header">
-      <div class="smc-status open">Open</div>
-      <div class="smc-rating"><i class="fas fa-star"></i> 4.6</div>
-    </div>
-    <div class="smc-name">Oryx Petrol – Kinondoni</div>
-    <div class="smc-address"><i class="fas fa-location-dot"></i> Kinondoni, Dar es Salaam</div>
-    <div class="smc-fuels">
-      <span class="fuel-chip">Petrol: <strong>TZS 2,860/L</strong></span>
-    </div>
-    <div class="smc-meta">
-      <span><i class="fas fa-route"></i> 2.1 km</span>
-      <span><i class="fas fa-clock"></i> ~18 min</span>
-    </div>
-    <a href="{% url 'customer_order' %}?station=3" class="btn-order-now"><i class="fas fa-bolt"></i> Order Now</a>
+  <div class="empty-mini-row">
+    <i class="fas fa-gas-pump" style="font-size:2rem;color:var(--text-m);opacity:.4"></i>
+    <p style="color:var(--text-s);font-size:.85rem">No stations available in your area yet.</p>
   </div>
   {% endfor %}
 </div>
@@ -232,15 +185,7 @@
     <span class="rot-date">{{ order.created_at|date:"d M Y" }}</span>
   </div>
   {% empty %}
-  <div class="rot-row">
-    <span class="rot-id">#FG-2041</span><span>Total Energies – Kariakoo</span><span>Petrol</span><span>20L</span>
-    <span><span class="status-chip delivered">Delivered</span></span><span class="rot-date">21 Jun 2026</span>
-  </div>
-  <div class="rot-row">
-    <span class="rot-id">#FG-2038</span><span>Puma Energy – Msimbazi</span><span>Diesel</span><span>30L</span>
-    <span><span class="status-chip delivered">Delivered</span></span><span class="rot-date">18 Jun 2026</span>
-  </div>
-  <div class="empty-orders" style="display:none">
+  <div class="empty-orders">
     <i class="fas fa-inbox"></i>
     <p>No orders yet. <a href="{% url 'customer_stations' %}">Find a station</a> to place your first order.</p>
   </div>

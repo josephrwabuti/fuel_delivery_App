@@ -18,14 +18,14 @@
       <div class="pav-name">{{ request.user.get_full_name|default:request.user.username }}</div>
       <div class="pav-role"><i class="fas fa-circle text-green"></i> Customer Account</div>
       <div class="pav-meta">
-        <span><i class="fas fa-calendar-check text-orange"></i> Member since {{ request.user.date_joined|date:"M Y"|default:"Jun 2026" }}</span>
+        <span><i class="fas fa-calendar-check text-orange"></i> Member since {{ request.user.date_joined|date:"M Y" }}</span>
       </div>
       <div class="pav-stats">
-        <div class="pav-stat"><div class="pvs-num">{{ total_orders|default:'12' }}</div><div class="pvs-label">Orders</div></div>
+        <div class="pav-stat"><div class="pvs-num">{{ total_orders|default:'0' }}</div><div class="pvs-label">Orders</div></div>
         <div class="pav-stat-div"></div>
-        <div class="pav-stat"><div class="pvs-num">{{ delivered_orders|default:'11' }}</div><div class="pvs-label">Delivered</div></div>
+        <div class="pav-stat"><div class="pvs-num">{{ delivered_orders|default:'0' }}</div><div class="pvs-label">Delivered</div></div>
         <div class="pav-stat-div"></div>
-        <div class="pav-stat"><div class="pvs-num">{{ total_litres|default:'240' }}L</div><div class="pvs-label">Total Fuel</div></div>
+        <div class="pav-stat"><div class="pvs-num">{{ total_litres|default:'0' }}L</div><div class="pvs-label">Total Fuel</div></div>
       </div>
     </div>
 
@@ -74,7 +74,7 @@
           </div>
           <div class="fg-group">
             <label class="fg-label">Phone Number</label>
-            <input type="tel" name="phone" class="fg-input-order" value="{{ request.user.profile.phone|default:'' }}" placeholder="+255 7XX XXX XXX"/>
+            <input type="tel" name="phone" class="fg-input-order" value="{{ request.user.phone|default:'' }}" placeholder="+255 7XX XXX XXX"/>
           </div>
           <div class="fg-group full-width">
             <label class="fg-label">Default Delivery Address</label>

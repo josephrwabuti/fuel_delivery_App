@@ -9,7 +9,7 @@
 
 <div class="notif-page-header">
   <div class="notif-counts">
-    <span class="nc-unread"><i class="fas fa-circle text-orange"></i> 3 unread</span>
+    <span class="nc-unread"><i class="fas fa-circle text-orange"></i> {{ unread_count }} unread</span>
   </div>
   <button class="btn-mark-all-read" onclick="markAllRead()">
     <i class="fas fa-check-double"></i> Mark all as read
@@ -18,94 +18,46 @@
 
 <div class="notif-list" id="notifList">
 
-  <!-- UNREAD -->
+  {% if unread_notifications %}
   <div class="notif-group-label">New</div>
-
-  <div class="notif-item unread" data-id="1">
-    <div class="ni-icon orange"><i class="fas fa-truck-fast"></i></div>
+  {% for n in unread_notifications %}
+  <div class="notif-item unread" data-id="{{ n.id }}">
+    <div class="ni-icon orange"><i class="fas fa-bell"></i></div>
     <div class="ni-body">
-      <div class="ni-title">Driver assigned for Order <strong>#FG-2047</strong></div>
-      <div class="ni-desc">John Mwalimu has been assigned to deliver your 20L of Petrol from Total Energies – Kariakoo. Estimated arrival: 8 minutes.</div>
+      <div class="ni-title">{{ n.title }}</div>
+      <div class="ni-desc">{{ n.message }}</div>
       <div class="ni-meta">
-        <span class="ni-time"><i class="fas fa-clock"></i> 2 minutes ago</span>
-        <a href="{% url 'customer_tracking' %}" class="ni-action">Track Order <i class="fas fa-arrow-right"></i></a>
+        <span class="ni-time"><i class="fas fa-clock"></i> {{ n.time_since }}</span>
       </div>
     </div>
-    <button class="ni-dismiss" onclick="dismissNotif(this)" title="Dismiss"><i class="fas fa-times"></i></button>
+    <button class="ni-dismiss" onclick="dismissNotif(this, {{ n.id }})" title="Dismiss"><i class="fas fa-times"></i></button>
   </div>
+  {% endfor %}
+  {% endif %}
 
-  <div class="notif-item unread" data-id="2">
-    <div class="ni-icon green"><i class="fas fa-circle-check"></i></div>
-    <div class="ni-body">
-      <div class="ni-title">Order <strong>#FG-2041</strong> delivered successfully</div>
-      <div class="ni-desc">Your 20L of Petrol from Total Energies – Kariakoo has been delivered. Total charged: TZS 59,000.</div>
-      <div class="ni-meta">
-        <span class="ni-time"><i class="fas fa-clock"></i> Yesterday at 14:52</span>
-        <a href="{% url 'customer_history' %}" class="ni-action">View Receipt <i class="fas fa-arrow-right"></i></a>
-      </div>
-    </div>
-    <button class="ni-dismiss" onclick="dismissNotif(this)" title="Dismiss"><i class="fas fa-times"></i></button>
-  </div>
-
-  <div class="notif-item unread" data-id="3">
-    <div class="ni-icon purple"><i class="fas fa-gas-pump"></i></div>
-    <div class="ni-body">
-      <div class="ni-title">New station available near you</div>
-      <div class="ni-desc">Oryx Petrol – Ubungo has joined FuelGo and is now available for delivery in your area. Check prices and order now.</div>
-      <div class="ni-meta">
-        <span class="ni-time"><i class="fas fa-clock"></i> 2 days ago</span>
-        <a href="{% url 'customer_stations' %}" class="ni-action">View Station <i class="fas fa-arrow-right"></i></a>
-      </div>
-    </div>
-    <button class="ni-dismiss" onclick="dismissNotif(this)" title="Dismiss"><i class="fas fa-times"></i></button>
-  </div>
-
-  <!-- READ -->
+  {% if read_notifications %}
   <div class="notif-group-label">Earlier</div>
-
-  <div class="notif-item" data-id="4">
-    <div class="ni-icon orange"><i class="fas fa-tag"></i></div>
+  {% for n in read_notifications %}
+  <div class="notif-item" data-id="{{ n.id }}">
+    <div class="ni-icon blue"><i class="fas fa-bell"></i></div>
     <div class="ni-body">
-      <div class="ni-title">Fuel price update in your area</div>
-      <div class="ni-desc">Petrol prices near you have been updated to TZS 2,850/L. Diesel remains at TZS 2,700/L at most stations.</div>
+      <div class="ni-title">{{ n.title }}</div>
+      <div class="ni-desc">{{ n.message }}</div>
       <div class="ni-meta">
-        <span class="ni-time"><i class="fas fa-clock"></i> 3 days ago</span>
-        <a href="{% url 'customer_stations' %}" class="ni-action">Check Prices <i class="fas fa-arrow-right"></i></a>
+        <span class="ni-time"><i class="fas fa-clock"></i> {{ n.time_since }}</span>
       </div>
     </div>
-    <button class="ni-dismiss" onclick="dismissNotif(this)" title="Dismiss"><i class="fas fa-times"></i></button>
+    <button class="ni-dismiss" onclick="dismissNotif(this, {{ n.id }})" title="Dismiss"><i class="fas fa-times"></i></button>
   </div>
+  {% endfor %}
+  {% endif %}
 
-  <div class="notif-item" data-id="5">
-    <div class="ni-icon blue"><i class="fas fa-rotate-right"></i></div>
-    <div class="ni-body">
-      <div class="ni-title">Order <strong>#FG-2038</strong> confirmed by station</div>
-      <div class="ni-desc">Puma Energy – Msimbazi has confirmed your order for 30L of Diesel. A driver will be assigned shortly.</div>
-      <div class="ni-meta">
-        <span class="ni-time"><i class="fas fa-clock"></i> 6 days ago</span>
-      </div>
-    </div>
-    <button class="ni-dismiss" onclick="dismissNotif(this)" title="Dismiss"><i class="fas fa-times"></i></button>
-  </div>
-
-  <div class="notif-item" data-id="6">
-    <div class="ni-icon green"><i class="fas fa-circle-check"></i></div>
-    <div class="ni-body">
-      <div class="ni-title">Order <strong>#FG-2038</strong> delivered successfully</div>
-      <div class="ni-desc">Your 30L of Diesel from Puma Energy – Msimbazi has been delivered. Total charged: TZS 83,000.</div>
-      <div class="ni-meta">
-        <span class="ni-time"><i class="fas fa-clock"></i> 6 days ago</span>
-        <a href="{% url 'customer_history' %}" class="ni-action">View Receipt <i class="fas fa-arrow-right"></i></a>
-      </div>
-    </div>
-    <button class="ni-dismiss" onclick="dismissNotif(this)" title="Dismiss"><i class="fas fa-times"></i></button>
-  </div>
-
-  <!-- Empty state (hidden by default) -->
-  <div class="notif-empty" id="notifEmpty" style="display:none">
+  {% if not unread_notifications and not read_notifications %}
+  <div class="notif-empty" id="notifEmpty">
     <i class="fas fa-bell-slash"></i>
     <p>You're all caught up! No notifications.</p>
   </div>
+  {% endif %}
 
 </div>
 
@@ -113,21 +65,24 @@
 
 {% block extra_js %}
 <script>
-function dismissNotif(btn) {
-  const item = btn.closest('.notif-item');
-  item.style.opacity = '0';
-  item.style.transform = 'translateX(30px)';
-  item.style.transition = 'all 0.3s ease';
-  setTimeout(() => {
-    item.remove();
-    checkEmpty();
-  }, 300);
+function dismissNotif(btn, id) {
+  fetch('/customer/notifications/' + id + '/dismiss/', { method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'} })
+    .then(() => {
+      const item = btn.closest('.notif-item');
+      item.style.opacity = '0';
+      item.style.transform = 'translateX(30px)';
+      item.style.transition = 'all 0.3s ease';
+      setTimeout(() => { item.remove(); checkEmpty(); }, 300);
+    });
 }
 
 function markAllRead() {
-  document.querySelectorAll('.notif-item.unread').forEach(item => item.classList.remove('unread'));
-  const unreadLabel = document.querySelector('.nc-unread');
-  if (unreadLabel) { unreadLabel.innerHTML = '<i class="fas fa-circle text-green"></i> All read'; }
+  fetch('/customer/notifications/mark-all-read/', { method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'} })
+    .then(() => {
+      document.querySelectorAll('.notif-item.unread').forEach(item => item.classList.remove('unread'));
+      const unreadLabel = document.querySelector('.nc-unread');
+      if (unreadLabel) { unreadLabel.innerHTML = '<i class="fas fa-circle text-green"></i> All read'; }
+    });
 }
 
 function checkEmpty() {

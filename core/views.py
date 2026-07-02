@@ -30,7 +30,7 @@ def customer_home(request):
 
     nearby_stations = Station.objects.filter(
         status="approved"
-    ).order_by("-created_at")[:6]
+    ).prefetch_related("fuels").order_by("-created_at")[:6]
 
     recent_orders = Order.objects.filter(
         customer=request.user
@@ -45,8 +45,8 @@ def customer_home(request):
         status__in=[
             "pending",
             "confirmed",
-            "driver_assigned",
-            "en_route"
+            "assigned",
+            "out",
         ]
     ).select_related("driver", "station").first()
 
@@ -63,6 +63,21 @@ def customer_home(request):
         customer=request.user
     ).aggregate(total=Sum("quantity"))["total"] or 0
 
+    today = timezone.now()
+    hour = today.hour
+    if hour < 12:
+        time_of_day = "Morning"
+    elif hour < 17:
+        time_of_day = "Afternoon"
+    else:
+        time_of_day = "Evening"
+
+    delivered = Order.objects.filter(customer=request.user, status="delivered")
+    avg_seconds = delivered.exclude(confirmed_at=None).annotate(
+        diff=F("delivered_at") - F("confirmed_at")
+    ).aggregate(avg=Avg("diff"))["avg"]
+    avg_delivery_time = int(avg_seconds.total_seconds() / 60) if avg_seconds else None
+
     context = {
         "nearby_stations": nearby_stations,
         "recent_orders": recent_orders,
@@ -71,6 +86,8 @@ def customer_home(request):
         "total_orders": total_orders,
         "delivered_orders": delivered_orders,
         "total_litres": total_litres,
+        "time_of_day": time_of_day,
+        "avg_delivery_time": avg_delivery_time,
     }
 
     return render(request, "customer/home.html", context)
@@ -118,12 +135,19 @@ def stations_view(request):
 
 def create_order(request):
     station_id = request.GET.get("station")
-    station = Station.objects.get(id=station_id)
+    reorder_id = request.GET.get("reorder")
+    preselected_station = None
+
+    if reorder_id:
+        prev_order = get_object_or_404(Order, id=reorder_id, customer=request.user)
+        preselected_station = prev_order.station
+    elif station_id:
+        preselected_station = get_object_or_404(Station, id=station_id)
 
     if request.method == "POST":
         order = Order.objects.create(
             customer=request.user,
-            station=station,
+            station=preselected_station,
             fuel_type=request.POST['fuel_type'],
             quantity=request.POST['quantity'],
             total_amount=request.POST['total_amount'],
@@ -132,14 +156,14 @@ def create_order(request):
         return redirect("customer_tracking")
 
     return render(request, "customer/order.html", {
-        "station": station
+        "preselected_station": preselected_station
     })
 
 
 def tracking_view(request):
     active_order = Order.objects.filter(
         customer=request.user
-    ).exclude(status="delivered").first()
+    ).exclude(status="delivered").select_related("station", "driver").first()
 
     return render(request, "customer/tracking.html", {
         "active_order": active_order
@@ -147,10 +171,27 @@ def tracking_view(request):
 
 
 def history_view(request):
-    orders = Order.objects.filter(customer=request.user).order_by('-created_at')
+    orders = Order.objects.filter(customer=request.user).select_related("station", "driver").order_by('-created_at')
+
+    orders_list = []
+    for o in orders:
+        orders_list.append({
+            "id": o.id,
+            "station": o.station.name if o.station else "—",
+            "fuel_type": o.fuel_type,
+            "quantity": o.quantity,
+            "total_amount": f"{o.total_amount:,.0f}",
+            "status": o.status,
+            "status_display": o.get_status_display(),
+            "delivery_address": o.delivery_address or "—",
+            "driver": o.driver.name if o.driver else "—",
+            "payment_method": o.payment_method or "—",
+            "created_at": o.created_at.strftime("%d %b %Y"),
+        })
 
     return render(request, "customer/history.html", {
-        "orders": orders
+        "orders": orders,
+        "orders_json": json.dumps(orders_list),
     })
     
 def confirm_delivery(request, order_id):
@@ -174,19 +215,74 @@ def cancel_order(request, order_id):
 
 
 def customer_profile(request):
-    return render(request, "customer/profile.html")
+    total_orders = Order.objects.filter(customer=request.user).count()
+    delivered_orders = Order.objects.filter(customer=request.user, status="delivered").count()
+    total_litres = Order.objects.filter(customer=request.user).aggregate(total=Sum("quantity"))["total"] or 0
+    return render(request, "customer/profile.html", {
+        "total_orders": total_orders,
+        "delivered_orders": delivered_orders,
+        "total_litres": total_litres,
+    })
 
 def customer_notifications(request):
-    return render(request, "customer/notifications.html")
+    notifications = Notification.objects.filter(user=request.user).order_by("-created_at")
+    unread_notifications = notifications.filter(is_read=False)
+    read_notifications = notifications.filter(is_read=True)
+    from django.utils.timesince import timesince
+    for n in unread_notifications:
+        n.time_since = timesince(n.created_at) + " ago"
+    for n in read_notifications:
+        n.time_since = timesince(n.created_at) + " ago"
+    return render(request, "customer/notifications.html", {
+        "notifications": notifications,
+        "unread_notifications": unread_notifications,
+        "read_notifications": read_notifications,
+        "unread_count": unread_notifications.count(),
+    })
 
 def customer_update_profile(request):
-    return render(request, 'customer/profile.html')
+    total_orders = Order.objects.filter(customer=request.user).count()
+    delivered_orders = Order.objects.filter(customer=request.user, status="delivered").count()
+    total_litres = Order.objects.filter(customer=request.user).aggregate(total=Sum("quantity"))["total"] or 0
+    return render(request, 'customer/profile.html', {
+        "total_orders": total_orders,
+        "delivered_orders": delivered_orders,
+        "total_litres": total_litres,
+    })
 
 def customer_change_password(request):
-    return render(request, 'customer/profile.html')
+    total_orders = Order.objects.filter(customer=request.user).count()
+    delivered_orders = Order.objects.filter(customer=request.user, status="delivered").count()
+    total_litres = Order.objects.filter(customer=request.user).aggregate(total=Sum("quantity"))["total"] or 0
+    return render(request, 'customer/profile.html', {
+        "total_orders": total_orders,
+        "delivered_orders": delivered_orders,
+        "total_litres": total_litres,
+    })
 
 def customer_delete_account(request):
-    return render(request, 'customer/profile.html')
+    total_orders = Order.objects.filter(customer=request.user).count()
+    delivered_orders = Order.objects.filter(customer=request.user, status="delivered").count()
+    total_litres = Order.objects.filter(customer=request.user).aggregate(total=Sum("quantity"))["total"] or 0
+    return render(request, 'customer/profile.html', {
+        "total_orders": total_orders,
+        "delivered_orders": delivered_orders,
+        "total_litres": total_litres,
+    })
+
+
+@login_required(login_url='login')
+def dismiss_notification(request, notif_id):
+    if request.method == "POST":
+        Notification.objects.filter(id=notif_id, user=request.user).delete()
+    return JsonResponse({"success": True})
+
+
+@login_required(login_url='login')
+def mark_all_notifications_read(request):
+    if request.method == "POST":
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    return JsonResponse({"success": True})
 
 
 @login_required(login_url='login')
@@ -197,8 +293,8 @@ def customer_place_order(request):
         station_id = request.POST.get("station_id")
         fuel_type = request.POST.get("fuel_type")
         quantity = request.POST.get("quantity")
-        delivery_address = request.POST.get("delivery_address")
-        phone = request.POST.get("contact_phone")
+        delivery_address = request.POST.get("delivery_address", "")
+        phone = request.POST.get("phone", "")
 
         station = get_object_or_404(Station, id=station_id)
 
@@ -218,7 +314,7 @@ def customer_place_order(request):
             quantity=quantity,
             delivery_address=delivery_address,
             phone=phone,
-            total_price=total_price,
+            total_amount=total_price,
             status="pending"
         )
 

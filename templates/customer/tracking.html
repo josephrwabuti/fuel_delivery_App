@@ -20,16 +20,16 @@
 {% else %}
 
 <!-- ===== ORDER STATUS BANNER ===== -->
-<div class="tracking-status-banner status-{{ active_order.status|default:'confirmed' }}">
+<div class="tracking-status-banner status-{{ active_order.status }}">
   <div class="tsb-left">
     <div class="tsb-pulse"></div>
     <div>
-      <div class="tsb-title">Order #{{ active_order.id|default:'FG-2047' }} — <span id="statusLabel">{{ active_order.get_status_display|default:'Driver Assigned' }}</span></div>
-      <div class="tsb-sub">{{ active_order.station.name|default:'Total Energies – Kariakoo' }} · {{ active_order.fuel_type|default:'Petrol' }} · {{ active_order.quantity|default:'20' }}L</div>
+      <div class="tsb-title">Order #{{ active_order.id }} — <span id="statusLabel">{{ active_order.get_status_display }}</span></div>
+      <div class="tsb-sub">{{ active_order.station.name }} · {{ active_order.fuel_type }} · {{ active_order.quantity }}L</div>
     </div>
   </div>
   <div class="tsb-eta">
-    <div class="tsb-eta-num" id="etaCountdown">08:32</div>
+    <div class="tsb-eta-num" id="etaCountdown">--:--</div>
     <div class="tsb-eta-label">Est. arrival</div>
   </div>
 </div>
@@ -45,7 +45,7 @@
         <div class="dt-icon"><i class="fas fa-circle-check"></i></div>
         <div class="dt-body">
           <div class="dt-title">Order Placed</div>
-          <div class="dt-time">{{ active_order.created_at|time:"H:i"|default:'14:22' }}</div>
+          <div class="dt-time">{{ active_order.created_at|time:"H:i" }}</div>
           <div class="dt-desc">Your order was received by the system</div>
         </div>
       </div>
@@ -54,8 +54,8 @@
         <div class="dt-icon"><i class="fas fa-gas-pump"></i></div>
         <div class="dt-body">
           <div class="dt-title">Station Confirmed</div>
-          <div class="dt-time">{{ active_order.confirmed_at|time:"H:i"|default:'14:25' }}</div>
-          <div class="dt-desc">{{ active_order.station.name|default:'Total Energies – Kariakoo' }} accepted your order</div>
+          <div class="dt-time">{{ active_order.confirmed_at|time:"H:i" }}</div>
+          <div class="dt-desc">{{ active_order.station.name }} accepted your order</div>
         </div>
       </div>
       <div class="dt-line done"></div>
@@ -63,8 +63,8 @@
         <div class="dt-icon"><i class="fas fa-id-badge"></i></div>
         <div class="dt-body">
           <div class="dt-title">Driver Assigned</div>
-          <div class="dt-time">{{ active_order.driver_assigned_at|time:"H:i"|default:'14:27' }}</div>
-          <div class="dt-desc">{{ active_order.driver.name|default:'John Mwalimu' }} is your delivery driver</div>
+          <div class="dt-time">{{ active_order.driver_assigned_at|time:"H:i" }}</div>
+          <div class="dt-desc">{{ active_order.driver.name }} is your delivery driver</div>
         </div>
       </div>
       <div class="dt-line active"></div>
@@ -117,7 +117,7 @@
         <strong>Driver has arrived!</strong>
         <span>Please confirm you received your fuel to complete the order.</span>
       </div>
-      <form method="POST" action="{% url 'customer_confirm_delivery' active_order.id|default:1 %}">
+      <form method="POST" action="{% url 'customer_confirm_delivery' active_order.id %}">
         {% csrf_token %}
         <button type="submit" class="btn-confirm-delivery">
           <i class="fas fa-circle-check"></i> Confirm Receipt
@@ -131,43 +131,55 @@
   <div class="tracking-side">
 
     <!-- Driver card -->
+    {% if active_order.driver %}
     <div class="driver-card">
       <div class="dc-header">
         <div class="dc-avatar"><i class="fas fa-user-tie"></i></div>
         <div class="dc-info">
-          <div class="dc-name">{{ active_order.driver.name|default:'John Mwalimu' }}</div>
+          <div class="dc-name">{{ active_order.driver.name }}</div>
           <div class="dc-sub"><i class="fas fa-id-badge text-blue"></i> Verified Driver</div>
-          <div class="dc-rating"><i class="fas fa-star text-orange"></i> {{ active_order.driver.rating|default:'4.8' }}</div>
+          <div class="dc-rating"><i class="fas fa-star text-orange"></i> {{ active_order.driver.rating }}</div>
         </div>
       </div>
       <div class="dc-plate">
-        <i class="fas fa-car text-orange"></i> Plate: <strong>{{ active_order.driver.plate|default:'T 123 ABC' }}</strong>
+        <i class="fas fa-car text-orange"></i> Plate: <strong>{{ active_order.driver.plate }}</strong>
       </div>
       <div class="dc-actions">
-        <a href="tel:{{ active_order.driver.phone|default:'+255700000001' }}" class="dc-btn call">
+        <a href="tel:{{ active_order.driver.phone }}" class="dc-btn call">
           <i class="fas fa-phone"></i> Call Driver
         </a>
-        <a href="sms:{{ active_order.driver.phone|default:'+255700000001' }}" class="dc-btn sms">
+        <a href="sms:{{ active_order.driver.phone }}" class="dc-btn sms">
           <i class="fas fa-comment-sms"></i> SMS
         </a>
       </div>
     </div>
+    {% else %}
+    <div class="driver-card">
+      <div class="dc-header">
+        <div class="dc-avatar"><i class="fas fa-user-clock"></i></div>
+        <div class="dc-info">
+          <div class="dc-name">Waiting for driver</div>
+          <div class="dc-sub"><i class="fas fa-hourglass-half text-orange"></i> A driver will be assigned shortly</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
     <!-- Order summary card -->
     <div class="track-order-summary">
       <div class="tos-title">Order Details</div>
-      <div class="tos-row"><span>Order ID</span><strong>#{{ active_order.id|default:'FG-2047' }}</strong></div>
-      <div class="tos-row"><span>Fuel Type</span><strong>{{ active_order.fuel_type|default:'Petrol' }}</strong></div>
-      <div class="tos-row"><span>Quantity</span><strong>{{ active_order.quantity|default:'20' }} Litres</strong></div>
-      <div class="tos-row"><span>Station</span><strong>{{ active_order.station.name|default:'Total Energies' }}</strong></div>
-      <div class="tos-row"><span>Payment</span><strong>{{ active_order.payment_method|default:'Cash on Delivery' }}</strong></div>
+      <div class="tos-row"><span>Order ID</span><strong>#{{ active_order.id }}</strong></div>
+      <div class="tos-row"><span>Fuel Type</span><strong>{{ active_order.fuel_type }}</strong></div>
+      <div class="tos-row"><span>Quantity</span><strong>{{ active_order.quantity }} Litres</strong></div>
+      <div class="tos-row"><span>Station</span><strong>{{ active_order.station.name }}</strong></div>
+      <div class="tos-row"><span>Payment</span><strong>{{ active_order.payment_method }}</strong></div>
       <div class="tos-divider"></div>
-      <div class="tos-row total"><span>Total</span><strong>TZS {{ active_order.total_price|default:'59,000' }}</strong></div>
+      <div class="tos-row total"><span>Total</span><strong>TZS {{ active_order.total_amount }}</strong></div>
     </div>
 
     <!-- Cancel order button (only if not yet dispatched) -->
     {% if active_order.status == 'pending' or active_order.status == 'confirmed' %}
-    <form method="POST" action="{% url 'customer_cancel_order' active_order.id|default:1 %}" onsubmit="return confirm('Cancel this order?')">
+    <form method="POST" action="{% url 'customer_cancel_order' active_order.id %}" onsubmit="return confirm('Cancel this order?')">
       {% csrf_token %}
       <button type="submit" class="btn-cancel-order">
         <i class="fas fa-times-circle"></i> Cancel Order
@@ -184,40 +196,12 @@
 
 {% block extra_js %}
 <script>
-/* ---- ETA countdown ---- */
+/* ---- ETA countdown placeholder ---- */
 (function () {
   const countdownEl = document.getElementById('etaCountdown');
   if (!countdownEl) return;
-
-  let totalSec = 8 * 60 + 32; // 8:32 demo
-  const tick = setInterval(() => {
-    if (totalSec <= 0) { clearInterval(tick); countdownEl.textContent = 'Arriving…'; return; }
-    totalSec--;
-    const m = String(Math.floor(totalSec / 60)).padStart(2, '0');
-    const s = String(totalSec % 60).padStart(2, '0');
-    countdownEl.textContent = `${m}:${s}`;
-  }, 1000);
+  // Real ETA would come from server-side calculation
+  countdownEl.textContent = 'Calculating…';
 })();
-
-/* ---- Animate driver marker position ---- */
-(function () {
-  const marker = document.getElementById('driverMarker');
-  if (!marker) return;
-  let pos = 0;
-  setInterval(() => {
-    pos = (pos + 0.4) % 100;
-    marker.style.left = `${20 + pos * 0.4}%`;
-    marker.style.top  = `${30 + Math.sin(pos * 0.12) * 12}%`;
-  }, 800);
-})();
-
-/* ---- Simulate "driver arrived" for demo (after 15s) ---- */
-setTimeout(() => {
-  const panel = document.getElementById('confirmDeliveryPanel');
-  if (panel) {
-    panel.style.display = 'flex';
-    panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-}, 15000);
 </script>
 {% endblock %}

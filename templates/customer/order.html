@@ -205,7 +205,7 @@
           <div class="fg-row-2">
             <div class="fg-group">
               <label class="fg-label"><i class="fas fa-phone text-orange"></i> Contact Phone</label>
-              <input type="tel" name="contact_phone" class="fg-input-order" placeholder="+255 7XX XXX XXX" value="{{ request.user.profile.phone|default:'' }}"/>
+              <input type="tel" name="phone" class="fg-input-order" placeholder="+255 7XX XXX XXX" value="{{ request.user.phone|default:'' }}"/>
             </div>
             <div class="fg-group">
               <label class="fg-label"><i class="fas fa-clock text-orange"></i> Preferred Time</label>
@@ -326,16 +326,6 @@ let deliveryLat = null, deliveryLng = null;
 let deliveryMapInstance = null, deliveryMarker = null;
 let confirmThumbMap = null;
 let mapPanelOpen = false;
-/* ---- Station data (mirrors stations.html STATIONS array) ---- */
-const STATION_DATA = {
-  '1': { name:'Total Energies – Kariakoo', address:'Kariakoo St, Dar es Salaam', distance:'0.8', eta:'8' },
-  '2': { name:'Puma Energy – Msimbazi',    address:'Msimbazi Centre, Dar es Salaam', distance:'1.4', eta:'14' },
-  '3': { name:'Oryx Petrol – Kinondoni',   address:'Kinondoni Rd, Dar es Salaam', distance:'2.1', eta:'18' },
-  '4': { name:'Engen – Ilala',             address:'Lumumba St, Ilala, Dar es Salaam', distance:'2.8', eta:'22' },
-  '5': { name:'Shell – Temeke',            address:"Chang'ombe Rd, Temeke", distance:'3.2', eta:'28' },
-  '6': { name:'GAPCO – Ubungo',            address:'Morogoro Rd, Ubungo', distance:'3.9', eta:'32' },
-};
-
 const urlParams = new URLSearchParams(window.location.search);
 const stationParam = urlParams.get('station');
 let selectedStationName = '—';
@@ -351,16 +341,8 @@ let selectedStationName = '—';
   }
   document.getElementById('selectedStationId').value = sid;
   const djName = document.getElementById('psName')?.textContent?.trim();
-  const known  = STATION_DATA[sid];
   if (djName && djName !== 'Loading station\u2026' && djName !== '?') {
     selectedStationName = djName;
-  } else if (known) {
-    const el = (id) => document.getElementById(id);
-    if (el('psInitial')) el('psInitial').textContent = known.name.charAt(0);
-    if (el('psName'))    el('psName').textContent    = known.name;
-    if (el('psAddress')) el('psAddress').innerHTML   = '<i class="fas fa-location-dot"></i> ' + known.address;
-    if (el('psMeta'))    el('psMeta').innerHTML      = '<i class="fas fa-route"></i> ' + known.distance + ' km · <i class="fas fa-clock"></i> ~' + known.eta + ' min delivery';
-    selectedStationName = known.name.split('\u2013')[0].split('-')[0].trim();
   }
   const summEl = document.getElementById('summStation');
   if (summEl) summEl.textContent = selectedStationName;

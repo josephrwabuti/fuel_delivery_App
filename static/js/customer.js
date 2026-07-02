@@ -27,160 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
   sidebarClose?.addEventListener('click', closeSidebar);
   sidebarOverlay?.addEventListener('click', closeSidebar);
 
-  /* ========== STATION MODAL ========== */
-  const DEMO_STATIONS = {
-    1: {
-      name:    'Total Energies – Kariakoo',
-      address: 'Kariakoo St, Dar es Salaam',
-      status:  'open',
-      rating:  '4.9',
-      reviews: '238',
-      hours:   'Mon–Sun: 6:00 AM – 10:00 PM',
-      phone:   '+255 712 000 001',
-      eta:     '~8 minutes',
-      fuels: [
-        { type: 'Petrol (RON 91)', price: '2,850', available: true },
-        { type: 'Diesel',          price: '2,700', available: true },
-      ],
-    },
-    2: {
-      name:    'Puma Energy – Msimbazi',
-      address: 'Msimbazi Centre, Dar es Salaam',
-      status:  'open',
-      rating:  '4.7',
-      reviews: '184',
-      hours:   'Mon–Sun: 5:30 AM – 11:00 PM',
-      phone:   '+255 712 000 002',
-      eta:     '~14 minutes',
-      fuels: [
-        { type: 'Petrol (RON 91)', price: '2,830', available: true },
-        { type: 'Diesel',          price: '2,680', available: true },
-      ],
-    },
-    3: {
-      name:    'Oryx Petrol – Kinondoni',
-      address: 'Kinondoni Rd, Dar es Salaam',
-      status:  'open',
-      rating:  '4.6',
-      reviews: '97',
-      hours:   'Mon–Sat: 7:00 AM – 9:00 PM',
-      phone:   '+255 712 000 003',
-      eta:     '~18 minutes',
-      fuels: [
-        { type: 'Petrol (RON 91)', price: '2,860', available: true },
-        { type: 'Diesel',          price: '2,720', available: false },
-      ],
-    },
-    4: {
-      name:    'Engen – Ilala',
-      address: 'Lumumba St, Ilala, Dar es Salaam',
-      status:  'open',
-      rating:  '4.5',
-      reviews: '63',
-      hours:   'Mon–Sun: 6:00 AM – 10:00 PM',
-      phone:   '+255 712 000 004',
-      eta:     '~22 minutes',
-      fuels: [
-        { type: 'Petrol (RON 91)', price: '2,840', available: true },
-        { type: 'Diesel',          price: '2,690', available: true },
-      ],
-    },
-    5: {
-      name:    'Shell – Temeke',
-      address: 'Chang\'ombe Rd, Temeke',
-      status:  'closed',
-      rating:  '4.8',
-      reviews: '201',
-      hours:   'Mon–Sun: 6:00 AM – 10:00 PM',
-      phone:   '+255 712 000 005',
-      eta:     '~28 minutes',
-      fuels: [
-        { type: 'Petrol (RON 91)', price: '2,870', available: true },
-        { type: 'Diesel',          price: '2,710', available: true },
-      ],
-    },
-    6: {
-      name:    'GAPCO – Ubungo',
-      address: 'Morogoro Rd, Ubungo',
-      status:  'open',
-      rating:  '4.4',
-      reviews: '52',
-      hours:   'Mon–Fri: 7:00 AM – 8:00 PM',
-      phone:   '+255 712 000 006',
-      eta:     '~32 minutes',
-      fuels: [
-        { type: 'Diesel', price: '2,660', available: true },
-      ],
-    },
-  };
-
-  window.openStationModal = function (id) {
-    const modal = document.getElementById('stationModal');
-    if (!modal) return;
-    const s = DEMO_STATIONS[id];
-    if (!s) return;
-
-    document.getElementById('modalInitial').textContent = s.name.charAt(0);
-    document.getElementById('modalName').textContent    = s.name;
-    document.getElementById('modalAddr').innerHTML      = `<i class="fas fa-location-dot"></i> ${s.address}`;
-
-    const statusEl = document.getElementById('modalStatus');
-    if (statusEl) {
-      statusEl.className = `sc-status-badge ${s.status} d-inline-flex mt-1`;
-      statusEl.innerHTML = `<span class="sdot"></span> ${s.status === 'open' ? 'Open' : 'Closed'}`;
-    }
-
-    // Fuel table
-    const fuelTable = document.getElementById('modalFuelTable');
-    if (fuelTable) {
-      fuelTable.innerHTML = `<div class="mft-row header"><span>Fuel Type</span><span>Price/L</span><span>Stock</span></div>` +
-        s.fuels.map(f => `
-          <div class="mft-row">
-            <span>${f.type}</span>
-            <span>TZS ${f.price}</span>
-            <span class="sc-fuel-stock ${f.available ? 'in' : 'out'}">${f.available ? 'Available' : 'Out of Stock'}</span>
-          </div>`).join('');
-    }
-
-    // Info grid
-    const infoGrid = document.getElementById('modalInfoGrid');
-    if (infoGrid) {
-      infoGrid.innerHTML = `
-        <div class="mig-item"><i class="fas fa-clock text-orange"></i><div><strong>Operating Hours</strong><span>${s.hours}</span></div></div>
-        <div class="mig-item"><i class="fas fa-phone text-orange"></i><div><strong>Phone</strong><span>${s.phone}</span></div></div>
-        <div class="mig-item"><i class="fas fa-star text-orange"></i><div><strong>Rating</strong><span>${s.rating} / 5 (${s.reviews} reviews)</span></div></div>
-        <div class="mig-item"><i class="fas fa-truck-fast text-orange"></i><div><strong>Avg. Delivery</strong><span>${s.eta}</span></div></div>
-      `;
-    }
-
-    // Order button
-    const orderBtn = document.getElementById('modalOrderBtn');
-    if (orderBtn) {
-      orderBtn.href = `/customer/order/?station=${id}`;
-      if (s.status === 'closed') {
-        orderBtn.classList.add('disabled');
-        orderBtn.innerHTML = '<i class="fas fa-moon"></i> Currently Closed';
-        orderBtn.style.pointerEvents = 'none';
-        orderBtn.style.opacity = '0.5';
-      } else {
-        orderBtn.classList.remove('disabled');
-        orderBtn.innerHTML = '<i class="fas fa-bolt"></i> Order from This Station';
-        orderBtn.style.pointerEvents = '';
-        orderBtn.style.opacity = '';
-      }
-    }
-
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  };
-
-  window.closeStationModal = function () {
-    const modal = document.getElementById('stationModal');
-    if (modal) modal.style.display = 'none';
-    document.body.style.overflow = '';
-  };
-
-  // Close modals on overlay click
+  /* ========== CLOSE MODALS ========== */
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', function (e) {
       if (e.target === this) {
@@ -322,39 +169,29 @@ document.addEventListener('DOMContentLoaded', function () {
       dropdown = document.createElement('div');
       dropdown.id = 'notifDropdown';
       dropdown.className = 'notif-dropdown';
+
+      let notifs;
+      try {
+        notifs = JSON.parse(this.dataset.notifs || '[]');
+      } catch { notifs = []; }
+
+      const itemsHtml = notifs.length
+        ? notifs.map(n => `
+            <div class="nd-item${n.is_read ? '' : ' unread'}">
+              <div class="nd-icon ${n.is_read ? 'blue' : 'orange'}"><i class="fas fa-bell"></i></div>
+              <div class="nd-body">
+                <div class="nd-title">${n.title}</div>
+                <div class="nd-time">${n.time}</div>
+              </div>
+            </div>`).join('')
+        : '<div class="nd-item" style="justify-content:center;color:var(--text-m);font-size:.8rem;padding:20px">No notifications</div>';
+
       dropdown.innerHTML = `
         <div class="nd-header">
           <span>Notifications</span>
           <button class="nd-mark-all">Mark all read</button>
         </div>
-        <div class="nd-item unread">
-          <div class="nd-icon orange"><i class="fas fa-truck-fast"></i></div>
-          <div class="nd-body">
-            <div class="nd-title">Driver assigned for Order #FG-2047</div>
-            <div class="nd-time">2 minutes ago</div>
-          </div>
-        </div>
-        <div class="nd-item unread">
-          <div class="nd-icon blue"><i class="fas fa-circle-check"></i></div>
-          <div class="nd-body">
-            <div class="nd-title">Your order #FG-2041 was delivered</div>
-            <div class="nd-time">Yesterday at 14:52</div>
-          </div>
-        </div>
-        <div class="nd-item unread">
-          <div class="nd-icon purple"><i class="fas fa-gas-pump"></i></div>
-          <div class="nd-body">
-            <div class="nd-title">New station opened near you: Oryx Ubungo</div>
-            <div class="nd-time">2 days ago</div>
-          </div>
-        </div>
-        <div class="nd-item">
-          <div class="nd-icon orange"><i class="fas fa-tag"></i></div>
-          <div class="nd-body">
-            <div class="nd-title">Fuel price update: Petrol now TZS 2,850/L</div>
-            <div class="nd-time">3 days ago</div>
-          </div>
-        </div>
+        ${itemsHtml}
         <div class="nd-footer"><a href="/customer/notifications/">View all notifications</a></div>
       `;
 
@@ -362,6 +199,8 @@ document.addEventListener('DOMContentLoaded', function () {
       bellBtn.parentElement.appendChild(dropdown);
 
       dropdown.querySelector('.nd-mark-all')?.addEventListener('click', () => {
+        const csrf = document.cookie.split('; ').find(r => r.startsWith('csrftoken='))?.split('=')[1] || '';
+        fetch('/customer/notifications/mark-all-read/', { method: 'POST', headers: {'X-CSRFToken': csrf} });
         dropdown.querySelectorAll('.nd-item.unread').forEach(i => i.classList.remove('unread'));
         const badge = bellBtn.querySelector('.icon-badge');
         if (badge) badge.style.display = 'none';

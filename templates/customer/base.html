@@ -60,7 +60,7 @@
     </a>
     <a href="{% url 'customer_notifications' %}" class="nav-item {% block nav_notif %}{% endblock %}">
       <i class="fas fa-bell"></i><span>Notifications</span>
-      <span class="nav-badge">3</span>
+      {% if unread_notif_count %}<span class="nav-badge">{{ unread_notif_count }}</span>{% endif %}
     </a>
   </nav>
 
@@ -93,9 +93,9 @@
       </a>
       {% endif %}
       <!-- Notifications -->
-      <button class="topbar-icon-btn" title="Notifications">
+      <button class="topbar-icon-btn" title="Notifications" data-notifs='{{ notifs_json }}'>
         <i class="fas fa-bell"></i>
-        <span class="icon-badge">3</span>
+        {% if unread_notif_count %}<span class="icon-badge">{{ unread_notif_count }}</span>{% endif %}
       </button>
       <!-- Profile -->
       <div class="topbar-avatar">
@@ -111,7 +111,7 @@
 
 </div><!-- /main-wrap -->
 
-<script src="{% static 'js/customer.js' %}"></script>
+<script src="{% static 'js/customer.js' %}?v=2"></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

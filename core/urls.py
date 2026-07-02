@@ -43,6 +43,12 @@ urlpatterns = [
     path(
         'customer/place-order/', views.customer_place_order, name='customer_place_order'
     ),
+    path(
+        'customer/notifications/<int:notif_id>/dismiss/', views.dismiss_notification, name='dismiss_notification'
+    ),
+    path(
+        'customer/notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'
+    ),
     
     path('dashboard/admin/stations/', views.admin_stations, name='admin_stations'),
     path('dashboard/admin/station/approve/<int:station_id>/', views.approve_station, name='approve_station'),
