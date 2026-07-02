@@ -12,10 +12,10 @@
 
 <!-- ===== STATS ROW ===== -->
 <div class="mini-stats-row">
-  <div class="msr-item"><div class="msr-num text-green">{{ approved_count|default:"12" }}</div><div class="msr-lbl">Approved</div></div>
-  <div class="msr-item"><div class="msr-num text-yellow">{{ pending_count|default:"2" }}</div><div class="msr-lbl">Pending</div></div>
-  <div class="msr-item"><div class="msr-num text-red">{{ rejected_count|default:"1" }}</div><div class="msr-lbl">Rejected</div></div>
-  <div class="msr-item"><div class="msr-num text-orange">{{ total_count|default:"15" }}</div><div class="msr-lbl">Total</div></div>
+  <div class="msr-item"><div class="msr-num text-green">{{ approved_count }}</div><div class="msr-lbl">Approved</div></div>
+  <div class="msr-item"><div class="msr-num text-yellow">{{ pending_count }}</div><div class="msr-lbl">Pending</div></div>
+  <div class="msr-item"><div class="msr-num text-red">{{ rejected_count }}</div><div class="msr-lbl">Rejected</div></div>
+  <div class="msr-item"><div class="msr-num text-orange">{{ total_count }}</div><div class="msr-lbl">Total</div></div>
 </div>
 
 <!-- ===== FILTER BAR ===== -->
@@ -26,7 +26,7 @@
   </div>
   <div class="filter-chips">
     <button class="fchip active" data-filter="all">All</button>
-    <button class="fchip" data-filter="pending">Pending <span class="fc-count">2</span></button>
+    <button class="fchip" data-filter="pending">Pending <span class="fc-count">{{ pending_count }}</span></button>
     <button class="fchip" data-filter="approved">Approved</button>
     <button class="fchip" data-filter="rejected">Rejected</button>
   </div>
@@ -161,7 +161,7 @@ let stationDetailMap = null;
 let currentStationId = null;
 
 function approveStation(id, name) {
-  fetch(`/admin/station/approve/${id}/`)
+  fetch(`/dashboard/admin/station/approve/${id}/`)
   .then(res => res.json())
   .then(data => {
     if (data.success) {
@@ -247,7 +247,7 @@ function initStationDetailMap(lat, lng, name) {
 function rejectEntity(type, id, name) {
   document.getElementById('rejectTitle').textContent = `Reject ${type === 'station' ? 'Station' : 'Driver'}`;
   document.getElementById('rejectEntityId').value = id;
-  document.getElementById('rejectForm').action = `/admin/station/reject/${id}/`;
+  document.getElementById('rejectForm').action = `/dashboard/admin/station/reject/${id}/`;
   openModal('rejectModal');
 }
 function suspendEntity(type, id, name) {

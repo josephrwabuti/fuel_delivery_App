@@ -10,33 +10,28 @@
 <div class="kpi-grid">
   <div class="kpi-card">
     <div class="kpi-icon orange"><i class="fas fa-receipt"></i></div>
-    <div class="kpi-body"><div class="kpi-num">{{ total_orders_today|default:"47" }}</div><div class="kpi-label">Orders Today</div></div>
-    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +18% vs yesterday</div>
+    <div class="kpi-body"><div class="kpi-num">{{ total_orders_today }}</div><div class="kpi-label">Orders Today</div></div>
   </div>
   <div class="kpi-card">
     <div class="kpi-icon blue"><i class="fas fa-gas-pump"></i></div>
-    <div class="kpi-body"><div class="kpi-num">{{ active_stations|default:"12" }}</div><div class="kpi-label">Active Stations</div></div>
-    <div class="kpi-trend"><i class="fas fa-circle text-green"></i> All operational</div>
+    <div class="kpi-body"><div class="kpi-num">{{ active_stations }}</div><div class="kpi-label">Active Stations</div></div>
   </div>
   <div class="kpi-card">
     <div class="kpi-icon purple"><i class="fas fa-id-badge"></i></div>
-    <div class="kpi-body"><div class="kpi-num">{{ active_drivers|default:"38" }}</div><div class="kpi-label">Active Drivers</div></div>
-    <div class="kpi-trend"><i class="fas fa-circle text-green"></i> {{ on_duty_drivers|default:"22" }} on duty</div>
+    <div class="kpi-body"><div class="kpi-num">{{ active_drivers }}</div><div class="kpi-label">Active Drivers</div></div>
+    <div class="kpi-trend">{{ on_duty_drivers }} on duty</div>
   </div>
   <div class="kpi-card">
     <div class="kpi-icon orange"><i class="fas fa-users"></i></div>
-    <div class="kpi-body"><div class="kpi-num">{{ total_customers|default:"1,247" }}</div><div class="kpi-label">Total Customers</div></div>
-    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +34 this week</div>
+    <div class="kpi-body"><div class="kpi-num">{{ total_customers }}</div><div class="kpi-label">Total Customers</div></div>
   </div>
   <div class="kpi-card">
     <div class="kpi-icon blue"><i class="fas fa-truck-fast"></i></div>
-    <div class="kpi-body"><div class="kpi-num">{{ live_deliveries|default:"9" }}</div><div class="kpi-label">Live Deliveries</div></div>
-    <div class="kpi-trend"><span class="live-dot"></span> In progress now</div>
+    <div class="kpi-body"><div class="kpi-num">{{ live_deliveries }}</div><div class="kpi-label">Live Deliveries</div></div>
   </div>
   <div class="kpi-card">
     <div class="kpi-icon purple"><i class="fas fa-coins"></i></div>
-    <div class="kpi-body"><div class="kpi-num">TZS {{ revenue_today|default:"8.4M" }}</div><div class="kpi-label">Revenue Today</div></div>
-    <div class="kpi-trend up"><i class="fas fa-arrow-trend-up"></i> +22% this week</div>
+    <div class="kpi-body"><div class="kpi-num">TZS {{ revenue_today }}</div><div class="kpi-label">Revenue Today</div></div>
   </div>
 </div>
 
@@ -47,7 +42,7 @@
   <div class="approval-banner station">
     <div class="apb-left">
       <div class="apb-icon"><i class="fas fa-gas-pump"></i></div>
-      <div><div class="apb-title">{{ pending_station_list|length|default:"3" }} Station{{ pending_station_list|length|pluralize }} Awaiting Approval</div><div class="apb-sub">Review and approve new fuel station registrations</div></div>
+      <div><div class="apb-title">{{ pending_station_list|length }} Station{{ pending_station_list|length|pluralize }} Awaiting Approval</div><div class="apb-sub">Review and approve new fuel station registrations</div></div>
     </div>
     <a href="{% url 'admin_stations' %}?filter=pending" class="btn-review">Review <i class="fas fa-arrow-right"></i></a>
   </div>
@@ -56,29 +51,11 @@
   <div class="approval-banner driver">
     <div class="apb-left">
       <div class="apb-icon"><i class="fas fa-id-badge"></i></div>
-      <div><div class="apb-title">{{ pending_driver_list|length|default:"5" }} Driver{{ pending_driver_list|length|pluralize }} Awaiting Approval</div><div class="apb-sub">Verify driver licences and approve accounts</div></div>
+      <div><div class="apb-title">{{ pending_driver_list|length }} Driver{{ pending_driver_list|length|pluralize }} Awaiting Approval</div><div class="apb-sub">Verify driver licences and approve accounts</div></div>
     </div>
     <a href="{% url 'admin_drivers' %}?filter=pending" class="btn-review">Review <i class="fas fa-arrow-right"></i></a>
   </div>
   {% endif %}
-</div>
-{% else %}
-<!-- Demo banners always shown -->
-<div class="approvals-row">
-  <div class="approval-banner station">
-    <div class="apb-left">
-      <div class="apb-icon"><i class="fas fa-gas-pump"></i></div>
-      <div><div class="apb-title">3 Stations Awaiting Approval</div><div class="apb-sub">Review and approve new fuel station registrations</div></div>
-    </div>
-    <a href="{% url 'admin_stations' %}?filter=pending" class="btn-review">Review <i class="fas fa-arrow-right"></i></a>
-  </div>
-  <div class="approval-banner driver">
-    <div class="apb-left">
-      <div class="apb-icon"><i class="fas fa-id-badge"></i></div>
-      <div><div class="apb-title">5 Drivers Awaiting Approval</div><div class="apb-sub">Verify driver licences and approve accounts</div></div>
-    </div>
-    <a href="{% url 'admin_drivers' %}?filter=pending" class="btn-review">Review <i class="fas fa-arrow-right"></i></a>
-  </div>
 </div>
 {% endif %}
 
@@ -92,15 +69,19 @@
     </div>
     <div class="admin-chart">
       <div class="ac-bars">
-        <div class="ac-col"><div class="ac-bar" style="height:42%"><span class="ac-val">38</span></div><span class="ac-day">Mon</span></div>
-        <div class="ac-col"><div class="ac-bar" style="height:58%"><span class="ac-val">52</span></div><span class="ac-day">Tue</span></div>
-        <div class="ac-col"><div class="ac-bar" style="height:50%"><span class="ac-val">45</span></div><span class="ac-day">Wed</span></div>
-        <div class="ac-col"><div class="ac-bar highlight" style="height:86%"><span class="ac-val">77</span></div><span class="ac-day">Thu</span></div>
-        <div class="ac-col"><div class="ac-bar highlight" style="height:100%"><span class="ac-val">89</span></div><span class="ac-day">Fri</span></div>
-        <div class="ac-col"><div class="ac-bar" style="height:71%"><span class="ac-val">64</span></div><span class="ac-day">Sat</span></div>
-        <div class="ac-col"><div class="ac-bar today" style="height:53%"><span class="ac-val">47</span></div><span class="ac-day">Today</span></div>
+        {% for day in week_days %}
+        <div class="ac-col">
+          <div class="ac-bar{% if forloop.last %} today{% endif %}" style="height:{% widthratio day.count week_max 100 %}%">
+            <span class="ac-val">{{ day.count }}</span>
+          </div>
+          <span class="ac-day">{{ day.label }}</span>
+        </div>
+        {% endfor %}
       </div>
-      <div class="ac-legend"><span><span class="ac-dot orange"></span>Orders</span><span class="ac-total">Total this week: <strong>412 orders</strong></span></div>
+      <div class="ac-legend">
+        <span><span class="ac-dot orange"></span>Orders</span>
+        <span class="ac-total">Total this week: <strong>{{ total_orders }} orders</strong></span>
+      </div>
     </div>
   </div>
 
@@ -108,10 +89,19 @@
   <div class="dash-card">
     <div class="dc-header"><div class="dc-title"><i class="fas fa-gas-pump text-blue"></i> Top Stations</div><a href="{% url 'admin_stations' %}" class="dc-link">All <i class="fas fa-arrow-right"></i></a></div>
     <div class="top-list">
-      <div class="tl-item"><div class="tl-rank">1</div><div class="tl-init orange">T</div><div class="tl-info"><span>Total Energies – Kariakoo</span><span class="tl-sub">148 orders · TZS 8.6M</span></div><div class="tl-badge approved">Active</div></div>
-      <div class="tl-item"><div class="tl-rank">2</div><div class="tl-init blue">P</div><div class="tl-info"><span>Puma Energy – Msimbazi</span><span class="tl-sub">112 orders · TZS 6.4M</span></div><div class="tl-badge approved">Active</div></div>
-      <div class="tl-item"><div class="tl-rank">3</div><div class="tl-init purple">O</div><div class="tl-info"><span>Oryx Petrol – Kinondoni</span><span class="tl-sub">88 orders · TZS 5.1M</span></div><div class="tl-badge approved">Active</div></div>
-      <div class="tl-item"><div class="tl-rank">4</div><div class="tl-init orange">E</div><div class="tl-info"><span>Engen – Ilala</span><span class="tl-sub">74 orders · TZS 4.2M</span></div><div class="tl-badge approved">Active</div></div>
+      {% for station in top_stations %}
+      <div class="tl-item">
+        <div class="tl-rank">{{ forloop.counter }}</div>
+        <div class="tl-init orange">{{ station.name|first }}</div>
+        <div class="tl-info">
+          <span>{{ station.name }}</span>
+          <span class="tl-sub">{{ station.order_count }} orders</span>
+        </div>
+        <div class="tl-badge approved">Active</div>
+      </div>
+      {% empty %}
+      <div class="tl-item"><div class="tl-info"><span>No stations yet</span></div></div>
+      {% endfor %}
     </div>
   </div>
 
@@ -119,10 +109,16 @@
   <div class="dash-card">
     <div class="dc-header"><div class="dc-title"><i class="fas fa-receipt text-orange"></i> Recent Orders</div><a href="{% url 'admin_orders' %}" class="dc-link">All <i class="fas fa-arrow-right"></i></a></div>
     <div class="mini-orders">
-      <div class="mo-row"><span class="mo-id">#FG-2047</span><span>Asha Mwangi</span><span>Petrol 20L</span><span><div class="status-chip pending">Pending</div></span></div>
-      <div class="mo-row"><span class="mo-id">#FG-2046</span><span>John Kimaro</span><span>Diesel 30L</span><span><div class="status-chip delivering">Delivering</div></span></div>
-      <div class="mo-row"><span class="mo-id">#FG-2045</span><span>Grace Ntare</span><span>Petrol 15L</span><span><div class="status-chip delivered">Delivered</div></span></div>
-      <div class="mo-row"><span class="mo-id">#FG-2044</span><span>Baraka Juma</span><span>Petrol 25L</span><span><div class="status-chip delivered">Delivered</div></span></div>
+      {% for order in recent_orders_list %}
+      <div class="mo-row">
+        <span class="mo-id">#{{ order.id }}</span>
+        <span>{{ order.customer.get_full_name }}</span>
+        <span>{{ order.fuel_type }} {{ order.quantity }}L</span>
+        <span><div class="status-chip {{ order.status }}">{{ order.get_status_display }}</div></span>
+      </div>
+      {% empty %}
+      <div class="mo-row"><span>No orders yet</span></div>
+      {% endfor %}
     </div>
   </div>
 
@@ -143,12 +139,12 @@
   <div class="dash-card">
     <div class="dc-header"><div class="dc-title"><i class="fas fa-chart-pie text-orange"></i> System Summary</div></div>
     <div class="summary-grid">
-      <div class="sg-item"><div class="sg-num">{{ total_orders|default:"3,841" }}</div><div class="sg-label">Total Orders</div></div>
-      <div class="sg-item"><div class="sg-num">{{ total_stations|default:"15" }}</div><div class="sg-label">Stations</div></div>
-      <div class="sg-item"><div class="sg-num">{{ total_drivers|default:"42" }}</div><div class="sg-label">Drivers</div></div>
-      <div class="sg-item"><div class="sg-num">TZS {{ total_revenue|default:"112M" }}</div><div class="sg-label">Lifetime Revenue</div></div>
-      <div class="sg-item"><div class="sg-num">{{ avg_delivery|default:"14" }} min</div><div class="sg-label">Avg. Delivery</div></div>
-      <div class="sg-item"><div class="sg-num">{{ delivery_rate|default:"97" }}%</div><div class="sg-label">Success Rate</div></div>
+      <div class="sg-item"><div class="sg-num">{{ total_orders }}</div><div class="sg-label">Total Orders</div></div>
+      <div class="sg-item"><div class="sg-num">{{ total_stations }}</div><div class="sg-label">Stations</div></div>
+      <div class="sg-item"><div class="sg-num">{{ total_drivers }}</div><div class="sg-label">Drivers</div></div>
+      <div class="sg-item"><div class="sg-num">TZS {{ total_revenue }}</div><div class="sg-label">Lifetime Revenue</div></div>
+      <div class="sg-item"><div class="sg-num">{{ avg_delivery }} min</div><div class="sg-label">Avg. Delivery</div></div>
+      <div class="sg-item"><div class="sg-num">{{ delivery_rate }}%</div><div class="sg-label">Success Rate</div></div>
     </div>
   </div>
 

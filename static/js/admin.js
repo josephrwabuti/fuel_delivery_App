@@ -109,31 +109,32 @@ document.addEventListener('DOMContentLoaded', function () {
       let dd = document.getElementById('adminNotifDD');
       if (dd) { dd.remove(); return; }
 
+      let notifs = [];
+      try { notifs = JSON.parse(bell.dataset.notifs || '[]'); } catch(e) {}
+
       dd = document.createElement('div');
       dd.id = 'adminNotifDD';
       dd.className = 'notif-dropdown';
+
+      let itemsHtml = '';
+      if (notifs.length === 0) {
+        itemsHtml = '<div class="nd-item"><div class="nd-body"><div class="nd-title">No notifications</div></div></div>';
+      } else {
+        notifs.forEach(function(n) {
+          const unreadClass = n.is_read ? '' : ' unread';
+          itemsHtml += '<div class="nd-item' + unreadClass + '">' +
+            '<div class="nd-icon orange"><i class="fas fa-bell"></i></div>' +
+            '<div class="nd-body"><div class="nd-title">' + escapeHtml(n.message) + '</div><div class="nd-time">' + escapeHtml(n.time) + '</div></div>' +
+            '</div>';
+        });
+      }
+
       dd.innerHTML = `
         <div class="nd-header">
           <span>Notifications</span>
-          <button class="nd-mark" onclick="this.closest('.notif-dropdown').querySelectorAll('.nd-item.unread').forEach(i=>i.classList.remove('unread'))">Mark all read</button>
         </div>
-        <div class="nd-item unread">
-          <div class="nd-icon orange"><i class="fas fa-gas-pump"></i></div>
-          <div class="nd-body"><div class="nd-title">Oryx Petrol – Kinondoni awaiting approval</div><div class="nd-time">15 min ago</div></div>
-        </div>
-        <div class="nd-item unread">
-          <div class="nd-icon blue"><i class="fas fa-id-badge"></i></div>
-          <div class="nd-body"><div class="nd-title">Driver Michael Osei registered — pending approval</div><div class="nd-time">2 min ago</div></div>
-        </div>
-        <div class="nd-item unread">
-          <div class="nd-icon yellow"><i class="fas fa-triangle-exclamation"></i></div>
-          <div class="nd-body"><div class="nd-title">Low stock alert: Oryx Petrol — Diesel at 6%</div><div class="nd-time">2 hr ago</div></div>
-        </div>
-        <div class="nd-item">
-          <div class="nd-icon green"><i class="fas fa-circle-check"></i></div>
-          <div class="nd-body"><div class="nd-title">Order #FG-2045 delivered successfully</div><div class="nd-time">3 hr ago</div></div>
-        </div>
-        <div class="nd-footer"><a href="/admin-panel/activity/">View all activity</a></div>
+        ${itemsHtml}
+        <div class="nd-footer"><a href="/activity/">View all activity</a></div>
       `;
 
       bell.parentElement.style.position = 'relative';
@@ -145,6 +146,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
       }, 0);
     });
+  }
+
+  function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
   }
 
   /* ===== SCROLL-IN REVEAL ===== */

@@ -8,24 +8,10 @@
 
 <!-- ===== MINI STATS ===== -->
 <div class="mini-stats-row">
-  <div class="msr-item"><div class="msr-num text-green">{{ approved_drivers|default:"38" }}</div><div class="msr-lbl">Approved</div></div>
-  <div class="msr-item"><div class="msr-num text-yellow">{{ pending_drivers|default:"3" }}</div><div class="msr-lbl">Pending</div></div>
-  <div class="msr-item"><div class="msr-num text-red">{{ rejected_drivers|default:"1" }}</div><div class="msr-lbl">Rejected</div></div>
-  <div class="msr-item"><div class="msr-num text-blue">{{ active_drivers|default:"14" }}</div><div class="msr-lbl">On Duty Now</div></div>
-</div>
-
-<!-- ===== PENDING APPROVAL BANNER ===== -->
-<div class="pending-banner">
-  <div class="pb-left">
-    <div class="pb-pulse"></div>
-    <div>
-      <div class="pb-title">3 Drivers Awaiting Approval</div>
-      <div class="pb-sub">Review their licence and personal details before approving access</div>
-    </div>
-  </div>
-  <button class="btn-filter-pending" onclick="filterByStatus('pending')">
-    <i class="fas fa-clock"></i> Show Pending Only
-  </button>
+  <div class="msr-item"><div class="msr-num text-green">{{ approved_drivers }}</div><div class="msr-lbl">Approved</div></div>
+  <div class="msr-item"><div class="msr-num text-yellow">{{ pending_drivers }}</div><div class="msr-lbl">Pending</div></div>
+  <div class="msr-item"><div class="msr-num text-red">{{ rejected_drivers }}</div><div class="msr-lbl">Rejected</div></div>
+  <div class="msr-item"><div class="msr-num text-blue">{{ active_drivers }}</div><div class="msr-lbl">On Duty Now</div></div>
 </div>
 
 <!-- ===== FILTER BAR ===== -->
@@ -74,76 +60,7 @@
       </span>
     </div>
     {% empty %}
-    <!-- Demo rows — pending drivers -->
-    <div class="dt-row dr-grid" data-status="pending" data-search="david mushi +255712000201 98765432101">
-      <span class="dt-name-cell"><div class="entity-init blue">D</div><div><div class="dt-main-name">David Mushi</div><div class="dt-sub">Motorcycle</div></div></span>
-      <span class="dt-sub-text">+255 712 000 201</span>
-      <span class="dt-sub-text">david.mushi@email.com</span>
-      <span class="dt-code licence">98765432101</span>
-      <span class="dt-sub-text">T 881 ZZA</span>
-      <span class="dt-time">23 Jun 2026</span>
-      <span><div class="status-chip pending">Pending</div></span>
-      <span class="dt-actions">
-        <button class="btn-approve" onclick="approveDriver(10,'David Mushi')" title="Approve"><i class="fas fa-check"></i></button>
-        <button class="btn-reject" onclick="rejectDriver(10,'David Mushi')" title="Reject"><i class="fas fa-times"></i></button>
-        <button class="btn-view" onclick="openDriverDetail(10,'David Mushi','98765432101','Motorcycle','T 881 ZZA','david.mushi@email.com','+255 712 000 201')" title="View"><i class="fas fa-eye"></i></button>
-      </span>
-    </div>
-    <div class="dt-row dr-grid" data-status="pending" data-search="grace ngoma +255712000202 12398765432">
-      <span class="dt-name-cell"><div class="entity-init blue">G</div><div><div class="dt-main-name">Grace Ngoma</div><div class="dt-sub">Pickup Truck</div></div></span>
-      <span class="dt-sub-text">+255 712 000 202</span>
-      <span class="dt-sub-text">grace.ngoma@email.com</span>
-      <span class="dt-code licence">12398765432</span>
-      <span class="dt-sub-text">T 442 KLA</span>
-      <span class="dt-time">24 Jun 2026</span>
-      <span><div class="status-chip pending">Pending</div></span>
-      <span class="dt-actions">
-        <button class="btn-approve" onclick="approveDriver(11,'Grace Ngoma')" title="Approve"><i class="fas fa-check"></i></button>
-        <button class="btn-reject" onclick="rejectDriver(11,'Grace Ngoma')" title="Reject"><i class="fas fa-times"></i></button>
-        <button class="btn-view" onclick="openDriverDetail(11,'Grace Ngoma','12398765432','Pickup Truck','T 442 KLA','grace.ngoma@email.com','+255 712 000 202')" title="View"><i class="fas fa-eye"></i></button>
-      </span>
-    </div>
-    <div class="dt-row dr-grid" data-status="pending" data-search="michael osei +255712000203 55544433322">
-      <span class="dt-name-cell"><div class="entity-init blue">M</div><div><div class="dt-main-name">Michael Osei</div><div class="dt-sub">Van</div></div></span>
-      <span class="dt-sub-text">+255 712 000 203</span>
-      <span class="dt-sub-text">m.osei@email.com</span>
-      <span class="dt-code licence">55544433322</span>
-      <span class="dt-sub-text">T 119 BBA</span>
-      <span class="dt-time">25 Jun 2026</span>
-      <span><div class="status-chip pending">Pending</div></span>
-      <span class="dt-actions">
-        <button class="btn-approve" onclick="approveDriver(12,'Michael Osei')" title="Approve"><i class="fas fa-check"></i></button>
-        <button class="btn-reject" onclick="rejectDriver(12,'Michael Osei')" title="Reject"><i class="fas fa-times"></i></button>
-        <button class="btn-view" onclick="openDriverDetail(12,'Michael Osei','55544433322','Van','T 119 BBA','m.osei@email.com','+255 712 000 203')" title="View"><i class="fas fa-eye"></i></button>
-      </span>
-    </div>
-    <!-- Approved drivers -->
-    <div class="dt-row dr-grid" data-status="approved" data-search="john mwalimu +255712000101 11122233344">
-      <span class="dt-name-cell"><div class="entity-init blue">J</div><div><div class="dt-main-name">John Mwalimu</div><div class="dt-sub">Motorcycle</div></div></span>
-      <span class="dt-sub-text">+255 712 000 101</span>
-      <span class="dt-sub-text">john.m@email.com</span>
-      <span class="dt-code licence">11122233344</span>
-      <span class="dt-sub-text">T 123 ABC</span>
-      <span class="dt-time">15 Jan 2026</span>
-      <span><div class="status-chip approved">Approved</div></span>
-      <span class="dt-actions">
-        <button class="btn-view" onclick="openDriverDetail(1,'John Mwalimu','11122233344','Motorcycle','T 123 ABC','john.m@email.com','+255 712 000 101')" title="View"><i class="fas fa-eye"></i></button>
-        <button class="btn-suspend" onclick="suspendDriver(1,'John Mwalimu')" title="Suspend"><i class="fas fa-ban"></i></button>
-      </span>
-    </div>
-    <div class="dt-row dr-grid" data-status="approved" data-search="amina said +255712000102 44455566677">
-      <span class="dt-name-cell"><div class="entity-init blue">A</div><div><div class="dt-main-name">Amina Said</div><div class="dt-sub">Pickup Truck</div></div></span>
-      <span class="dt-sub-text">+255 712 000 102</span>
-      <span class="dt-sub-text">amina.s@email.com</span>
-      <span class="dt-code licence">44455566677</span>
-      <span class="dt-sub-text">T 456 DEF</span>
-      <span class="dt-time">20 Feb 2026</span>
-      <span><div class="status-chip approved">Approved</div></span>
-      <span class="dt-actions">
-        <button class="btn-view" onclick="openDriverDetail(2,'Amina Said','44455566677','Pickup Truck','T 456 DEF','amina.s@email.com','+255 712 000 102')" title="View"><i class="fas fa-eye"></i></button>
-        <button class="btn-suspend" onclick="suspendDriver(2,'Amina Said')" title="Suspend"><i class="fas fa-ban"></i></button>
-      </span>
-    </div>
+    <p>No drivers found.</p>
     {% endfor %}
   </div>
 </div>
@@ -183,7 +100,7 @@
 {% block extra_js %}
 <script>
 function approveDriver(id, name) {
-  fetch(`/admin/driver/approve/${id}/`)
+  fetch(`/dashboard/admin/driver/approve/${id}/`)
     .then(r => r.json())
     .then(data => {
       if (data.success) {
@@ -194,7 +111,7 @@ function approveDriver(id, name) {
     });
 }
 function rejectDriver(id, name) {
-  fetch(`/admin/driver/reject/${id}/`)
+  fetch(`/dashboard/admin/driver/reject/${id}/`)
     .then(r => r.json())
     .then(data => {
       if (data.success) {
@@ -205,7 +122,7 @@ function rejectDriver(id, name) {
     });
 }
 function suspendDriver(id, name) {
-  fetch(`/admin/driver/suspend/${id}/`)
+  fetch(`/dashboard/admin/driver/suspend/${id}/`)
     .then(r => r.json())
     .then(data => {
       if (data.success) {

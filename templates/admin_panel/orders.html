@@ -6,10 +6,10 @@
 
 {% block content %}
 <div class="mini-stats-row">
-  <div class="msr-item"><div class="msr-num text-yellow">{{ pending_orders|default:"5" }}</div><div class="msr-lbl">Pending</div></div>
-  <div class="msr-item"><div class="msr-num text-orange">{{ delivering_orders|default:"8" }}</div><div class="msr-lbl">Delivering</div></div>
-  <div class="msr-item"><div class="msr-num text-green">{{ delivered_today|default:"31" }}</div><div class="msr-lbl">Delivered Today</div></div>
-  <div class="msr-item"><div class="msr-num text-blue">{{ total_orders|default:"3,841" }}</div><div class="msr-lbl">All Time</div></div>
+  <div class="msr-item"><div class="msr-num text-yellow">{{ pending_orders }}</div><div class="msr-lbl">Pending</div></div>
+  <div class="msr-item"><div class="msr-num text-orange">{{ delivering_orders }}</div><div class="msr-lbl">Delivering</div></div>
+  <div class="msr-item"><div class="msr-num text-green">{{ delivered_today }}</div><div class="msr-lbl">Delivered Today</div></div>
+  <div class="msr-item"><div class="msr-num text-blue">{{ total_orders }}</div><div class="msr-lbl">All Time</div></div>
 </div>
 
 <div class="filter-bar">
@@ -43,11 +43,7 @@
       <span><button class="btn-view" onclick="openOrderDetail('{{ order.id }}')" title="View"><i class="fas fa-eye"></i></button></span>
     </div>
     {% empty %}
-    <div class="dt-row or-grid" data-status="pending" data-search="fg-2047 asha mwangi total energies"><span class="dt-id">#FG-2047</span><span class="dt-sub-text">Asha Mwangi</span><span class="dt-sub-text">Total Energies</span><span><span class="fuel-badge petrol">Petrol</span></span><span>20L</span><span class="fw-600">TZS 59,000</span><span class="dt-sub-text">—</span><span><div class="status-chip pending">Pending</div></span><span class="dt-time">25 Jun, 14:18</span><span><button class="btn-view" onclick="openOrderDetail('FG-2047')" title="View"><i class="fas fa-eye"></i></button></span></div>
-    <div class="dt-row or-grid" data-status="delivering" data-search="fg-2046 john kimaro puma energy"><span class="dt-id">#FG-2046</span><span class="dt-sub-text">John Kimaro</span><span class="dt-sub-text">Puma Energy</span><span><span class="fuel-badge diesel">Diesel</span></span><span>30L</span><span class="fw-600">TZS 83,000</span><span class="dt-sub-text">John Mwalimu</span><span><div class="status-chip delivering">Delivering</div></span><span class="dt-time">25 Jun, 13:55</span><span><button class="btn-view" onclick="openOrderDetail('FG-2046')" title="View"><i class="fas fa-eye"></i></button></span></div>
-    <div class="dt-row or-grid" data-status="delivered" data-search="fg-2045 grace ntare total energies"><span class="dt-id">#FG-2045</span><span class="dt-sub-text">Grace Ntare</span><span class="dt-sub-text">Total Energies</span><span><span class="fuel-badge petrol">Petrol</span></span><span>15L</span><span class="fw-600">TZS 44,750</span><span class="dt-sub-text">Amina Said</span><span><div class="status-chip delivered">Delivered</div></span><span class="dt-time">25 Jun, 12:30</span><span><button class="btn-view" onclick="openOrderDetail('FG-2045')" title="View"><i class="fas fa-eye"></i></button></span></div>
-    <div class="dt-row or-grid" data-status="delivered" data-search="fg-2044 baraka juma total energies"><span class="dt-id">#FG-2044</span><span class="dt-sub-text">Baraka Juma</span><span class="dt-sub-text">Total Energies</span><span><span class="fuel-badge petrol">Petrol</span></span><span>25L</span><span class="fw-600">TZS 73,250</span><span class="dt-sub-text">John Mwalimu</span><span><div class="status-chip delivered">Delivered</div></span><span class="dt-time">25 Jun, 11:10</span><span><button class="btn-view" onclick="openOrderDetail('FG-2044')" title="View"><i class="fas fa-eye"></i></button></span></div>
-    <div class="dt-row or-grid" data-status="cancelled" data-search="fg-2040 david mushi shell"><span class="dt-id">#FG-2040</span><span class="dt-sub-text">David Mushi</span><span class="dt-sub-text">Shell – Temeke</span><span><span class="fuel-badge petrol">Petrol</span></span><span>10L</span><span class="fw-600">—</span><span class="dt-sub-text">—</span><span><div class="status-chip cancelled">Cancelled</div></span><span class="dt-time">24 Jun, 18:45</span><span><button class="btn-view" onclick="openOrderDetail('FG-2040')" title="View"><i class="fas fa-eye"></i></button></span></div>
+    <p>No orders found.</p>
     {% endfor %}
   </div>
 </div>

@@ -6,12 +6,17 @@ from accounts.models import Station, Driver, CustomerProfile
 from orders.models import Order
 from delivery.models import DeliveryLog
 from core.models import Notification, PlatformSettings
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.http import JsonResponse
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Avg, F, Value, FloatField
+from django.db.models.functions import TruncDate, ExtractWeekDay
 from django.utils import timezone
+from django.utils.timesince import timesince
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
+from datetime import timedelta
 import json
 
 
@@ -226,14 +231,27 @@ def customer_place_order(request):
 #  ADMIN HELPERS
 # ===========================
 
-def get_admin_base_context():
+def get_admin_base_context(request=None):
     pending_stations = Station.objects.filter(status="pending").count()
     pending_drivers = Driver.objects.filter(status="pending").count()
-    notif_count = 0
+    user_notifs = Notification.objects.filter(
+        user=request.user
+    ).order_by('-created_at')[:10] if request and request.user.is_authenticated else []
+    notif_count = sum(1 for n in user_notifs if not n.is_read)
+    notifs_json = []
+    for n in user_notifs:
+        notifs_json.append({
+            'id': n.id,
+            'title': n.title,
+            'message': n.message,
+            'is_read': n.is_read,
+            'time': timesince(n.created_at) + ' ago',
+        })
     return {
         "pending_stations": pending_stations,
         "pending_drivers": pending_drivers,
         "notif_count": notif_count,
+        "notifs_json": json.dumps(notifs_json),
     }
 
 
@@ -244,7 +262,7 @@ def get_admin_base_context():
 @login_required(login_url='login')
 @role_required('admin')
 def admin_home(request):
-    ctx = get_admin_base_context()
+    ctx = get_admin_base_context(request)
     today = timezone.now().date()
 
     total_orders_today = Order.objects.filter(created_at__date=today).count()
@@ -269,6 +287,35 @@ def admin_home(request):
         status="delivered"
     ).aggregate(total=Sum("total_amount"))["total"] or 0
 
+    start_of_week = today - timedelta(days=today.weekday())
+    week_days = []
+    week_labels = []
+    for i in range(7):
+        day = start_of_week + timedelta(days=i)
+        count = Order.objects.filter(created_at__date=day).count()
+        week_labels.append(day.strftime('%a'))
+        week_days.append({'label': day.strftime('%a'), 'count': count})
+    max_count = max((d['count'] for d in week_days), default=1)
+
+    top_stations = Station.objects.annotate(
+        order_count=Count('order')
+    ).filter(order_count__gt=0).order_by('-order_count')[:5]
+
+    recent_orders_list = Order.objects.select_related(
+        'customer', 'station', 'driver'
+    ).order_by('-created_at')[:5]
+
+    delivered_orders = Order.objects.filter(status='delivered')
+    total_delivered = delivered_orders.count()
+    avg_delivery_seconds = delivered_orders.exclude(
+        confirmed_at=None
+    ).annotate(
+        diff=F('delivered_at') - F('confirmed_at')
+    ).aggregate(avg=Avg('diff'))['avg']
+    avg_delivery = int(avg_delivery_seconds.total_seconds() / 60) if avg_delivery_seconds else 0
+    total_all = total_orders or 1
+    delivery_rate = int((total_delivered / total_all) * 100)
+
     ctx.update({
         "total_orders_today": total_orders_today,
         "active_stations": active_stations,
@@ -283,6 +330,13 @@ def admin_home(request):
         "total_stations": total_stations,
         "total_drivers": total_drivers,
         "total_revenue": int(total_revenue),
+        "week_days": week_days,
+        "week_max": max_count,
+        "week_labels": week_labels,
+        "top_stations": top_stations,
+        "recent_orders_list": recent_orders_list,
+        "avg_delivery": avg_delivery,
+        "delivery_rate": delivery_rate,
     })
 
     return render(request, 'admin_panel/home.html', ctx)
@@ -295,7 +349,7 @@ def admin_home(request):
 @login_required(login_url='login')
 @role_required('admin')
 def admin_stations(request):
-    ctx = get_admin_base_context()
+    ctx = get_admin_base_context(request)
 
     pending_stations = Station.objects.filter(status='pending')
     approved_stations = Station.objects.filter(status='approved')
@@ -352,7 +406,7 @@ def reject_station(request, station_id):
 @login_required(login_url='login')
 @role_required('admin')
 def admin_drivers(request):
-    ctx = get_admin_base_context()
+    ctx = get_admin_base_context(request)
     drivers = User.objects.filter(role="driver").select_related("driver")
 
     approved_drivers = drivers.filter(driver__status="approved").count()
@@ -414,7 +468,7 @@ def suspend_driver(request, driver_id):
 @login_required(login_url='login')
 @role_required('admin')
 def admin_customers(request):
-    ctx = get_admin_base_context()
+    ctx = get_admin_base_context(request)
     customers = User.objects.filter(role="customer").annotate(
         order_count=Count("order"),
         total_spent=Sum("order__total_amount"),
@@ -431,7 +485,7 @@ def admin_customers(request):
 @login_required(login_url='login')
 @role_required('admin')
 def admin_orders(request):
-    ctx = get_admin_base_context()
+    ctx = get_admin_base_context(request)
     today = timezone.now().date()
 
     orders = Order.objects.select_related(
@@ -464,21 +518,67 @@ def admin_orders(request):
 @login_required(login_url='login')
 @role_required('admin')
 def admin_reports(request):
-    ctx = get_admin_base_context()
+    ctx = get_admin_base_context(request)
     today = timezone.now().date()
 
-    period_orders = Order.objects.count()
-    period_litres = Order.objects.aggregate(total=Sum("quantity"))["total"] or 0
-    period_revenue = Order.objects.filter(
+    period = int(request.GET.get('period', 7))
+    since = today - timedelta(days=period)
+    period_qs = Order.objects.filter(created_at__date__gte=since)
+
+    period_orders = period_qs.count()
+    period_litres = period_qs.aggregate(total=Sum("quantity"))["total"] or 0
+    period_revenue = period_qs.filter(
         status="delivered"
     ).aggregate(total=Sum("total_amount"))["total"] or 0
-    new_users = User.objects.filter(date_joined__date__gte=today - timezone.timedelta(days=30)).count()
+    new_users = User.objects.filter(date_joined__date__gte=today - timedelta(days=30)).count()
+
+    week_start = today - timedelta(days=today.weekday())
+    report_week = []
+    for i in range(7):
+        day = week_start + timedelta(days=i)
+        count = Order.objects.filter(created_at__date=day).count()
+        report_week.append({'label': day.strftime('%a'), 'count': count})
+    report_max = max((d['count'] for d in report_week), default=1)
+
+    fuel_totals = Order.objects.values('fuel_type').annotate(
+        total=Count('id')
+    ).order_by()
+    fuel_orders = Order.objects.count() or 1
+    fuel_data = {}
+    for f in fuel_totals:
+        fuel_data[f['fuel_type']] = int((f['total'] / fuel_orders) * 100)
+
+    top_stations = Station.objects.annotate(
+        order_count=Count('order'),
+        station_revenue=Sum('order__total_amount')
+    ).filter(order_count__gt=0).order_by('-order_count')[:5]
+    if top_stations:
+        top_station_max = top_stations.first().order_count
+    else:
+        top_station_max = 1
+
+    top_drivers = Driver.objects.filter(
+        order__isnull=False
+    ).annotate(
+        delivery_count=Count('order')
+    ).order_by('-delivery_count')[:5]
+    if top_drivers:
+        top_driver_max = top_drivers.first().delivery_count
+    else:
+        top_driver_max = 1
 
     ctx.update({
         "period_orders": period_orders,
         "period_litres": period_litres,
         "period_revenue": int(period_revenue),
         "new_users": new_users,
+        "report_week": report_week,
+        "report_max": report_max,
+        "fuel_data": fuel_data,
+        "top_stations": top_stations,
+        "top_station_max": top_station_max,
+        "top_drivers": top_drivers,
+        "top_driver_max": top_driver_max,
     })
     return render(request, 'admin_panel/reports.html', ctx)
 
@@ -488,19 +588,38 @@ def admin_reports(request):
 # ===========================
 
 def admin_demand(request):
-    ctx = get_admin_base_context()
+    ctx = get_admin_base_context(request)
     return render(request, 'admin_panel/reports.html', ctx)
 
 
+@login_required(login_url='login')
+@role_required('admin')
 def admin_activity(request):
-    ctx = get_admin_base_context()
+    ctx = get_admin_base_context(request)
+    today = timezone.now().date()
+
+    recent_notifications = Notification.objects.select_related('user').order_by('-created_at')[:10]
+    active_sessions = User.objects.filter(last_login__date=today).count()
+    orders_today = Order.objects.filter(created_at__date=today).count()
+    on_duty_drivers = Driver.objects.filter(on_duty=True).count()
+    live_deliveries = Order.objects.filter(
+        status__in=["confirmed", "assigned", "picked_up", "delivering"]
+    ).count()
+
+    ctx.update({
+        "recent_notifications": recent_notifications,
+        "active_sessions": active_sessions,
+        "orders_today": orders_today,
+        "on_duty_drivers": on_duty_drivers,
+        "live_deliveries": live_deliveries,
+    })
     return render(request, 'admin_panel/activity.html', ctx)
 
 
 @login_required(login_url='login')
 @role_required('admin')
 def admin_settings(request):
-    ctx = get_admin_base_context()
+    ctx = get_admin_base_context(request)
     settings = PlatformSettings.objects.first()
     ctx["settings"] = settings
     return render(request, 'admin_panel/settings.html', ctx)
@@ -525,7 +644,7 @@ def admin_save_settings(request):
 @login_required(login_url='login')
 @role_required('admin')
 def admin_profile(request):
-    ctx = get_admin_base_context()
+    ctx = get_admin_base_context(request)
     return render(request, 'admin_panel/profile.html', ctx)
 
 

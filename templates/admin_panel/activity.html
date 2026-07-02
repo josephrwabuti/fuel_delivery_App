@@ -14,14 +14,17 @@
       <div class="afc-live"><span class="live-dot"></span> Live</div>
     </div>
     <div class="activity-feed" id="activityFeed">
-      <div class="af-item"><div class="af-icon orange"><i class="fas fa-receipt"></i></div><div class="af-body"><div class="af-msg">New order <strong>#FG-2047</strong> placed by Asha Mwangi</div><div class="af-time">Just now</div></div></div>
-      <div class="af-item"><div class="af-icon blue"><i class="fas fa-id-badge"></i></div><div class="af-body"><div class="af-msg">Driver <strong>Michael Osei</strong> registered — awaiting approval</div><div class="af-time">2 min ago</div></div></div>
-      <div class="af-item"><div class="af-icon green"><i class="fas fa-circle-check"></i></div><div class="af-body"><div class="af-msg">Order <strong>#FG-2045</strong> delivered by Amina Said</div><div class="af-time">8 min ago</div></div></div>
-      <div class="af-item"><div class="af-icon purple"><i class="fas fa-gas-pump"></i></div><div class="af-body"><div class="af-msg"><strong>Oryx Petrol – Kinondoni</strong> submitted registration for approval</div><div class="af-time">15 min ago</div></div></div>
-      <div class="af-item"><div class="af-icon orange"><i class="fas fa-truck-fast"></i></div><div class="af-body"><div class="af-msg">Driver assigned to <strong>#FG-2046</strong> by Puma Energy</div><div class="af-time">22 min ago</div></div></div>
-      <div class="af-item"><div class="af-icon green"><i class="fas fa-user-plus"></i></div><div class="af-body"><div class="af-msg">New customer <strong>Grace Ntare</strong> registered</div><div class="af-time">34 min ago</div></div></div>
-      <div class="af-item"><div class="af-icon red"><i class="fas fa-times-circle"></i></div><div class="af-body"><div class="af-msg">Order <strong>#FG-2040</strong> rejected by Shell – Temeke</div><div class="af-time">1 hr ago</div></div></div>
-      <div class="af-item"><div class="af-icon yellow"><i class="fas fa-triangle-exclamation"></i></div><div class="af-body"><div class="af-msg">Low stock alert at <strong>Oryx Petrol</strong> — Diesel at 6%</div><div class="af-time">2 hr ago</div></div></div>
+      {% for notif in recent_notifications %}
+      <div class="af-item">
+        <div class="af-icon orange"><i class="fas fa-bell"></i></div>
+        <div class="af-body">
+          <div class="af-msg">{{ notif.message }}</div>
+          <div class="af-time">{{ notif.created_at|timesince }} ago</div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="af-item"><div class="af-body"><div class="af-msg">No recent activity.</div></div></div>
+      {% endfor %}
     </div>
   </div>
 
@@ -41,12 +44,10 @@
     <div class="health-card">
       <div class="hc-title"><i class="fas fa-gauge-high text-blue"></i> Live Metrics</div>
       <div class="metric-items">
-        <div class="mi-item"><span>Active Sessions</span><strong class="text-orange">{{ active_sessions|default:"247" }}</strong></div>
-        <div class="mi-item"><span>Orders Today</span><strong class="text-orange">{{ orders_today|default:"44" }}</strong></div>
-        <div class="mi-item"><span>Drivers On Duty</span><strong class="text-green">{{ on_duty_drivers|default:"14" }}</strong></div>
-        <div class="mi-item"><span>Live Deliveries</span><strong class="text-blue">{{ live_deliveries|default:"8" }}</strong></div>
-        <div class="mi-item"><span>Avg. Response Time</span><strong>142ms</strong></div>
-        <div class="mi-item"><span>Uptime</span><strong class="text-green">99.8%</strong></div>
+        <div class="mi-item"><span>Active Sessions</span><strong class="text-orange">{{ active_sessions }}</strong></div>
+        <div class="mi-item"><span>Orders Today</span><strong class="text-orange">{{ orders_today }}</strong></div>
+        <div class="mi-item"><span>Drivers On Duty</span><strong class="text-green">{{ on_duty_drivers }}</strong></div>
+        <div class="mi-item"><span>Live Deliveries</span><strong class="text-blue">{{ live_deliveries }}</strong></div>
       </div>
     </div>
   </div>

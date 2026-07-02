@@ -23,7 +23,7 @@
         <div class="fg-group"><label class="fg-label">First Name</label><input type="text" name="first_name" class="fg-input-a" value="{{ request.user.first_name }}"/></div>
         <div class="fg-group"><label class="fg-label">Last Name</label><input type="text" name="last_name" class="fg-input-a" value="{{ request.user.last_name }}"/></div>
         <div class="fg-group"><label class="fg-label">Email Address</label><input type="email" name="email" class="fg-input-a" value="{{ request.user.email }}"/></div>
-        <div class="fg-group"><label class="fg-label">Phone Number</label><input type="tel" name="phone" class="fg-input-a" value="{{ request.user.profile.phone|default:'' }}" placeholder="+255 7XX XXX XXX"/></div>
+        <div class="fg-group"><label class="fg-label">Phone Number</label><input type="tel" name="phone" class="fg-input-a" value="{{ request.user.phone }}" placeholder="+255 7XX XXX XXX"/></div>
       </div>
       <div class="settings-actions"><button type="submit" class="btn-save-settings"><i class="fas fa-save"></i> Save Changes</button></div>
     </form>
@@ -55,13 +55,16 @@
 
   <!-- Admin activity log -->
   <div class="settings-card">
-    <div class="sc-title"><i class="fas fa-clock-rotate-left text-purple"></i> Recent Admin Activity</div>
+    <div class="sc-title"><i class="fas fa-clock-rotate-left text-purple"></i> Recent Notifications</div>
     <div class="admin-log">
-      <div class="al-item"><div class="al-icon green"><i class="fas fa-check"></i></div><div class="al-body"><strong>Approved Total Energies – Kariakoo</strong><span>Station registration · 10 Jan 2026, 09:14</span></div></div>
-      <div class="al-item"><div class="al-icon green"><i class="fas fa-check"></i></div><div class="al-body"><strong>Approved Driver: John Mwalimu</strong><span>Driver registration · 15 Jan 2026, 11:30</span></div></div>
-      <div class="al-item"><div class="al-icon red"><i class="fas fa-times"></i></div><div class="al-body"><strong>Rejected Station: XYZ Fuels – Ilala</strong><span>Invalid licence number · 18 Jun 2026, 14:22</span></div></div>
-      <div class="al-item"><div class="al-icon orange"><i class="fas fa-sliders"></i></div><div class="al-body"><strong>Updated Platform Settings</strong><span>Delivery fee changed to TZS 2,000 · 20 Jun 2026, 10:05</span></div></div>
-      <div class="al-item"><div class="al-icon blue"><i class="fas fa-ban"></i></div><div class="al-body"><strong>Suspended Customer: Tom Banda</strong><span>Policy violation · 22 Jun 2026, 16:40</span></div></div>
+      {% for notif in request.user.notifications.all|slice:":5" %}
+      <div class="al-item">
+        <div class="al-icon green"><i class="fas fa-bell"></i></div>
+        <div class="al-body"><strong>{{ notif.title }}</strong><span>{{ notif.message }} · {{ notif.created_at|date:"d M Y, H:i" }}</span></div>
+      </div>
+      {% empty %}
+      <div class="al-item"><div class="al-body"><span>No recent notifications.</span></div></div>
+      {% endfor %}
     </div>
   </div>
 

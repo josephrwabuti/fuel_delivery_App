@@ -99,9 +99,9 @@
         {% if pending_drivers %}{{ pending_drivers }} driver{{ pending_drivers|pluralize }} pending{% endif %}
       </div>
       {% endif %}
-      <button class="topbar-icon-btn" id="notifBell">
+      <button class="topbar-icon-btn" id="notifBell" data-notifs='{{ notifs_json }}'>
         <i class="fas fa-bell"></i>
-        <span class="icon-badge">{{ notif_count|default:"4" }}</span>
+        <span class="icon-badge">{{ notif_count }}</span>
       </button>
       <div class="topbar-avatar"><i class="fas fa-user-shield"></i></div>
     </div>
@@ -112,7 +112,7 @@
   </main>
 </div>
 
-<script src="{% static 'js/admin.js' %}"></script>
+<script src="{% static 'js/admin.js' %}?v=2"></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>
