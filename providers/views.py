@@ -30,7 +30,7 @@ def get_context_base(request):
     station = request.user.station
     pending_count = Order.objects.filter(station=station, status='pending').count()
     notif_count = Notification.objects.filter(
-        recipient=request.user, is_read=False
+        user=request.user, is_read=False
     ).count()
     return {
         'pending_count': pending_count,
