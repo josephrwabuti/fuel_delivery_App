@@ -1,10 +1,12 @@
-const CACHE_NAME = "fuelgo-v1";
+const CACHE_NAME = "fuelgo-v2";
 const ASSETS = [
   "/pwa/",
   "/static/pwa/manifest.json",
   "/static/pwa/css/style.css",
   "/static/pwa/js/app.js",
   "/static/pwa/js/api.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css",
+  "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js",
 ];
 
 self.addEventListener("install", (event) => {

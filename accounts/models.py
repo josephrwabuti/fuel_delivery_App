@@ -96,6 +96,9 @@ class Driver(models.Model):
     is_approved = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     on_duty = models.BooleanField(default=False)
+    current_lat = models.FloatField(null=True, blank=True)
+    current_lng = models.FloatField(null=True, blank=True)
+    location_updated_at = models.DateTimeField(null=True, blank=True)
     station = models.ForeignKey(
         'accounts.Station', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='drivers'

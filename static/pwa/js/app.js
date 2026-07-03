@@ -5,6 +5,8 @@ let App = {
   navItems: [],
   geolocationWatchId: null,
   selectedStation: null,
+  driverLocationInterval: null,
+  customerTrackInterval: null,
 };
 
 function $id(id) { return document.getElementById(id); }
@@ -37,6 +39,89 @@ function showToast(msg, type) {
 
 function showLoading(show) {
   $id("loading-overlay").style.display = show ? "flex" : "none";
+}
+
+// ─── Map helpers ──────────────────────────────────────
+function osmLayer() {
+  return L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    maxZoom: 19,
+  });
+}
+
+function userIcon() {
+  return L.divIcon({ className: "", html: '<div class="pwa-marker-user"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
+}
+
+function stationIcon(open) {
+  return L.divIcon({ className: "", html: `<div class="pwa-marker-station${open ? "" : " closed"}"></div>`, iconSize: [14, 14], iconAnchor: [7, 7] });
+}
+
+function deliveryIcon() {
+  return L.divIcon({ className: "", html: '<div class="pwa-marker-delivery"></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
+}
+
+function routeStartIcon() {
+  return L.divIcon({ className: "", html: '<div class="pwa-marker-route-start"></div>', iconSize: [14, 14], iconAnchor: [7, 7] });
+}
+
+function routeEndIcon() {
+  return L.divIcon({ className: "", html: '<div class="pwa-marker-route-end"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
+}
+
+function driverIcon() {
+  return L.divIcon({ className: "", html: '<div class="pwa-marker-driver"></div>', iconSize: [20, 20], iconAnchor: [10, 10] });
+}
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function requestLocation() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation not supported"));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => {
+        const msgs = { 1: "Location access denied", 2: "Location unavailable", 3: "Timed out" };
+        reject(new Error(msgs[err.code] || "Could not detect location"));
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+    );
+  });
+}
+
+function reverseGeocode(lat, lng) {
+  return fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+    .then((r) => r.json())
+    .then((d) => {
+      const a = d.address;
+      return [a?.road, a?.suburb || a?.neighbourhood, a?.city || a?.town].filter(Boolean).join(", ") || d.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    })
+    .catch(() => `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+}
+
+function getMapCenter(stations) {
+  const defaultCenter = [-6.8235, 39.2695];
+  if (!stations || !stations.length) return defaultCenter;
+  const lats = stations.map((s) => s.lat).filter((v) => v);
+  const lngs = stations.map((s) => s.lng).filter((v) => v);
+  if (!lats.length || !lngs.length) return defaultCenter;
+  return [lats.reduce((a, b) => a + b, 0) / lats.length, lngs.reduce((a, b) => a + b, 0) / lngs.length];
+}
+
+function cleanupMap(mapVar) {
+  if (window[mapVar]) {
+    window[mapVar].remove();
+    window[mapVar] = null;
+  }
 }
 
 // ─── Router ───────────────────────────────────────────
@@ -80,6 +165,7 @@ function showApp() {
   $id("app").style.display = "flex";
   $id("bottom-nav").classList.add("show");
   updateHeader();
+  requestLocation().catch(() => {});
 }
 
 function showAuth() {
@@ -145,6 +231,8 @@ function updateNavBadge(index, count) {
 
 // ─── Page Renderer ────────────────────────────────────
 async function renderPage() {
+  if (App.driverLocationInterval) { clearInterval(App.driverLocationInterval); App.driverLocationInterval = null; }
+  if (App.customerTrackInterval) { clearInterval(App.customerTrackInterval); App.customerTrackInterval = null; }
   const hash = location.hash || "#/customer/dashboard";
   updateNavActive(hash);
 
@@ -274,87 +362,282 @@ async function renderCustomerStations(content) {
   content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
   const data = await API.customerStations();
   if (data.status !== "success") return;
+  const stations = data.stations;
+
+  cleanupMap("stationMapInstance");
+  let userPos = null;
 
   let html = `
-    <div class="search-bar">
-      <input type="text" id="station-search" placeholder="Search stations..." oninput="filterStations()">
-      <select id="fuel-filter" onchange="filterStations()">
-        <option value="">All Fuels</option>
-        <option value="Petrol">Petrol</option>
-        <option value="Diesel">Diesel</option>
-        <option value="Kerosene">Kerosene</option>
-      </select>
+    <div class="tabs" style="margin-bottom:8px">
+      <button class="tab active" onclick="toggleStationView('list', this)">📋 List</button>
+      <button class="tab" onclick="toggleStationView('map', this)">🗺️ Map</button>
     </div>
-    <div id="stations-list">`;
+    <div id="station-list-view">
+      <div class="search-bar">
+        <input type="text" id="station-search" placeholder="Search stations..." oninput="filterStationList()">
+        <select id="fuel-filter" onchange="filterStationList()">
+          <option value="">All Fuels</option>
+          <option value="Petrol">Petrol</option>
+          <option value="Diesel">Diesel</option>
+          <option value="Kerosene">Kerosene</option>
+        </select>
+      </div>
+      <div id="stations-list">`;
 
-  for (const s of data.stations) {
+  for (const s of stations) {
+    const dist = userPos ? haversine(userPos.lat, userPos.lng, s.lat, s.lng).toFixed(1) : null;
     html += `
-      <div class="card station-card" data-name="${escapeHtml(s.name).toLowerCase()}" data-fuels="${s.fuels.map(f => f.type).join(",")}">
+      <div class="card station-card" data-sid="${s.id}" data-name="${escapeHtml(s.name).toLowerCase()}" data-fuels="${s.fuels.map(f => f.type).join(",")}" data-lat="${s.lat}" data-lng="${s.lng}">
         <div class="sc-name">${escapeHtml(s.name)}</div>
         <div class="sc-addr">${escapeHtml(s.address)}</div>
         <div class="sc-fuels">${s.fuels.map(f => `<span class="fuel-tag"><span class="ft-dot ${f.available ? 'available' : 'unavailable'}"></span>${f.type} · TZS ${Number(f.price).toLocaleString()}</span>`).join("")}</div>
-        <div class="sc-meta">⭐ ${s.rating} · ${s.review_count} reviews · ${s.hours}</div>
+        <div class="sc-meta">⭐ ${s.rating} · ${s.review_count} reviews · ${s.hours}${dist ? ` · 📍 ${dist} km` : ""}</div>
         <div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="navigate('#/customer/order?station=${s.id}')">Order Here</button></div>
       </div>`;
   }
-  html += `</div>`;
+  html += `</div></div>
+    <div id="station-map-view" style="display:none">
+      <div id="station-map" style="height:400px;border-radius:var(--radius);overflow:hidden;margin-bottom:10px"></div>
+      <div style="display:flex;gap:12px;font-size:12px;color:var(--text2);margin-bottom:10px;flex-wrap:wrap">
+        <span><span style="display:inline-block;width:12px;height:12px;background:#3b82f6;border-radius:50%;vertical-align:middle;margin-right:4px"></span> You</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#f97316;border-radius:50%;vertical-align:middle;margin-right:4px"></span> Open</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#64748b;border-radius:50%;vertical-align:middle;margin-right:4px"></span> Closed</span>
+      </div>
+      <div id="station-map-list"></div>
+    </div>`;
+
   content.innerHTML = html;
-  window.filterStations = function () {
+
+  window.filterStationList = function () {
     const q = $id("station-search").value.toLowerCase();
     const fuel = $id("fuel-filter").value;
     qsa(".station-card").forEach(el => {
       const name = el.dataset.name;
       const fuels = el.dataset.fuels;
-      const matchName = !q || name.includes(q);
-      const matchFuel = !fuel || fuels.includes(fuel);
-      el.style.display = matchName && matchFuel ? "block" : "none";
+      el.style.display = (!q || name.includes(q)) && (!fuel || fuels.includes(fuel)) ? "block" : "none";
     });
   };
+
+  window.toggleStationView = function (view, btn) {
+    qsa("#station-list-view, #station-map-view").forEach(v => v.style.display = "none");
+    qsa(".tabs .tab").forEach(t => t.classList.remove("active"));
+    btn.classList.add("active");
+    if (view === "map") {
+      $id("station-map-view").style.display = "block";
+      initStationMap(stations);
+    } else {
+      $id("station-list-view").style.display = "block";
+    }
+  };
+
+  async function initStationMap(stations) {
+    if (window.stationMapInstance) return;
+    try {
+      userPos = await requestLocation();
+    } catch {}
+    const center = userPos ? [userPos.lat, userPos.lng] : getMapCenter(stations);
+    const map = L.map("station-map", { zoomControl: true, scrollWheelZoom: true }).setView(center, 13);
+    osmLayer().addTo(map);
+    window.stationMapInstance = map;
+
+    if (userPos) {
+      L.marker([userPos.lat, userPos.lng], { icon: userIcon() }).addTo(map).bindPopup("<strong>📍 You are here</strong>");
+    }
+    for (const s of stations) {
+      const dist = userPos ? haversine(userPos.lat, userPos.lng, s.lat, s.lng).toFixed(1) : "—";
+      const fuelsHtml = s.fuels.map(f => `${f.type}: TZS ${Number(f.price).toLocaleString()}/L${f.available ? "" : " (Out)"}`).join("<br>");
+      const popup = `
+        <div style="min-width:180px">
+          <div style="font-weight:700;font-size:15px;margin-bottom:4px">${escapeHtml(s.name)}</div>
+          <div style="color:${s.is_open ? "#22c55e" : "#ef4444"};font-size:12px;font-weight:600">● ${s.is_open ? "Open" : "Closed"}</div>
+          <div style="font-size:12px;color:#94a3b8">📍 ${dist} km away</div>
+          <div style="font-size:12px;color:#94a3b8">🕐 ${s.hours}</div>
+          <div style="font-size:12px;margin:4px 0">${fuelsHtml}</div>
+          ${s.is_open ? `<a href="#/customer/order?station=${s.id}" style="display:block;text-align:center;background:#f97316;color:#fff;border-radius:8px;padding:8px;font-size:13px;font-weight:700;margin-top:8px;text-decoration:none">⚡ Order Here</a>` : ""}
+        </div>`;
+      L.marker([s.lat, s.lng], { icon: stationIcon(s.is_open) }).addTo(map).bindPopup(popup, { maxWidth: 240 });
+    }
+    setTimeout(() => map.invalidateSize(), 200);
+  }
 }
 
 async function renderCustomerOrder(content, params) {
   updateHeader("Place Order", true, { label: "Stations", onclick: () => navigate("#/customer/stations") });
   content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
 
+  cleanupMap("orderMapInstance");
+
   const stationsRes = await API.customerStations();
+  const stations = stationsRes.stations;
+  let deliveryLat = null, deliveryLng = null;
+  window._orderDelivery = { lat: null, lng: null, address: "" };
+
   let html = `
     <div class="form-group">
-      <label>Station</label>
+      <label>⛽ Station</label>
       <select id="order-station" onchange="updateOrderFuels()">
         <option value="">Select station</option>`;
-  for (const s of stationsRes.stations) {
+  for (const s of stations) {
     html += `<option value="${s.id}" ${params.get("station") == s.id ? "selected" : ""}>${escapeHtml(s.name)}</option>`;
   }
   html += `</select></div>
-    <div class="form-group"><label>Fuel Type</label><select id="order-fuel"><option value="">Select station first</option></select></div>
-    <div class="form-group"><label>Quantity (Litres)</label><input type="number" id="order-qty" min="1" value="5" oninput="updateOrderTotal()"></div>
-    <div class="form-group"><label>Delivery Address</label><input type="text" id="order-address" placeholder="Your delivery address"></div>
-    <div class="form-group"><label>Phone</label><input type="tel" id="order-phone" placeholder="Phone number" value="${escapeHtml(App.user.phone || "")}"></div>
-    <div class="form-group"><label>Payment Method</label>
+    <div class="form-group"><label>Fuel Type</label><select id="order-fuel" onchange="updateOrderTotal()"><option value="">Select station first</option></select></div>
+    <div class="form-group"><label>Quantity (Litres)</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-outline btn-sm" onclick="adjustQty(-5)">−5</button>
+        <input type="number" id="order-qty" min="1" value="5" oninput="updateOrderTotal()" style="text-align:center;flex:1">
+        <button class="btn btn-outline btn-sm" onclick="adjustQty(5)">+5</button>
+      </div>
+    </div>
+
+    <div class="card" style="border:2px solid var(--primary);margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:8px">📍 Delivery Location</div>
+      <div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" id="btn-detect-loc" onclick="detectOrderLocation()">📡 Use My Location</button>
+        <button class="btn btn-outline btn-sm" id="btn-pin-map" onclick="toggleOrderMap()">🗺️ Pin on Map</button>
+      </div>
+      <div id="order-loc-status" style="font-size:13px;color:var(--text2);margin-bottom:8px">📍 Tap "Use My Location" or pin on the map</div>
+      <input type="text" id="order-address" placeholder="Delivery address (auto-filled)" style="margin-bottom:8px">
+      <input type="hidden" id="order-lat">
+      <input type="hidden" id="order-lng">
+      <div id="order-map-container" style="display:none;height:260px;border-radius:var(--radius-sm);overflow:hidden;margin-top:8px"></div>
+    </div>
+
+    <div class="form-group"><label>📞 Phone</label><input type="tel" id="order-phone" placeholder="Phone number" value="${escapeHtml(App.user.phone || "")}"></div>
+    <div class="form-group"><label>💳 Payment Method</label>
       <select id="order-payment">
         <option value="Cash">Cash on Delivery</option>
         <option value="M-Pesa">M-Pesa</option>
         <option value="Tigo Pesa">Tigo Pesa</option>
       </select>
     </div>
-    <div class="form-group"><label>Notes (optional)</label><textarea id="order-notes" rows="2"></textarea></div>
+    <div class="form-group"><label>📝 Notes (optional)</label><textarea id="order-notes" rows="2" placeholder="Any special instructions"></textarea></div>
+
     <div class="card" style="background:var(--bg2)">
-      <div style="display:flex;justify-content:space-between;font-size:14px">
-        <span>Delivery Fee</span><span>TZS 2,000</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:14px;margin-top:4px">
-        <span>Fuel Cost</span><span id="order-fuel-cost">TZS 0</span>
-      </div>
+      <div style="display:flex;justify-content:space-between;font-size:14px"><span>Delivery Fee</span><span>TZS 2,000</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:14px;margin-top:4px"><span>Fuel Cost</span><span id="order-fuel-cost">TZS 0</span></div>
       <hr style="border-color:var(--bg3);margin:8px 0">
-      <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:700">
-        <span>Total</span><span id="order-total">TZS 2,000</span>
-      </div>
+      <div style="display:flex;justify-content:space-between;font-size:20px;font-weight:700"><span>Total</span><span id="order-total">TZS 2,000</span></div>
     </div>
-    <button class="btn btn-primary btn-block" style="margin-top:8px" onclick="submitOrder()">Place Order</button>`;
+    <button class="btn btn-primary btn-block" style="margin-top:8px" onclick="submitOrder()">⚡ Place Order</button>`;
 
   content.innerHTML = html;
-  window._stations = stationsRes.stations;
-  if (params.get("station")) updateOrderFuels();
+  window._stations = stations;
+
+  requestLocation().then(pos => {
+    qsa(".station-card").forEach(el => {
+      const lat = parseFloat(el.dataset.lat);
+      const lng = parseFloat(el.dataset.lng);
+      if (lat && lng) {
+        const dist = haversine(pos.lat, pos.lng, lat, lng).toFixed(1);
+        const meta = el.querySelector(".sc-meta");
+        if (meta && !meta.textContent.includes("km")) meta.textContent += ` · 📍 ${dist} km`;
+      }
+    });
+  }).catch(() => {});
+
+  if (params.get("station")) {
+    $id("order-station").value = params.get("station");
+    updateOrderFuels();
+  }
+
+  window._orderMapInstance = null;
+  window._orderMarker = null;
+
+  window.detectOrderLocation = async function () {
+    const status = $id("order-loc-status");
+    const btn = $id("btn-detect-loc");
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Detecting...';
+    status.innerHTML = '<span style="color:var(--primary)">📍 Getting your location...</span>';
+    try {
+      const pos = await requestLocation();
+      deliveryLat = pos.lat;
+      deliveryLng = pos.lng;
+      $id("order-lat").value = pos.lat;
+      $id("order-lng").value = pos.lng;
+      const addr = await reverseGeocode(pos.lat, pos.lng);
+      _orderDelivery.address = addr;
+      $id("order-address").value = addr;
+      status.innerHTML = `<span style="color:var(--success)">✅ Location captured: ${escapeHtml(addr)}</span>`;
+      btn.innerHTML = '📡 Update Location';
+      btn.disabled = false;
+      if (window._orderMapInstance && window._orderMarker) {
+        window._orderMarker.setLatLng([pos.lat, pos.lng]);
+        window._orderMapInstance.setView([pos.lat, pos.lng], 16);
+      }
+    } catch (e) {
+      status.innerHTML = `<span style="color:var(--danger)">⚠️ ${e.message}. Please pin on the map.</span>`;
+      btn.innerHTML = '📡 Try Again';
+      btn.disabled = false;
+      toggleOrderMap();
+    }
+  };
+
+  window.toggleOrderMap = function () {
+    const container = $id("order-map-container");
+    const btn = $id("btn-pin-map");
+    const isVisible = container.style.display === "block";
+    container.style.display = isVisible ? "none" : "block";
+    btn.classList.toggle("active", !isVisible);
+
+    if (!isVisible && !window._orderMapInstance) {
+      const cLat = deliveryLat || -6.8235;
+      const cLng = deliveryLng || 39.2695;
+      const map = L.map("order-map-container", { zoomControl: true, scrollWheelZoom: true }).setView([cLat, cLng], 15);
+      osmLayer().addTo(map);
+      window._orderMapInstance = map;
+
+      if (deliveryLat) {
+        window._orderMarker = L.marker([deliveryLat, deliveryLng], { icon: deliveryIcon(), draggable: true })
+          .addTo(map)
+          .on("dragend", async (e) => {
+            const p = e.target.getLatLng();
+            await onOrderMapClick(p.lat, p.lng);
+          });
+      }
+
+      map.on("click", async (e) => {
+        await onOrderMapClick(e.latlng.lat, e.latlng.lng);
+      });
+
+      setTimeout(() => map.invalidateSize(), 200);
+    } else if (!isVisible && window._orderMapInstance) {
+      setTimeout(() => window._orderMapInstance.invalidateSize(), 200);
+    }
+  };
+
+  async function onOrderMapClick(lat, lng) {
+    deliveryLat = lat;
+    deliveryLng = lng;
+    $id("order-lat").value = lat;
+    $id("order-lng").value = lng;
+    const status = $id("order-loc-status");
+    status.innerHTML = '<span style="color:var(--primary)">📍 Getting address...</span>';
+
+    if (window._orderMarker) {
+      window._orderMarker.setLatLng([lat, lng]);
+    } else if (window._orderMapInstance) {
+      window._orderMarker = L.marker([lat, lng], { icon: deliveryIcon(), draggable: true })
+        .addTo(window._orderMapInstance)
+        .on("dragend", async (e) => {
+          const p = e.target.getLatLng();
+          await onOrderMapClick(p.lat, p.lng);
+        });
+    }
+    window._orderMapInstance.setView([lat, lng], 16);
+
+    const addr = await reverseGeocode(lat, lng);
+    _orderDelivery.address = addr;
+    $id("order-address").value = addr;
+    status.innerHTML = `<span style="color:var(--success)">✅ Pinned: ${escapeHtml(addr)}</span>`;
+  }
+
+  window.adjustQty = function (delta) {
+    const inp = $id("order-qty");
+    inp.value = Math.max(1, Math.min(200, (parseInt(inp.value) || 5) + delta));
+    updateOrderTotal();
+  };
 }
 
 window.updateOrderFuels = function () {
@@ -391,18 +674,28 @@ window.submitOrder = async function () {
   const phone = $id("order-phone").value;
   const payment = $id("order-payment").value;
   const notes = $id("order-notes").value;
+  const lat = $id("order-lat").value;
+  const lng = $id("order-lng").value;
 
-  if (!stationId || !fuelType || !qty || !address) {
-    showToast("Please fill all required fields", "error");
+  if (!stationId || !fuelType || !qty) {
+    showToast("Please select station, fuel and quantity", "error");
+    return;
+  }
+  if (!address || !lat || !lng) {
+    showToast("Please set your delivery location (use GPS or pin on map)", "error");
     return;
   }
 
   try {
     showLoading(true);
-    const res = await API.createOrder({ station_id: stationId, fuel_type: fuelType, quantity: qty, delivery_address: address, phone, payment_method: payment, notes });
+    const res = await API.createOrder({
+      station_id: stationId, fuel_type: fuelType, quantity: qty,
+      delivery_address: address, phone, payment_method: payment,
+      notes, lat: parseFloat(lat), lng: parseFloat(lng),
+    });
     showLoading(false);
     if (res.status === "success") {
-      showToast("Order placed successfully!", "success");
+      showToast("Order placed successfully! 🎉", "success");
       navigate("#/customer/tracking");
     }
   } catch (e) {
@@ -414,6 +707,7 @@ window.submitOrder = async function () {
 async function renderCustomerTracking(content) {
   updateHeader("Track Delivery");
   content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  cleanupMap("trackMapInstance");
   const data = await API.customerTracking();
   if (data.status !== "success") return;
   const o = data.active_order;
@@ -469,6 +763,49 @@ async function renderCustomerTracking(content) {
   }
 
   content.innerHTML = html;
+
+  if (o.delivery_address) {
+    const mapDiv = document.createElement("div");
+    mapDiv.id = "track-map";
+    mapDiv.style.cssText = "height:220px;border-radius:var(--radius);overflow:hidden;margin-top:12px";
+    const firstCard = qs(".card", content);
+    if (firstCard) firstCard.after(mapDiv);
+
+    let map, userMarker, driverMarker;
+    try {
+      const pos = await requestLocation();
+      map = L.map("track-map", { zoomControl: false, scrollWheelZoom: true }).setView([pos.lat, pos.lng], 14);
+      osmLayer().addTo(map);
+      userMarker = L.marker([pos.lat, pos.lng], { icon: userIcon() }).addTo(map).bindPopup("<strong>📍 Your Location</strong>");
+    } catch {
+      map = L.map("track-map", { zoomControl: false, scrollWheelZoom: true }).setView([-6.8235, 39.2695], 10);
+      osmLayer().addTo(map);
+    }
+    window.trackMapInstance = map;
+    setTimeout(() => map.invalidateSize(), 200);
+
+    if (o.driver && o.driver.current_lat && o.driver.current_lng) {
+      driverMarker = L.marker([o.driver.current_lat, o.driver.current_lng], { icon: driverIcon() }).addTo(map).bindPopup(`<strong>🚚 ${escapeHtml(o.driver.name)}</strong><br>${o.driver.location_updated_at ? "Updated: " + o.driver.location_updated_at : ""}`);
+    }
+
+    if (o.status === "delivering") {
+      App.customerTrackInterval = setInterval(async () => {
+        try {
+          const res = await API.customerTracking();
+          if (res.status !== "success" || !res.active_order) return;
+          const d = res.active_order.driver;
+          if (d && d.current_lat && d.current_lng && map) {
+            if (driverMarker) {
+              driverMarker.setLatLng([d.current_lat, d.current_lng]);
+              driverMarker.setPopupContent(`<strong>🚚 ${escapeHtml(d.name)}</strong><br>Updated: ${d.location_updated_at || "recently"}`);
+            } else {
+              driverMarker = L.marker([d.current_lat, d.current_lng], { icon: driverIcon() }).addTo(map).bindPopup(`<strong>🚚 ${escapeHtml(d.name)}</strong>`);
+            }
+          }
+        } catch {}
+      }, 10000);
+    }
+  }
 }
 
 window.confirmDelivery = async function (id) {
@@ -800,6 +1137,7 @@ window.driverUpdateStatus = async function (orderId, status) {
 async function renderDriverActive(content) {
   updateHeader("Active Delivery");
   content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  cleanupMap("driverRouteMap");
   const data = await API.driverActive();
   if (data.status !== "success") return;
   const o = data.active_order;
@@ -831,15 +1169,17 @@ async function renderDriverActive(content) {
   html += `</ul></div>`;
 
   if (o.customer_lat && o.customer_lng && o.station_lat && o.station_lng) {
+    const midLat = (o.station_lat + o.customer_lat) / 2;
+    const midLng = (o.station_lng + o.customer_lng) / 2;
+    const dist = haversine(o.station_lat, o.station_lng, o.customer_lat, o.customer_lng).toFixed(1);
     html += `
       <div class="card">
-        <div class="card-title" style="margin-bottom:8px">🗺️ Map</div>
-        <div class="map-placeholder" id="delivery-map">
-          <div style="text-align:center">
-            <div style="font-size:24px">📍</div>
-            <div style="font-size:12px;color:var(--text2)">Station to Customer</div>
-            <a href="https://www.openstreetmap.org/directions?from=${o.station_lat}%2C${o.station_lng}&to=${o.customer_lat}%2C${o.customer_lng}" target="_blank" style="color:var(--primary);font-size:13px;margin-top:4px;display:block">Open in Maps</a>
-          </div>
+        <div class="card-title" style="margin-bottom:8px">🗺️ Route (${dist} km)</div>
+        <div id="driver-route-map" style="height:260px;border-radius:var(--radius-sm);overflow:hidden"></div>
+        <div style="margin-top:8px;display:flex;gap:12px;font-size:12px;color:var(--text2);flex-wrap:wrap">
+          <span><span style="display:inline-block;width:12px;height:12px;background:#22c55e;border-radius:50%;vertical-align:middle;margin-right:4px"></span> ${escapeHtml(o.station_name)}</span>
+          <span><span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:50%;vertical-align:middle;margin-right:4px"></span> ${escapeHtml(o.customer_name)}</span>
+          <a href="https://www.openstreetmap.org/directions?from=${o.station_lat}%2C${o.station_lng}&to=${o.customer_lat}%2C${o.customer_lng}" target="_blank" style="color:var(--primary)">Open in Maps ↗</a>
         </div>
       </div>`;
   }
@@ -851,6 +1191,34 @@ async function renderDriverActive(content) {
   html += `</div>`;
 
   content.innerHTML = html;
+
+  if (o.customer_lat && o.customer_lng && o.station_lat && o.station_lng) {
+    setTimeout(() => {
+      const midLat2 = (o.station_lat + o.customer_lat) / 2;
+      const midLng2 = (o.station_lng + o.customer_lng) / 2;
+      const map = L.map("driver-route-map", { zoomControl: true, scrollWheelZoom: true }).setView([midLat2, midLng2], 13);
+      osmLayer().addTo(map);
+      L.marker([o.station_lat, o.station_lng], { icon: routeStartIcon() }).addTo(map).bindPopup(`<strong>⛽ ${escapeHtml(o.station_name)}</strong>`);
+      L.marker([o.customer_lat, o.customer_lng], { icon: routeEndIcon() }).addTo(map).bindPopup(`<strong>📍 ${escapeHtml(o.customer_name)}</strong><br>${escapeHtml(o.delivery_address)}`);
+      const latlngs = [[o.station_lat, o.station_lng], [o.customer_lat, o.customer_lng]];
+      L.polyline(latlngs, { color: "#f97316", weight: 3, opacity: 0.7, dashArray: "8, 8" }).addTo(map);
+      window.driverRouteMap = map;
+      setTimeout(() => map.invalidateSize(), 200);
+    }, 100);
+  }
+
+  if (o.status === "delivering") {
+    const sendLocation = async () => {
+      try {
+        const pos = await requestLocation();
+        if (pos && pos.lat && pos.lng) {
+          await API.updateLocation(pos.lat, pos.lng);
+        }
+      } catch {}
+    };
+    sendLocation();
+    App.driverLocationInterval = setInterval(sendLocation, 8000);
+  }
 }
 
 async function renderDriverEarnings(content) {

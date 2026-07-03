@@ -374,3 +374,12 @@ body {
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--bg3); }
 th { color: var(--text3); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+
+/* Map markers */
+.pwa-marker-user { width:18px;height:18px;background:#3b82f6;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4); }
+.pwa-marker-station { width:14px;height:14px;background:#f97316;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4); }
+.pwa-marker-station.closed { background:#64748b; }
+.pwa-marker-delivery { width:22px;height:22px;background:#ef4444;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:12px; }
+.pwa-marker-route-start { width:14px;height:14px;background:#22c55e;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4); }
+.pwa-marker-route-end { width:16px;height:16px;background:#ef4444;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4); }
+.pwa-marker-driver { width:20px;height:20px;background:#f97316;border:3px solid #fff;border-radius:4px 50% 50% 50%;transform:rotate(45deg);box-shadow:0 1px 4px rgba(0,0,0,.4); }

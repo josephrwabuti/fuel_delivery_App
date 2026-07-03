@@ -319,6 +319,9 @@ def api_tracking(request):
                 "rating": float(active_order.driver.rating),
                 "plate": active_order.driver.plate or active_order.driver.plate_number or "",
                 "vehicle_type": active_order.driver.vehicle_type or "",
+                "current_lat": active_order.driver.current_lat,
+                "current_lng": active_order.driver.current_lng,
+                "location_updated_at": active_order.driver.location_updated_at.strftime("%H:%M") if active_order.driver.location_updated_at else None,
             },
         },
     })
@@ -664,9 +667,15 @@ def api_driver_update_location(request):
         data = json.loads(request.body)
         lat = data.get("lat")
         lng = data.get("lng")
-        # Location processing would go here (e.g., cache/save)
+        if lat is None or lng is None:
+            return JsonResponse({"status": "error", "message": "lat and lng required"}, status=400)
+        driver = request.user.driver
+        driver.current_lat = float(lat)
+        driver.current_lng = float(lng)
+        driver.location_updated_at = timezone.now()
+        driver.save(update_fields=["current_lat", "current_lng", "location_updated_at"])
         return JsonResponse({"status": "success"})
-    except (json.JSONDecodeError, TypeError):
+    except (json.JSONDecodeError, TypeError, ValueError):
         return JsonResponse({"status": "error", "message": "Invalid data"}, status=400)
 
 
