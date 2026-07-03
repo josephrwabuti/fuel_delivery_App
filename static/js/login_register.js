@@ -253,6 +253,17 @@ function showFormError(msg) {
   setTimeout(() => { err.style.display = 'none'; }, 4000);
 }
 
+function showSigninError(msg) {
+  const existing = document.querySelector('.signin-form-error');
+  if (existing) existing.remove();
+  const err = document.createElement('div');
+  err.className = 'signin-form-error';
+  err.style.cssText = 'display:flex;align-items:center;gap:8px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:9px 14px;border-radius:8px;font-size:.83rem;margin-bottom:12px';
+  document.getElementById('signinBtn')?.insertAdjacentElement('beforebegin', err);
+  err.innerHTML = '<i class="fas fa-circle-xmark"></i> ' + msg;
+  setTimeout(() => { err.style.display = 'none'; }, 6000);
+}
+
 /* ---- DOMContentLoaded ---- */
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -263,10 +274,60 @@ document.addEventListener('DOMContentLoaded', function () {
   if (signinForm) signinForm.action = cfg.loginUrl;
   if (signupForm) signupForm.action = cfg.registerUrl;
 
-  // Signin submit
+  // Signin submit — role check via AJAX
   if (signinForm) {
-    signinForm.addEventListener('submit', function () {
+    signinForm.addEventListener('submit', function (e) {
+      e.preventDefault();
       setLoading('signinForm', 'signinBtn', true);
+
+      const existingError = document.querySelector('.signin-form-error');
+      if (existingError) existingError.remove();
+
+      const formData = new FormData(signinForm);
+      const selectedRole = currentRole;
+
+      fetch(signinForm.action, {
+        method: 'POST',
+        body: formData,
+        redirect: 'follow',
+      })
+      .then(response => response.text().then(html => ({
+        finalPath: new URL(response.url).pathname,
+        html: html,
+      })))
+      .then(({ finalPath, html }) => {
+        // Still on login page → invalid credentials
+        if (finalPath.startsWith('/accounts/login')) {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const msgEl = doc.querySelector('.form-messages .msg');
+          const errorText = msgEl
+            ? msgEl.textContent.trim()
+            : 'Invalid email or password. Please try again.';
+          showSigninError(errorText);
+          setLoading('signinForm', 'signinBtn', false);
+          return;
+        }
+
+        // Determine which role the account actually is
+        let detectedRole = null;
+        if (finalPath.startsWith('/customer/')) detectedRole = 'customer';
+        else if (finalPath.startsWith('/provider/') || finalPath.startsWith('/providers/')) detectedRole = 'provider';
+        else if (finalPath.startsWith('/driver/') || finalPath.startsWith('/delivery/')) detectedRole = 'driver';
+        else if (finalPath.startsWith('/dashboard/admin/')) detectedRole = 'admin';
+
+        if (detectedRole && detectedRole !== selectedRole) {
+          const detectedCfg = ROLES[detectedRole];
+          showSigninError('This account is registered as a <strong>' + detectedCfg.label + '</strong>. Please select the correct portal tab to sign in.');
+          setLoading('signinForm', 'signinBtn', false);
+        } else {
+          window.location.href = finalPath;
+        }
+      })
+      .catch(function () {
+        // Network error — fall back to normal submission
+        try { signinForm.submit(); } catch (_) {}
+      });
     });
   }
 
