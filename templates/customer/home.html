@@ -154,8 +154,8 @@
       <span><i class="fas fa-route"></i> {{ station.distance|default:'—' }} km</span>
       <span><i class="fas fa-clock"></i> ~{{ station.eta|default:'—' }} min</span>
     </div>
-    <a href="{% url 'customer_order' %}?station={{ station.id }}" class="btn-order-now {% if station.status != 'open' %}disabled{% endif %}">
-      {% if station.status == 'open' %}<i class="fas fa-bolt"></i> Order Now{% else %}<i class="fas fa-moon"></i> Closed{% endif %}
+    <a href="{% url 'customer_order' %}?station={{ station.id }}" class="btn-order-now {% if not station.is_open %}disabled{% endif %}">
+      {% if station.is_open %}<i class="fas fa-bolt"></i> Order Now{% else %}<i class="fas fa-moon"></i> Closed{% endif %}
     </a>
   </div>
   {% empty %}

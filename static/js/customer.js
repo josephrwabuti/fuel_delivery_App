@@ -84,12 +84,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     cards.forEach(card => {
       const name     = (card.dataset.name || '').toLowerCase();
-      const status   = (card.dataset.status || '').toLowerCase();
+      const isOpen  = card.dataset.isOpen === 'true';
       const fuels    = (card.dataset.fuels || '').toLowerCase();
 
       let show = true;
       if (q && !name.includes(q)) show = false;
-      if (activeFilter === 'open'    && status !== 'open')  show = false;
+      if (activeFilter === 'open'    && !isOpen)  show = false;
       if (activeFilter === 'petrol'  && !fuels.includes('petrol')) show = false;
       if (activeFilter === 'diesel'  && !fuels.includes('diesel')) show = false;
 

@@ -509,9 +509,9 @@ def provider_update_station(request):
 def provider_toggle_open(request):
     if request.method == 'POST':
         station = request.user.station
-        station.status = 'closed' if station.status == 'open' else 'open'
+        station.is_open = not station.is_open
         station.save()
-        return JsonResponse({'status': 'ok', 'is_open': station.status == 'open'})
+        return JsonResponse({'status': 'ok', 'is_open': station.is_open})
     return JsonResponse({'status': 'error'}, status=400)
 
 

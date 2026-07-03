@@ -103,6 +103,7 @@
 {% for station in stations %}
 <div class="station-card"
   data-status="{{ station.status }}"
+  data-is-open="{{ station.is_open|lower }}"
   data-fuels="{{ station.fuel_types }}"
   data-distance="{{ station.distance|default:'0' }}"
   data-name="{{ station.name|lower }}"
@@ -110,7 +111,7 @@
   data-lng="{{ station.lng }}"
   data-id="{{ station.id }}">
   <div class="sc-top-bar">
-    <div class="sc-status-badge {{ station.status }}"><span class="sdot"></span> {{ station.status|title }}</div>
+    <div class="sc-status-badge {{ station.is_open|yesno:'open,closed' }}"><span class="sdot"></span> {{ station.is_open|yesno:"Open,Closed" }}</div>
     <div class="sc-rating"><i class="fas fa-star"></i> {{ station.rating }} <span class="sc-reviews">({{ station.review_count }})</span></div>
   </div>
   <div class="sc-body-main">
@@ -136,8 +137,8 @@
     {% endfor %}
   </div>
   <div class="sc-actions">
-    <a href="{% url 'customer_order' %}?station={{ station.id }}" class="btn-select-station {% if station.status != 'open' %}disabled{% endif %}">
-      {% if station.status == 'open' %}<i class="fas fa-bolt"></i> Order from Here{% else %}<i class="fas fa-moon"></i> Closed{% endif %}
+    <a href="{% url 'customer_order' %}?station={{ station.id }}" class="btn-select-station {% if not station.is_open %}disabled{% endif %}">
+      {% if station.is_open %}<i class="fas fa-bolt"></i> Order from Here{% else %}<i class="fas fa-moon"></i> Closed{% endif %}
     </a>
     <button class="btn-sc-detail" onclick="openStationModal({{ station.id }})" title="View on map"><i class="fas fa-map-pin"></i></button>
   </div>
@@ -243,8 +244,8 @@ function initMainMap(){
   STATIONS.forEach(s=>{
     const f=s.fuels.map(f=>`<div class="popup-row"><i class="fas fa-droplet"></i>${f.type}: TZS ${f.price}/L${f.ok?'':' (Out)'}</div>`).join('');
     const dist=uLat?haversine(uLat,uLng,s.lat,s.lng).toFixed(1):'—';
-    const popup=`<div class="popup-inner"><div class="popup-name">${s.name}</div><div class="${s.status==='open'?'popup-open':'popup-closed'}">● ${s.status==='open'?'Open':'Closed'}</div><div class="popup-row"><i class="fas fa-route"></i>${dist} km away</div><div class="popup-row"><i class="fas fa-clock"></i>${s.hours}</div>${f}${s.status==='open'?`<a href="/customer/order/?station=${s.id}" class="popup-btn"><i class="fas fa-bolt"></i> Order from Here</a>`:''}</div>`;
-    L.marker([s.lat,s.lng],{icon:sIcon(s.status==='open')}).addTo(mainMap).bindPopup(popup,{maxWidth:240});
+    const popup=`<div class="popup-inner"><div class="popup-name">${s.name}</div><div class="${s.is_open?'popup-open':'popup-closed'}">● ${s.is_open?'Open':'Closed'}</div><div class="popup-row"><i class="fas fa-route"></i>${dist} km away</div><div class="popup-row"><i class="fas fa-clock"></i>${s.hours}</div>${f}${s.is_open?`<a href="/customer/order/?station=${s.id}" class="popup-btn"><i class="fas fa-bolt"></i> Order from Here</a>`:''}</div>`;
+    L.marker([s.lat,s.lng],{icon:sIcon(s.is_open)}).addTo(mainMap).bindPopup(popup,{maxWidth:240});
   });
 }
 
@@ -270,16 +271,16 @@ window.openStationModal=function(id){
   document.getElementById('mInit').textContent=s.name.charAt(0);
   document.getElementById('mName').textContent=s.name;
   document.getElementById('mAddr').innerHTML=`<i class="fas fa-location-dot"></i> ${s.address}`;
-  const st=document.getElementById('mStatus');st.className=`sc-status-badge ${s.status} d-inline-flex mt-1`;st.innerHTML=`<span class="sdot"></span> ${s.status==='open'?'Open':'Closed'}`;
+  const st=document.getElementById('mStatus');st.className=`sc-status-badge ${s.is_open?'open':'closed'} d-inline-flex mt-1`;st.innerHTML=`<span class="sdot"></span> ${s.is_open?'Open':'Closed'}`;
   document.getElementById('mFuels').innerHTML='<div class="mft-row header"><span>Type</span><span>Price/L</span><span>Stock</span></div>'+s.fuels.map(f=>`<div class="mft-row"><span>${f.type}</span><span>TZS ${f.price}</span><span class="sc-fuel-stock ${f.ok?'in':'out'}">${f.ok?'Available':'Out of Stock'}</span></div>`).join('');
   document.getElementById('mInfo').innerHTML=`<div class="mig-item"><i class="fas fa-clock text-orange"></i><div><strong>Hours</strong><span>${s.hours}</span></div></div><div class="mig-item"><i class="fas fa-phone text-orange"></i><div><strong>Phone</strong><span>${s.phone}</span></div></div><div class="mig-item"><i class="fas fa-star text-orange"></i><div><strong>Rating</strong><span>${s.rating}/5 (${s.reviews} reviews)</span></div></div><div class="mig-item"><i class="fas fa-truck-fast text-orange"></i><div><strong>Distance</strong><span>${uLat?haversine(uLat,uLng,s.lat,s.lng).toFixed(1)+' km away':'—'}</span></div></div>`;
-  const ob=document.getElementById('mOrderBtn');ob.href=s.status==='open'?`/customer/order/?station=${s.id}`:'#';ob.style.opacity=s.status==='open'?'1':'0.4';ob.style.pointerEvents=s.status==='open'?'':'none';
+  const ob=document.getElementById('mOrderBtn');ob.href=s.is_open?`/customer/order/?station=${s.id}`:'#';ob.style.opacity=s.is_open?'1':'0.4';ob.style.pointerEvents=s.is_open?'':'none';
   document.getElementById('stationModal').style.display='flex';document.body.style.overflow='hidden';
   setTimeout(()=>{
     if(!miniMap){miniMap=L.map('miniMap',{zoomControl:false,dragging:false,scrollWheelZoom:false}).setView([s.lat,s.lng],15);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(miniMap);}
     else miniMap.setView([s.lat,s.lng],15);
     miniMap.eachLayer(l=>{if(l instanceof L.Marker)l.remove();});
-    L.marker([s.lat,s.lng],{icon:sIcon(s.status==='open')}).addTo(miniMap).bindPopup(s.name).openPopup();
+    L.marker([s.lat,s.lng],{icon:sIcon(s.is_open)}).addTo(miniMap).bindPopup(s.name).openPopup();
     if(uLat)L.marker([uLat,uLng],{icon:uIcon()}).addTo(miniMap);
     miniMap.invalidateSize();
   },160);
@@ -308,7 +309,9 @@ document.querySelectorAll('.fchip').forEach(c=>c.addEventListener('click',functi
   document.querySelectorAll('.fchip').forEach(x=>x.classList.remove('active'));this.classList.add('active');
   const f=this.dataset.filter;let v=0;
   document.querySelectorAll('.station-card').forEach(card=>{
-    const ok=f==='all'||card.dataset.status===f||(card.dataset.fuels||'').includes(f);
+    const openMatch=f!=='open'||card.dataset.isOpen==='true';
+    const fuelMatch=(card.dataset.fuels||'').includes(f);
+    const ok=f==='all'||openMatch||fuelMatch;
     card.style.display=ok?'':'none';if(ok)v++;
   });
   document.getElementById('stationCount').textContent=v;

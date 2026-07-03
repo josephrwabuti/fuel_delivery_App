@@ -29,7 +29,7 @@ def home(request):
 def customer_home(request):
 
     nearby_stations = Station.objects.filter(
-        status__in=["approved", "open"]
+        status="approved", is_open=True
     ).prefetch_related("fuels").order_by("-created_at")[:6]
 
     recent_orders = Order.objects.filter(
@@ -102,7 +102,7 @@ def provider_home(request):
 @login_required(login_url='login')
 @role_required('customer')
 def stations_view(request):
-    stations = Station.objects.filter(status__in=["approved", "open"]).prefetch_related("fuels")
+    stations = Station.objects.filter(status="approved", is_open=True).prefetch_related("fuels")
 
     stations_list = []
     for s in stations:
@@ -120,6 +120,7 @@ def stations_view(request):
             "lat": s.lat,
             "lng": s.lng,
             "status": s.status,
+            "is_open": s.is_open,
             "rating": str(s.rating),
             "reviews": str(s.review_count),
             "hours": s.hours or "24/7",
@@ -146,13 +147,13 @@ def create_order(request):
     elif station_id:
         preselected_station = get_object_or_404(Station, id=station_id)
 
-    if preselected_station and preselected_station.status != "open":
+    if preselected_station and not preselected_station.is_open:
         messages.error(request, f"'{preselected_station.name}' is currently closed. Please choose an open station.")
         return redirect("customer_stations")
 
     if request.method == "POST":
         station = preselected_station
-        if station and station.status != "open":
+        if station and not station.is_open:
             messages.error(request, "Cannot place order — station is closed.")
             return redirect("customer_stations")
         order = Order.objects.create(
@@ -307,7 +308,7 @@ def customer_place_order(request):
         phone = request.POST.get("phone", "")
 
         station = get_object_or_404(Station, id=station_id)
-        if station.status != "open":
+        if not station.is_open:
             messages.error(request, "Cannot place order — station is currently closed.")
             return redirect("customer_stations")
 
@@ -375,7 +376,7 @@ def admin_home(request):
     today = timezone.now().date()
 
     total_orders_today = Order.objects.filter(created_at__date=today).count()
-    active_stations = Station.objects.filter(status__in=["approved", "open"]).count()
+    active_stations = Station.objects.filter(status="approved").count()
     active_drivers = Driver.objects.filter(is_approved=True).count()
     on_duty_drivers = Driver.objects.filter(on_duty=True).count()
     total_customers = User.objects.filter(role="customer").count()

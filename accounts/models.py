@@ -21,8 +21,6 @@ class CustomerProfile(models.Model):
 
 class Station(models.Model):
     STATUS_CHOICES = [
-        ("open", "Open"),
-        ("closed", "Closed"),
         ("pending", "Pending"),
         ("approved", "Approved"),
         ("rejected", "Rejected"),
@@ -37,7 +35,8 @@ class Station(models.Model):
     address = models.TextField()
     lat = models.FloatField()
     lng = models.FloatField()
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="open")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
+    is_open = models.BooleanField(default=True)
     rating = models.FloatField(default=0)
     review_count = models.IntegerField(default=0)
     hours = models.CharField(max_length=100, default="24/7")
@@ -54,10 +53,6 @@ class Station(models.Model):
     @property
     def is_approved(self):
         return self.status == "approved"
-
-    @property
-    def is_open(self):
-        return self.status == "open"
 
     def __str__(self):
         return self.name

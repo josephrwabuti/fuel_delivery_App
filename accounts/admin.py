@@ -17,15 +17,15 @@ admin.site.register(Driver)
 # Station Admin
 @admin.register(Station)
 class StationAdmin(admin.ModelAdmin):
-    list_display = ('name', 'address', 'status')
-    list_filter = ('status',)
+    list_display = ('name', 'address', 'status', 'is_open')
+    list_filter = ('status', 'is_open')
     actions = ['approve_stations', 'reject_stations']
 
     def approve_stations(self, request, queryset):
-        queryset.update(status='open')
+        queryset.update(status='approved')
 
     def reject_stations(self, request, queryset):
-        queryset.update(status='closed')
+        queryset.update(status='rejected')
 
     approve_stations.short_description = "Approve selected stations"
     reject_stations.short_description = "Reject selected stations"
