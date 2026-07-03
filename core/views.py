@@ -656,8 +656,32 @@ def admin_orders(request):
     ).count()
     total_orders = orders.count()
 
+    orders_json = []
+    for o in orders:
+        orders_json.append({
+            'id': o.id,
+            'customer_name': o.customer.get_full_name(),
+            'station_name': o.station.name,
+            'driver_name': o.driver.name if o.driver else None,
+            'fuel_type': o.fuel_type,
+            'quantity': o.quantity,
+            'total_amount': str(o.total_amount),
+            'payment_method': o.payment_method,
+            'status': o.status,
+            'status_display': o.get_status_display(),
+            'delivery_address': o.delivery_address,
+            'phone': o.phone,
+            'notes': o.notes,
+            'created_at': o.created_at.strftime('%d %b %Y, %H:%M') if o.created_at else '',
+            'confirmed_at': o.confirmed_at.strftime('%d %b %Y, %H:%M') if o.confirmed_at else None,
+            'picked_up_at': o.picked_up_at.strftime('%d %b %Y, %H:%M') if o.picked_up_at else None,
+            'delivered_at': o.delivered_at.strftime('%d %b %Y, %H:%M') if o.delivered_at else None,
+            'landmark': o.landmark or '',
+        })
+
     ctx.update({
         "orders": orders,
+        "orders_json": json.dumps(orders_json),
         "pending_orders": pending_orders,
         "delivering_orders": delivering_orders,
         "delivered_today": delivered_today,

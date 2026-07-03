@@ -52,22 +52,24 @@
 <div class="modal-overlay" id="orderDetailModal" style="display:none">
   <div class="modal-box wide">
     <button class="modal-close" onclick="closeModal('orderDetailModal')"><i class="fas fa-times"></i></button>
-    <div class="modal-hdr-simple"><div class="mhs-icon orange"><i class="fas fa-receipt"></i></div><div><div class="mhs-title" id="odTitle">Order #FG-2047</div><div class="mhs-sub"><div class="status-chip pending">Pending</div></div></div></div>
+    <div class="modal-hdr-simple"><div class="mhs-icon orange"><i class="fas fa-receipt"></i></div><div><div class="mhs-title" id="odTitle">Order #—</div><div class="mhs-sub"><div class="status-chip" id="odStatus">—</div></div></div></div>
     <div class="detail-grid">
       <div class="dg-section"><div class="dg-title">Order Info</div>
-        <div class="dg-row"><span>Customer</span><strong>Asha Mwangi</strong></div>
-        <div class="dg-row"><span>Station</span><strong>Total Energies – Kariakoo</strong></div>
-        <div class="dg-row"><span>Driver</span><strong>John Mwalimu</strong></div>
-        <div class="dg-row"><span>Fuel Type</span><strong>Petrol (RON 91)</strong></div>
-        <div class="dg-row"><span>Quantity</span><strong>20 Litres</strong></div>
-        <div class="dg-row"><span>Payment</span><strong>Cash on Delivery</strong></div>
+        <div class="dg-row"><span>Customer</span><strong id="odCustomer">—</strong></div>
+        <div class="dg-row"><span>Phone</span><strong id="odPhone">—</strong></div>
+        <div class="dg-row"><span>Station</span><strong id="odStation">—</strong></div>
+        <div class="dg-row"><span>Driver</span><strong id="odDriver">—</strong></div>
+        <div class="dg-row"><span>Fuel Type</span><strong id="odFuel">—</strong></div>
+        <div class="dg-row"><span>Quantity</span><strong id="odQty">—</strong></div>
+        <div class="dg-row"><span>Payment</span><strong id="odPayment">—</strong></div>
       </div>
       <div class="dg-section"><div class="dg-title">Financials & Timeline</div>
-        <div class="dg-row"><span>Fuel Cost</span><strong>TZS 57,000</strong></div>
-        <div class="dg-row"><span>Delivery Fee</span><strong>TZS 2,000</strong></div>
-        <div class="dg-row"><span>Total</span><strong class="text-orange">TZS 59,000</strong></div>
-        <div class="dg-row"><span>Placed</span><strong>25 Jun 2026, 14:18</strong></div>
-        <div class="dg-row"><span>Delivery Address</span><strong>Kariakoo Market, Block C</strong></div>
+        <div class="dg-row"><span>Total</span><strong class="text-orange" id="odTotal">—</strong></div>
+        <div class="dg-row"><span>Placed</span><strong id="odPlaced">—</strong></div>
+        <div class="dg-row"><span>Confirmed</span><strong id="odConfirmed">—</strong></div>
+        <div class="dg-row"><span>Picked Up</span><strong id="odPicked">—</strong></div>
+        <div class="dg-row"><span>Delivered</span><strong id="odDelivered">—</strong></div>
+        <div class="dg-row"><span>Delivery Address</span><strong id="odAddress">—</strong></div>
       </div>
     </div>
     <div class="modal-footer-btns"><button class="btn-modal-cancel" onclick="closeModal('orderDetailModal')">Close</button></div>
@@ -76,7 +78,28 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-function openOrderDetail(id) { document.getElementById('odTitle').textContent='Order #'+id; openModal('orderDetailModal'); }
+const ORDERS_DATA = {{ orders_json|safe }};
+function openOrderDetail(id) {
+  const o = ORDERS_DATA.find(x => String(x.id) === String(id));
+  if (!o) return;
+  document.getElementById('odTitle').textContent = 'Order #' + o.id;
+  document.getElementById('odStatus').textContent = o.status_display;
+  document.getElementById('odStatus').className = 'status-chip ' + o.status;
+  document.getElementById('odCustomer').textContent = o.customer_name;
+  document.getElementById('odPhone').textContent = o.phone || '—';
+  document.getElementById('odStation').textContent = o.station_name;
+  document.getElementById('odDriver').textContent = o.driver_name || '—';
+  document.getElementById('odFuel').textContent = o.fuel_type;
+  document.getElementById('odQty').textContent = o.quantity + ' Litres';
+  document.getElementById('odPayment').textContent = o.payment_method;
+  document.getElementById('odTotal').textContent = 'TZS ' + o.total_amount;
+  document.getElementById('odPlaced').textContent = o.created_at || '—';
+  document.getElementById('odConfirmed').textContent = o.confirmed_at || '—';
+  document.getElementById('odPicked').textContent = o.picked_up_at || '—';
+  document.getElementById('odDelivered').textContent = o.delivered_at || '—';
+  document.getElementById('odAddress').textContent = o.delivery_address || '—';
+  openModal('orderDetailModal');
+}
 document.getElementById('orderSearch')?.addEventListener('input',function(){const q=this.value.toLowerCase();document.querySelectorAll('.dt-row').forEach(r=>{r.style.display=(r.dataset.search||'').includes(q)?'':'none';});});
 document.querySelectorAll('.fchip').forEach(c=>{c.addEventListener('click',function(){document.querySelectorAll('.fchip').forEach(x=>x.classList.remove('active'));this.classList.add('active');const f=this.dataset.filter;document.querySelectorAll('.dt-row').forEach(r=>{r.style.display=(f==='all'||r.dataset.status===f)?'':'none';});});});
 </script>
