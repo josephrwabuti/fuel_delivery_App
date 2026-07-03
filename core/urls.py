@@ -57,6 +57,7 @@ urlpatterns = [
     path('dashboard/admin/station/approve/<int:station_id>/', views.approve_station, name='approve_station'),
     path('dashboard/admin/station/reject/<int:station_id>/', views.reject_station, name='reject_station'),
     path('dashboard/admin/driver/approve/<int:driver_id>/', views.approve_driver, name='approve_driver'),
+    path('dashboard/admin/driver/assign/<int:driver_id>/', views.assign_driver_station, name='assign_driver_station'),
     path('dashboard/admin/driver/reject/<int:driver_id>/', views.reject_driver, name='reject_driver'),
     path('dashboard/admin/driver/suspend/<int:driver_id>/', views.suspend_driver, name='suspend_driver'),
     path('drivers/', views.admin_drivers, name='admin_drivers'),

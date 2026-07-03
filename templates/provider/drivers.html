@@ -18,20 +18,19 @@
     <button class="fchip" data-filter="busy">On Delivery</button>
     <button class="fchip" data-filter="offline">Off Duty</button>
   </div>
-  <button class="btn-primary-sm" onclick="openModal('addDriverModal')">
-    <i class="fas fa-plus"></i> Add Driver
-  </button>
 </div>
 
 <!-- ===== DRIVERS GRID ===== -->
 <div class="drivers-grid" id="driversGrid">
 
   {% for driver in drivers %}
-  <div class="driver-card-full" data-status="{{ driver.status }}" data-name="{{ driver.name|lower }}">
+  <div class="driver-card-full" data-status="{{ driver.status_css }}" data-name="{{ driver.name|lower }}">
     <div class="dcf-header">
       <div class="dcf-avatar">{{ driver.name|slice:":1" }}</div>
       <div class="dcf-status-badge {{ driver.status_css }}">
-        <span class="sdot"></span> {{ driver.get_status_display }}
+        <span class="sdot"></span>
+        {% if driver.status == 'assigned' %}Pending Acceptance
+        {% else %}{{ driver.get_status_display }}{% endif %}
       </div>
     </div>
     <div class="dcf-name">{{ driver.name }}</div>
@@ -52,69 +51,31 @@
     </div>
     {% endif %}
     <div class="dcf-actions">
-      <button class="dcf-btn edit" onclick="openEditDriver({{ driver.id }})"><i class="fas fa-pen"></i> Edit</button>
+      {% if driver.status == 'assigned' %}
+      <button class="dcf-btn accept" onclick="acceptDriver({{ driver.id }}, '{{ driver.name|escapejs }}')"><i class="fas fa-check"></i> Accept</button>
+      <button class="dcf-btn reject" onclick="rejectDriver({{ driver.id }}, '{{ driver.name|escapejs }}')"><i class="fas fa-times"></i> Reject</button>
+      {% else %}
       <button class="dcf-btn {% if driver.is_active %}deactivate{% else %}activate{% endif %}" onclick="toggleDriverStatus({{ driver.id }}, {{ driver.is_active|yesno:'true,false' }})">
         {% if driver.is_active %}<i class="fas fa-ban"></i> Deactivate{% else %}<i class="fas fa-check"></i> Activate{% endif %}
       </button>
+      {% endif %}
     </div>
   </div>
   {% empty %}
   <div class="driver-card-full" style="justify-content:center;padding:40px;color:var(--text-m);text-align:center;grid-column:1/-1">
-    <span>No drivers yet. <a href="#" onclick="openModal('addDriverModal');return false" style="color:var(--orange)">Add your first driver</a></span>
+    <span>No drivers assigned to your station yet. Drivers will appear here once the admin assigns them.</span>
   </div>
   {% endfor %}
 </div>
 
-<!-- ===== ADD DRIVER MODAL ===== -->
-<div class="modal-overlay" id="addDriverModal" style="display:none">
-  <div class="modal-box">
-    <button class="modal-close" onclick="closeModal('addDriverModal')"><i class="fas fa-times"></i></button>
-    <div class="modal-header-simple">
-      <div class="mhs-icon blue"><i class="fas fa-user-plus"></i></div>
-      <div><div class="mhs-title" id="driverModalTitle">Add New Driver</div><div class="mhs-sub">Driver will be assigned to your station</div></div>
-    </div>
-    <form method="POST" action="{% url 'provider_add_driver' %}">
-      {% csrf_token %}
-      <input type="hidden" name="driver_id" id="editDriverId"/>
-      <div class="form-grid-2">
-        <div class="fg-group">
-          <label class="fg-label">Full Name</label>
-          <input type="text" name="name" id="driverName" class="fg-input-p" placeholder="Driver's full name" required/>
-        </div>
-        <div class="fg-group">
-          <label class="fg-label">Phone Number</label>
-          <input type="tel" name="phone" id="driverPhone" class="fg-input-p" placeholder="+255 7XX XXX XXX" required/>
-        </div>
-        <div class="fg-group">
-          <label class="fg-label">Vehicle Plate Number</label>
-          <input type="text" name="plate" id="driverPlate" class="fg-input-p" placeholder="e.g. T 123 ABC" required/>
-        </div>
-        <div class="fg-group">
-          <label class="fg-label">Vehicle Type</label>
-          <select name="vehicle_type" class="fg-input-p">
-            <option value="motorcycle">Motorcycle</option>
-            <option value="pickup">Pickup Truck</option>
-            <option value="van">Van</option>
-            <option value="truck">Fuel Truck</option>
-          </select>
-        </div>
-        <div class="fg-group full-width-form">
-          <label class="fg-label">National ID / License No.</label>
-          <input type="text" name="license_no" class="fg-input-p" placeholder="Driver's license or national ID number" required/>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-modal-cancel" onclick="closeModal('addDriverModal')">Cancel</button>
-        <button type="submit" class="btn-modal-confirm"><i class="fas fa-user-plus"></i> Add Driver</button>
-      </div>
-    </form>
-  </div>
-</div>
+
 
 {% endblock %}
 
 {% block extra_js %}
 <script>
+const CSRF = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
 // Driver filter
 document.querySelectorAll('.fchip').forEach(chip => {
   chip.addEventListener('click', function() {
@@ -135,14 +96,57 @@ document.getElementById('driverSearch').addEventListener('input', function() {
   });
 });
 
-function openEditDriver(id) {
-  document.getElementById('driverModalTitle').textContent = 'Edit Driver';
-  document.getElementById('editDriverId').value = id;
-  openModal('addDriverModal');
+function toggleDriverStatus(id, isActive) {
+  fetch(`/providers/drivers/${id}/toggle/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF},
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      showToast(isActive ? 'Driver deactivated.' : 'Driver activated.', isActive ? 'error' : 'success');
+      location.reload();
+    }
+  }).catch(() => {
+    showToast('Failed to toggle driver status.', 'error');
+  });
 }
 
-function toggleDriverStatus(id, isActive) {
-  showToast(isActive ? 'Driver deactivated.' : 'Driver activated.', isActive ? 'error' : 'success');
+function acceptDriver(id, name) {
+  fetch(`/providers/drivers/${id}/accept/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF},
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      showToast(`${name} accepted. They can now go On Duty.`, 'success');
+      location.reload();
+    } else {
+      showToast('Failed to accept driver. Status may have changed.', 'error');
+    }
+  }).catch(() => {
+    showToast('Network error while accepting driver.', 'error');
+  });
+}
+
+function rejectDriver(id, name) {
+  if (!confirm(`Reject ${name}? They will be removed from your station.`)) return;
+  fetch(`/providers/drivers/${id}/reject-station/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF},
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      showToast(`${name} rejected and removed from your station.`, 'error');
+      location.reload();
+    } else {
+      showToast('Failed to reject driver. Status may have changed.', 'error');
+    }
+  }).catch(() => {
+    showToast('Network error while rejecting driver.', 'error');
+  });
 }
 </script>
 {% endblock %}

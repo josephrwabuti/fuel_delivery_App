@@ -220,7 +220,7 @@ function quickAction(action, orderId) {
   currentOrderId = orderId;
   const row = document.querySelector(`[data-search*="${orderId.toLowerCase()}"]`);
   if (action === 'accept') {
-    fetch(`/provider/orders/${orderId}/accept/`, {
+    fetch(`/providers/orders/${orderId}/accept/`, {
       method: 'POST',
       headers: { 'X-CSRFToken': getCSRF() },
     }).then(() => {
@@ -282,7 +282,7 @@ function selectDriver(el, id, name) {
 function confirmAssign() {
   const driverId = document.getElementById('selectedDriverId').value;
   if (!driverId) { showToast('No driver selected.', 'error'); return; }
-  fetch(`/provider/orders/${currentOrderId}/assign/`, {
+  fetch(`/providers/orders/${currentOrderId}/assign/`, {
     method: 'POST',
     headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'driver_id=' + encodeURIComponent(driverId),
@@ -303,7 +303,7 @@ function confirmAssign() {
 function confirmReject() {
   const reason = document.getElementById('rejectReason').value;
   if (!reason) { showToast('Please select a rejection reason.', 'error'); return; }
-  fetch(`/provider/orders/${currentOrderId}/reject/`, {
+  fetch(`/providers/orders/${currentOrderId}/reject/`, {
     method: 'POST',
     headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'reason=' + encodeURIComponent(reason),

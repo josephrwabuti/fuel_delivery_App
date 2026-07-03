@@ -521,6 +521,7 @@ def admin_drivers(request):
 
     approved_drivers = drivers.filter(driver__status="approved").count()
     pending_drivers = drivers.filter(driver__status="pending").count()
+    assigned_drivers = drivers.filter(driver__status="assigned").count()
     rejected_drivers = drivers.filter(driver__status="rejected").count()
     active_drivers = drivers.filter(driver__on_duty=True).count()
 
@@ -528,8 +529,10 @@ def admin_drivers(request):
         "drivers": drivers,
         "approved_drivers": approved_drivers,
         "pending_drivers": pending_drivers,
+        "assigned_drivers": assigned_drivers,
         "rejected_drivers": rejected_drivers,
         "active_drivers": active_drivers,
+        "stations": Station.objects.filter(status="approved"),
     })
     return render(request, 'admin_panel/drivers.html', ctx)
 
@@ -545,10 +548,38 @@ def approve_driver(request, driver_id):
     Notification.objects.create(
         user=driver.user,
         title="Account Approved",
-        message="Your driver account has been approved. You can now go On Duty and start receiving orders.",
+        message="Your driver account has been approved. An admin will assign you to a station soon.",
     )
 
     return JsonResponse({"success": True})
+
+
+@login_required
+@role_required("admin")
+def assign_driver_station(request, driver_id):
+    if request.method == "POST":
+        driver = get_object_or_404(Driver, id=driver_id)
+        station_id = request.POST.get("station_id")
+        station = get_object_or_404(Station, id=station_id)
+        driver.station = station
+        driver.status = "assigned"
+        driver.is_approved = True
+        driver.save()
+
+        Notification.objects.create(
+            user=driver.user,
+            title="Station Assigned",
+            message=f"You have been assigned to {station.name}. Please coordinate with the station owner.",
+        )
+
+        Notification.objects.create(
+            user=station.owner,
+            title="New Driver Assigned",
+            message=f"Driver {driver.name} has been assigned to your station by the admin. Please accept or reject.",
+        )
+
+        return JsonResponse({"success": True, "station_name": station.name})
+    return JsonResponse({"success": False}, status=400)
 
 
 @login_required

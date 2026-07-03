@@ -142,12 +142,14 @@ a{text-decoration:none;color:inherit}
 .btn-reject{border-color:rgba(239,68,68,0.3);color:var(--red)}.btn-reject:hover{background:rgba(239,68,68,0.12)}
 .btn-view{border-color:var(--border-m);color:var(--text-s)}.btn-view:hover{border-color:var(--orange-bdr);color:var(--orange);background:var(--orange-dim)}
 .btn-suspend{border-color:rgba(234,179,8,0.3);color:var(--yellow)}.btn-suspend:hover{background:rgba(234,179,8,0.12)}
+.btn-assign{border-color:rgba(59,130,246,0.3);color:var(--blue)}.btn-assign:hover{background:rgba(59,130,246,0.12)}
 
 /* Status chips */
 .status-chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:100px;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
 .status-chip.approved,.status-chip.active{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25)}
 .status-chip.pending{background:rgba(234,179,8,0.12);color:var(--yellow);border:1px solid rgba(234,179,8,0.25)}
 .status-chip.rejected,.status-chip.suspended,.status-chip.cancelled{background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
+.status-chip.assigned{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue-bdr)}
 .status-chip.confirmed{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue-bdr)}
 .status-chip.delivering{background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange-bdr)}
 .status-chip.delivered{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25)}

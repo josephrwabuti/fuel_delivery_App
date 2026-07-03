@@ -43,7 +43,9 @@ urlpatterns = [
      
      path("stock/restock/", views.provider_restock, name="provider_restock"),
      
-     path("provider/driver/", views.provider_add_driver, name="provider_add_driver"),
+     path("drivers/<int:id>/accept/", views.provider_accept_driver, name="provider_accept_driver"),
+
+    path("drivers/<int:id>/reject-station/", views.provider_reject_driver, name="provider_reject_driver"),
      
      path("station/update", views.provider_update_station,
          name="provider_update_station"),

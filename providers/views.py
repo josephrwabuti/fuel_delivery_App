@@ -135,7 +135,7 @@ def provider_orders(request):
     ).select_related('customer').order_by('-created_at'))
 
     available_drivers = Driver.objects.filter(
-        station=station, on_duty=True
+        station=station, status='approved'
     ).exclude(
         order__status__in=('assigned', 'out')
     )
@@ -171,15 +171,11 @@ def provider_order_detail(request, id):
     station = request.user.station
     order = get_object_or_404(Order, id=id, station=station)
     available_drivers = Driver.objects.filter(
-        station=station, on_duty=True
+        station=station, status='approved'
     ).exclude(
         order__status__in=('assigned', 'out')
     ).annotate(
-        display_status=Case(
-            When(on_duty=True, then=Value('available')),
-            default=Value('offline'),
-            output_field=CharField(),
-        )
+        display_status=Value('available', output_field=CharField()),
     )
     context = {
         'order': order,
@@ -292,8 +288,9 @@ def provider_drivers(request):
     station = request.user.station
     drivers = Driver.objects.filter(station=station).select_related('user').order_by('name')
     for d in drivers:
-        d.is_active = d.status not in ('suspended', 'rejected')
-        if d.status == 'approved' and d.on_duty:
+        if d.status == 'assigned':
+            d.status_css = 'pending'
+        elif d.status == 'approved' and d.on_duty:
             d.status_css = 'available'
         elif d.status == 'approved' and not d.on_duty:
             d.status_css = 'offline'
@@ -310,37 +307,41 @@ def provider_drivers(request):
 
 @login_required(login_url='login')
 @role_required('provider')
-def provider_add_driver(request):
+def provider_accept_driver(request, id):
     station = request.user.station
     if request.method == 'POST':
-        name = request.POST.get('name')
-        phone = request.POST.get('phone')
-        plate = request.POST.get('plate')
-        licence = request.POST.get('licence_number')
-        vehicle_type = request.POST.get('vehicle_type')
-        if name and phone:
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            username = f"driver_{station.id}_{int(timezone.now().timestamp())}"
-            user = User.objects.create_user(
-                username=username,
-                password='default123',
-                role='driver',
-                phone=phone,
+        driver = get_object_or_404(Driver, id=id, station=station)
+        if driver.status == 'assigned':
+            driver.status = 'approved'
+            driver.is_approved = True
+            driver.save()
+            Notification.objects.create(
+                user=driver.user,
+                title="Accepted by Station",
+                message=f"{station.name} has accepted you. You can now go On Duty.",
             )
-            Driver.objects.create(
-                user=user,
-                name=name,
-                phone=phone,
-                plate=plate or '',
-                licence_number=licence or '',
-                vehicle_type=vehicle_type or '',
-                station=station,
-                status='pending',
-                is_approved=False,
+            return JsonResponse({'status': 'ok', 'new_status': 'approved'})
+    return JsonResponse({'status': 'error'}, status=400)
+
+
+@login_required(login_url='login')
+@role_required('provider')
+def provider_reject_driver(request, id):
+    station = request.user.station
+    if request.method == 'POST':
+        driver = get_object_or_404(Driver, id=id, station=station)
+        if driver.status == 'assigned':
+            driver.station = None
+            driver.status = 'approved'
+            driver.is_approved = True
+            driver.save()
+            Notification.objects.create(
+                user=driver.user,
+                title="Rejected by Station",
+                message=f"{station.name} has rejected your assignment. Admin will reassign you.",
             )
-            messages.success(request, f'Driver {name} added.')
-    return redirect('provider_drivers')
+            return JsonResponse({'status': 'ok', 'new_status': 'unassigned'})
+    return JsonResponse({'status': 'error'}, status=400)
 
 
 @login_required(login_url='login')

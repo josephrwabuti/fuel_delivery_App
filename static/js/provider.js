@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
   window.toggleStationOpen = function (checkbox) {
     const label = document.getElementById('openLabel');
     const csrf = document.querySelector('[name=csrfmiddlewaretoken]');
-    fetch('/provider/station/toggle-open/', {
+    fetch('/providers/station/toggle-open/', {
       method: 'POST',
       headers: {
         'X-CSRFToken': csrf ? csrf.value : '',

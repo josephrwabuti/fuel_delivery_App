@@ -10,6 +10,7 @@
 <div class="mini-stats-row">
   <div class="msr-item"><div class="msr-num text-green">{{ approved_drivers }}</div><div class="msr-lbl">Approved</div></div>
   <div class="msr-item"><div class="msr-num text-yellow">{{ pending_drivers }}</div><div class="msr-lbl">Pending</div></div>
+  <div class="msr-item"><div class="msr-num text-orange">{{ assigned_drivers }}</div><div class="msr-lbl">Assigned</div></div>
   <div class="msr-item"><div class="msr-num text-red">{{ rejected_drivers }}</div><div class="msr-lbl">Rejected</div></div>
   <div class="msr-item"><div class="msr-num text-blue">{{ active_drivers }}</div><div class="msr-lbl">On Duty Now</div></div>
 </div>
@@ -24,6 +25,7 @@
     <button class="fchip active" data-filter="all">All</button>
     <button class="fchip" data-filter="pending">Pending</button>
     <button class="fchip" data-filter="approved">Approved</button>
+    <button class="fchip" data-filter="assigned">Assigned</button>
     <button class="fchip" data-filter="rejected">Rejected</button>
     <button class="fchip" data-filter="suspended">Suspended</button>
   </div>
@@ -54,6 +56,9 @@
         <button class="btn-reject" onclick="rejectDriver(this, '{{ driver.get_full_name|escapejs }}')" title="Reject"><i class="fas fa-times"></i></button>
         {% endif %}
         <button class="btn-view" onclick="openDriverDetail(this, '{{ driver.get_full_name|escapejs }}', '{{ driver.driver.licence_number|escapejs }}', '{{ driver.driver.vehicle_type|escapejs }}', '{{ driver.driver.plate_number|escapejs }}', '{{ driver.email|escapejs }}', '{{ driver.driver.phone|escapejs }}')" title="View Detail"><i class="fas fa-eye"></i></button>
+        {% if driver.driver.status == 'approved' and not driver.driver.station %}
+        <button class="btn-assign" onclick="openAssignModal({{ driver.driver.id }}, '{{ driver.get_full_name|escapejs }}')" title="Assign Station"><i class="fas fa-location-dot"></i></button>
+        {% endif %}
         {% if driver.driver.status == 'approved' %}
         <button class="btn-suspend" onclick="suspendDriver(this, '{{ driver.get_full_name|escapejs }}')" title="Suspend"><i class="fas fa-ban"></i></button>
         {% endif %}
@@ -95,6 +100,34 @@
   </div>
 </div>
 
+<!-- ===== ASSIGN STATION MODAL ===== -->
+<div class="modal-overlay" id="assignModal" style="display:none">
+  <div class="modal-box narrow">
+    <button class="modal-close" onclick="closeModal('assignModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-hdr-simple">
+      <div class="mhs-icon orange"><i class="fas fa-location-dot"></i></div>
+      <div><div class="mhs-title">Assign Station</div><div class="mhs-sub" id="assignDriverName">Assign driver to a station</div></div>
+    </div>
+    <form method="POST" id="assignForm">
+      {% csrf_token %}
+      <input type="hidden" name="driver_id" id="assignDriverId"/>
+      <div class="fg-group mb-14">
+        <label class="fg-label">Select Station</label>
+        <select name="station_id" class="fg-input-a" id="assignStationSelect" required>
+          <option value="">— Choose a station —</option>
+          {% for station in stations %}
+          <option value="{{ station.id }}">{{ station.name }} — {{ station.address|truncatechars:30 }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="modal-footer-btns">
+        <button type="button" class="btn-modal-cancel" onclick="closeModal('assignModal')">Cancel</button>
+        <button type="submit" class="btn-modal-confirm"><i class="fas fa-check"></i> Assign Driver</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -111,7 +144,7 @@ function approveDriver(btn, name) {
     .then(r => r.json())
     .then(data => {
       if (data.success) {
-        showToast(`${name} approved. They can now go On Duty.`, 'success');
+        showToast(`${name} approved.`, 'success');
         updateDriverRow(userId, 'approved');
         closeModal('driverDetailModal');
       }
@@ -140,6 +173,12 @@ function suspendDriver(btn, name) {
       }
     });
 }
+function openAssignModal(driverId, name) {
+  document.getElementById('assignDriverId').value = driverId;
+  document.getElementById('assignDriverName').textContent = `Assign ${name} to a station`;
+  document.getElementById('assignStationSelect').value = '';
+  openModal('assignModal');
+}
 function openDriverDetail(btn, name, licence, vehicle, plate, email, phone) {
   const userId = getUserId(btn), driverId = getDriverId(btn);
   document.getElementById('ddInitial').textContent  = name.charAt(0);
@@ -162,13 +201,38 @@ function updateDriverRow(userId, status) {
     const actions = row.querySelector('.dt-actions');
     if (actions) {
       if (status === 'approved') {
-        actions.innerHTML = `<button class="btn-view" onclick="openDriverDetail(this,'','','','','','')" title="View"><i class="fas fa-eye"></i></button><button class="btn-suspend" onclick="suspendDriver(this,'')" title="Suspend"><i class="fas fa-ban"></i></button>`;
+        actions.innerHTML = `<button class="btn-assign" onclick="openAssignModal(${row.dataset.driverId},'')" title="Assign Station"><i class="fas fa-location-dot"></i></button><button class="btn-view" onclick="openDriverDetail(this,'','','','','','')" title="View"><i class="fas fa-eye"></i></button><button class="btn-suspend" onclick="suspendDriver(this,'')" title="Suspend"><i class="fas fa-ban"></i></button>`;
+      } else if (status === 'assigned') {
+        actions.innerHTML = `<button class="btn-view" onclick="openDriverDetail(this,'','','','','','')" title="View"><i class="fas fa-eye"></i></button>`;
       } else if (status === 'rejected' || status === 'suspended') {
         actions.innerHTML = `<button class="btn-view" onclick="openDriverDetail(this,'','','','','','')" title="View"><i class="fas fa-eye"></i></button>`;
       }
     }
   });
 }
+
+// Assign form submit
+document.getElementById('assignForm')?.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const driverId = document.getElementById('assignDriverId').value;
+  const stationId = document.getElementById('assignStationSelect').value;
+  if (!stationId) { showToast('Please select a station.', 'error'); return; }
+  const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  fetch(`/dashboard/admin/driver/assign/${driverId}/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: `station_id=${stationId}`
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      showToast(`Driver assigned to ${data.station_name}`, 'success');
+      const userId = document.querySelector(`.dt-row[data-driver-id="${driverId}"]`)?.dataset?.userId;
+      updateDriverRow(userId, 'assigned');
+      closeModal('assignModal');
+    }
+  });
+});
 function filterByStatus(status) {
   document.querySelectorAll('.fchip').forEach(c => { c.classList.toggle('active', c.dataset.filter === status); });
   document.querySelectorAll('.dt-row').forEach(r => { r.style.display = r.dataset.status === status ? '' : 'none'; });

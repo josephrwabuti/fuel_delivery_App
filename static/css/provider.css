@@ -248,6 +248,7 @@ a{text-decoration:none;color:inherit}
 .dcf-avatar{width:48px;height:48px;border-radius:50%;background:var(--orange-dim);border:2px solid var(--orange-bdr);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--orange)}
 .dcf-status-badge{display:flex;align-items:center;gap:5px;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:100px}
 .dcf-status-badge .sdot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.dcf-status-badge.pending{background:rgba(234,179,8,0.12);color:var(--yellow);border:1px solid rgba(234,179,8,0.25)}
 .dcf-status-badge.available{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25)}
 .dcf-status-badge.busy{background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange-bdr)}
 .dcf-status-badge.offline{background:var(--glass-l);color:var(--text-m);border:1px solid var(--border-s)}
@@ -266,6 +267,8 @@ a{text-decoration:none;color:inherit}
 .dcf-btn.edit{border-color:var(--blue-bdr);color:var(--blue);background:var(--blue-dim)}.dcf-btn.edit:hover{background:var(--blue);color:#fff}
 .dcf-btn.deactivate{border-color:rgba(239,68,68,0.3);color:var(--red);background:rgba(239,68,68,0.08)}.dcf-btn.deactivate:hover{background:rgba(239,68,68,0.2)}
 .dcf-btn.activate{border-color:rgba(34,197,94,0.3);color:var(--green);background:rgba(34,197,94,0.08)}.dcf-btn.activate:hover{background:rgba(34,197,94,0.15)}
+.dcf-btn.accept{border-color:rgba(34,197,94,0.3);color:var(--green);background:rgba(34,197,94,0.08)}.dcf-btn.accept:hover{background:rgba(34,197,94,0.2)}
+.dcf-btn.reject{border-color:rgba(239,68,68,0.3);color:var(--red);background:rgba(239,68,68,0.08)}.dcf-btn.reject:hover{background:rgba(239,68,68,0.2)}
 
 /* ===== REPORTS PAGE ===== */
 .report-filter-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}

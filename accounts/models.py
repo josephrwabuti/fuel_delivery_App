@@ -79,6 +79,7 @@ class Driver(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),
         ("approved", "Approved"),
+        ("assigned", "Assigned"),
         ("rejected", "Rejected"),
         ("suspended", "Suspended"),
     ]
