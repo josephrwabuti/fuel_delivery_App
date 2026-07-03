@@ -425,6 +425,12 @@ def provider_reports(request):
             'rating': d['total_rating'] / d['deliveries'] if d['total_rating'] and d['deliveries'] else 0,
         })
 
+    def fmt(n):
+        try:
+            return f"{int(n):,}"
+        except (TypeError, ValueError):
+            return "0"
+
     top_customers_qs = orders_qs.values(
         'customer__first_name', 'customer__last_name'
     ).annotate(
@@ -442,12 +448,6 @@ def provider_reports(request):
             'revenue': rev,
             'revenue_fmt': fmt(rev),
         })
-
-    def fmt(n):
-        try:
-            return f"{int(n):,}"
-        except (TypeError, ValueError):
-            return "0"
 
     context = {
         'total_orders': total_orders,

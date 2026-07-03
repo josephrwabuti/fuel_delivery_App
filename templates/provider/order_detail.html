@@ -1,0 +1,127 @@
+{% extends 'provider/base.html' %}
+{% load static %}
+{% block title %}FuelGo – Order #{{ order.id }}{% endblock %}
+{% block page_title %}Order #{{ order.id }}{% endblock %}
+{% block nav_orders %}active{% endblock %}
+
+{% block content %}
+
+<div class="order-detail-grid">
+  <div class="odg-section">
+    <div class="odg-title">Customer</div>
+    <div class="odg-val"><i class="fas fa-user text-orange"></i> {{ order.customer.get_full_name }}</div>
+    <div class="odg-val"><i class="fas fa-phone text-orange"></i> {{ order.phone }}</div>
+    <div class="odg-val"><i class="fas fa-location-dot text-orange"></i> {{ order.delivery_address }}</div>
+    {% if order.landmark %}
+    <div class="odg-val"><i class="fas fa-flag text-orange"></i> {{ order.landmark }}</div>
+    {% endif %}
+  </div>
+  <div class="odg-section">
+    <div class="odg-title">Order Details</div>
+    <div class="odg-val"><i class="fas fa-fire-flame-curved text-orange"></i> {{ order.fuel_type }}</div>
+    <div class="odg-val"><i class="fas fa-droplet text-blue"></i> {{ order.quantity }} Litres</div>
+    <div class="odg-val"><i class="fas fa-wallet text-orange"></i> {{ order.payment_method }}</div>
+    <div class="odg-val"><i class="fas fa-clock text-orange"></i> {{ order.created_at|date:"d M Y H:i" }}</div>
+  </div>
+  <div class="odg-section">
+    <div class="odg-title">Payment</div>
+    <div class="omt-row flat" style="margin-bottom:4px"><span>Subtotal</span><span>TZS {{ order.total_amount|floatformat:0 }}</span></div>
+    <div class="omt-row flat total" style="border-bottom:none;margin-top:4px"><span><strong>Total</strong></span><span><strong>TZS {{ order.total_amount|floatformat:0 }}</strong></span></div>
+  </div>
+  <div class="odg-section">
+    <div class="odg-title">Status</div>
+    <div style="margin-bottom:10px"><div class="status-chip {{ order.status }}">{{ order.get_status_display }}</div></div>
+    {% if order.notes %}
+    <div class="odg-val"><i class="fas fa-note-sticky text-orange"></i> {{ order.notes }}</div>
+    {% endif %}
+  </div>
+  <div class="odg-section" style="grid-column:span 2">
+    <div class="odg-title">Timeline</div>
+    <div class="odg-timeline">
+      <div class="odt-item done"><i class="fas fa-circle-check"></i> Order placed – {{ order.created_at|date:"d M Y H:i" }}</div>
+      {% if order.confirmed_at %}
+      <div class="odt-item done"><i class="fas fa-circle-check"></i> Confirmed – {{ order.confirmed_at|date:"d M Y H:i" }}</div>
+      {% endif %}
+      {% if order.driver_assigned_at %}
+      <div class="odt-item done"><i class="fas fa-circle-check"></i> Driver assigned – {{ order.driver_assigned_at|date:"d M Y H:i" }}</div>
+      {% endif %}
+      {% if order.picked_up_at %}
+      <div class="odt-item done"><i class="fas fa-circle-check"></i> Picked up – {{ order.picked_up_at|date:"d M Y H:i" }}</div>
+      {% endif %}
+      {% if order.delivered_at %}
+      <div class="odt-item done"><i class="fas fa-circle-check"></i> Delivered – {{ order.delivered_at|date:"d M Y H:i" }}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if order.status == 'confirmed' %}
+<div class="section-head" style="margin-top:24px">
+  <div class="section-title-sm"><i class="fas fa-id-badge text-blue"></i> Assign a Driver</div>
+</div>
+<div class="driver-select-list">
+  {% for driver in available_drivers %}
+  <div class="dsl-item{% if forloop.first %} selected{% endif %}" data-driver="{{ driver.id }}" onclick="selectDriver(this, {{ driver.id }}, '{{ driver.name }}')" style="cursor:pointer">
+    <div class="dsl-avatar">{{ driver.name|slice:":1" }}</div>
+    <div class="dsl-info">
+      <strong>{{ driver.name }}</strong>
+      <span><i class="fas fa-star text-orange"></i> {{ driver.rating|default:"—" }} · <span style="color:var(--green);font-weight:600">Available</span></span>
+    </div>
+    <div class="dsl-check"><i class="fas fa-circle-check"></i></div>
+  </div>
+  {% empty %}
+  <div class="dsl-item disabled" style="opacity:0.5;cursor:not-allowed">
+    <div class="dsl-avatar">—</div>
+    <div class="dsl-info">
+      <strong>No drivers available</strong>
+      <span>Add drivers from the Drivers page</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<input type="hidden" id="selectedDriverId" value="{{ available_drivers.first.id|default:'' }}"/>
+<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">
+  <a href="{% url 'provider_orders' %}" class="btn-modal-cancel"><i class="fas fa-arrow-left"></i> Back to Orders</a>
+  <button class="btn-modal-confirm" onclick="confirmAssign()"><i class="fas fa-id-badge"></i> Assign Driver</button>
+</div>
+{% else %}
+<div style="display:flex;gap:10px;margin-top:24px;justify-content:flex-end">
+  <a href="{% url 'provider_orders' %}" class="btn-modal-cancel"><i class="fas fa-arrow-left"></i> Back to Orders</a>
+  {% if order.status == 'pending' %}
+  <form method="POST" action="{% url 'provider_accept_order' order.id %}" style="display:inline">
+    {% csrf_token %}
+    <button class="btn-modal-confirm"><i class="fas fa-check"></i> Accept Order</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCSRF() {
+  const m = document.querySelector('[name=csrfmiddlewaretoken]');
+  return m ? m.value : '';
+}
+
+function selectDriver(el, id) {
+  document.querySelectorAll('.dsl-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('selectedDriverId').value = id;
+}
+
+function confirmAssign() {
+  const driverId = document.getElementById('selectedDriverId').value;
+  if (!driverId) { showToast('No driver selected.', 'error'); return; }
+  fetch('/providers/orders/{{ order.id }}/assign/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'driver_id=' + encodeURIComponent(driverId),
+  }).then(() => {
+    showToast('Driver assigned!', 'success');
+    setTimeout(() => window.location.href = '{% url "provider_orders" %}', 1000);
+  }).catch(() => showToast('Failed to assign driver.', 'error'));
+}
+</script>
+{% endblock %}
