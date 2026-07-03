@@ -1,16 +1,16 @@
 /* =========================================================
    FuelGo – Landing Page Stylesheet
-   Design: Dark Navy + Orange (#e85d04) + Blue (#3b82f6) + Purple (#8b5cf6)
+   Design: Blue + Orange (#e85d04) + Purple (#8b5cf6)
    Fonts: Bebas Neue (display) + Outfit (body)
    ========================================================= */
 
 :root {
-  --navy-950: #050d1a;
-  --navy-900: #080f1f;
-  --navy-800: #0d1a2e;
-  --navy-700: #112240;
-  --navy-600: #1a3354;
-  --navy-500: #1e3a5f;
+  --blue-950: #172554;
+  --blue-900: #1e3a8a;
+  --blue-800: #1e40af;
+  --blue-700: #2563eb;
+  --blue-600: #3b82f6;
+  --blue-500: #60a5fa;
   --orange:   #e85d04;
   --orange-light: #ff7216;
   --orange-dim:   #e85d0422;
@@ -19,12 +19,12 @@
   --purple:   #8b5cf6;
   --purple-dim: #8b5cf622;
   --text-primary:   #f0f4ff;
-  --text-secondary: #94a3b8;
-  --text-muted:     #64748b;
-  --border-subtle:  rgba(255,255,255,0.07);
-  --border-medium:  rgba(255,255,255,0.12);
-  --glass-bg: rgba(13,26,46,0.8);
-  --glass-bg-light: rgba(255,255,255,0.04);
+  --text-secondary: #cbd5e1;
+  --text-muted:     #94a3b8;
+  --border-subtle:  rgba(255,255,255,0.08);
+  --border-medium:  rgba(255,255,255,0.15);
+  --glass-bg: rgba(30,58,138,0.75);
+  --glass-bg-light: rgba(255,255,255,0.05);
   --radius: 16px;
   --radius-sm: 10px;
   --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
@@ -36,7 +36,7 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: 'Outfit', sans-serif;
-  background-color: var(--navy-950);
+  background-color: var(--blue-950);
   color: var(--text-primary);
   line-height: 1.6;
   overflow-x: hidden;
@@ -48,7 +48,7 @@ body {
 
 /* ---- SCROLLBAR ---- */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--navy-900); }
+::-webkit-scrollbar-track { background: var(--blue-950); }
 ::-webkit-scrollbar-thumb { background: var(--orange); border-radius: 3px; }
 
 /* ===================  NAVBAR  =================== */
@@ -59,7 +59,7 @@ body {
   z-index: 1000;
 }
 #mainNav.scrolled {
-  background: rgba(5,13,26,0.95);
+  background: rgba(23,37,84,0.95);
   backdrop-filter: blur(16px);
   padding: 12px 0;
   border-bottom: 1px solid var(--border-subtle);
@@ -150,7 +150,7 @@ body {
                     url('https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=1800&q=80');
   background-size: cover;
   background-position: center 60%;
-  background-color: var(--navy-800);
+  background-color: var(--blue-900);
   z-index: 0;
   transform: scale(1.05);
   animation: heroZoom 20s ease-in-out infinite alternate;
@@ -164,9 +164,9 @@ body {
   inset: 0;
   background: linear-gradient(
     135deg,
-    rgba(5,13,26,0.97) 0%,
-    rgba(5,13,26,0.88) 50%,
-    rgba(5,13,26,0.72) 100%
+    rgba(23,37,84,0.97) 0%,
+    rgba(30,58,138,0.9) 50%,
+    rgba(30,64,175,0.75) 100%
   );
   z-index: 1;
 }
@@ -382,7 +382,7 @@ body {
 }
 .fp-bar {
   width: 100%;
-  background: var(--navy-600);
+  background: var(--blue-600);
   border-radius: 4px 4px 0 0;
   transition: height 0.5s;
 }
@@ -394,7 +394,7 @@ body {
 
 /* ===================  STATS STRIP  =================== */
 .stats-strip {
-  background: var(--navy-800);
+  background: var(--blue-800);
   border-top: 1px solid var(--border-subtle);
   border-bottom: 1px solid var(--border-subtle);
   padding: 0;
@@ -447,7 +447,7 @@ body {
 }
 
 /* ===================  FEATURES  =================== */
-.features-section { background: var(--navy-950); }
+.features-section { background: var(--blue-950); }
 .feature-card {
   background: var(--glass-bg-light);
   border: 1px solid var(--border-subtle);
@@ -487,7 +487,7 @@ body {
 .feature-card p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.65; margin: 0; }
 
 /* ===================  HOW IT WORKS  =================== */
-.how-section { background: var(--navy-800); }
+.how-section { background: var(--blue-900); }
 .step-card {
   background: var(--glass-bg-light);
   border: 1px solid var(--border-subtle);
@@ -527,7 +527,7 @@ body {
 .step-card p { font-size: 0.87rem; color: var(--text-secondary); margin: 0; }
 
 /* ===================  ROLES  =================== */
-.roles-section { background: var(--navy-950); }
+.roles-section { background: var(--blue-950); }
 .role-card {
   background: var(--glass-bg-light);
   border: 1px solid var(--border-subtle);
@@ -595,12 +595,12 @@ body {
 .btn-role-provider { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
 .btn-role-provider:hover { background: var(--blue); color: #fff; }
 .btn-role-driver { background: rgba(34,197,94,0.1); border-color: #22c55e; color: #22c55e; }
-.btn-role-driver:hover { background: #22c55e; color: var(--navy-950); }
+.btn-role-driver:hover { background: #22c55e; color: var(--blue-950); }
 .btn-role-admin { background: var(--purple-dim); border-color: var(--purple); color: var(--purple); }
 .btn-role-admin:hover { background: var(--purple); color: #fff; }
 
 /* ===================  AI SECTION  =================== */
-.ai-section { background: var(--navy-800); }
+.ai-section { background: var(--blue-900); }
 .ai-visual { position: relative; }
 .ai-chart-mock {
   background: var(--glass-bg);
@@ -637,7 +637,7 @@ body {
 .acm-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
 .acm-bar {
   width: 100%;
-  background: var(--navy-600);
+  background: var(--blue-600);
   border-radius: 5px 5px 0 0;
   transition: height 0.8s cubic-bezier(.34,1.56,.64,1);
   cursor: pointer;
@@ -687,7 +687,7 @@ body {
 .ai-benefit-item p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
 
 /* ===================  TRUST  =================== */
-.trust-section { background: var(--navy-950); }
+.trust-section { background: var(--blue-950); }
 .trust-card {
   background: var(--glass-bg-light);
   border: 1px solid var(--border-subtle);
@@ -717,14 +717,14 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, var(--navy-800) 0%, var(--navy-700) 100%);
+  background: linear-gradient(135deg, var(--blue-900) 0%, var(--blue-800) 100%);
   z-index: 0;
 }
 .cta-section::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 50%, rgba(232,93,4,0.15) 0%, transparent 70%);
+  background: radial-gradient(ellipse at 50% 50%, rgba(232,93,4,0.12) 0%, transparent 70%);
   z-index: 0;
 }
 .cta-content { position: relative; z-index: 1; }
@@ -765,7 +765,7 @@ body {
 .btn-cta-outline:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-dim); }
 
 /* ===================  CONTACT  =================== */
-.contact-section { background: var(--navy-900); }
+.contact-section { background: var(--blue-900); }
 .ci-item {
   display: flex;
   align-items: center;
@@ -798,11 +798,11 @@ body {
   background: rgba(255,255,255,0.06) !important;
 }
 .fg-input::placeholder { color: var(--text-muted) !important; }
-.fg-input option { background: var(--navy-800); color: var(--text-primary); }
+.fg-input option { background: var(--blue-800); color: var(--text-primary); }
 
 /* ===================  FOOTER  =================== */
 .site-footer {
-  background: var(--navy-950);
+  background: var(--blue-950);
   border-top: 1px solid var(--border-subtle);
   padding: 64px 0 0;
 }
@@ -869,7 +869,7 @@ body {
 .fp-btn.provider { background: var(--blue-dim); border-color: rgba(59,130,246,0.3); color: var(--blue); }
 .fp-btn.provider:hover { background: var(--blue); color: #fff; }
 .fp-btn.driver { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.3); color: #22c55e; }
-.fp-btn.driver:hover { background: #22c55e; color: var(--navy-950); }
+.fp-btn.driver:hover { background: #22c55e; color: var(--blue-950); }
 .fp-btn.admin { background: var(--purple-dim); border-color: rgba(139,92,246,0.3); color: var(--purple); }
 .fp-btn.admin:hover { background: var(--purple); color: #fff; }
 .footer-bottom {
