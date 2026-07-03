@@ -40,6 +40,7 @@
   <div class="tracking-main">
 
     <!-- Timeline -->
+    {% with s=active_order.status %}
     <div class="delivery-timeline">
       <div class="dt-step done">
         <div class="dt-icon"><i class="fas fa-circle-check"></i></div>
@@ -49,43 +50,44 @@
           <div class="dt-desc">Your order was received by the system</div>
         </div>
       </div>
-      <div class="dt-line done"></div>
-      <div class="dt-step done">
+      <div class="dt-line{% if s != 'pending' %} done{% endif %}"></div>
+      <div class="dt-step{% if s == 'pending' %} pending{% else %} done{% endif %}">
         <div class="dt-icon"><i class="fas fa-gas-pump"></i></div>
         <div class="dt-body">
           <div class="dt-title">Station Confirmed</div>
-          <div class="dt-time">{{ active_order.confirmed_at|time:"H:i" }}</div>
+          <div class="dt-time">{{ active_order.confirmed_at|time:"H:i"|default:"—" }}</div>
           <div class="dt-desc">{{ active_order.station.name }} accepted your order</div>
         </div>
       </div>
-      <div class="dt-line done"></div>
-      <div class="dt-step done">
+      <div class="dt-line{% if s == 'assigned' or s == 'out' or s == 'delivered' %} done{% endif %}"></div>
+      <div class="dt-step{% if s == 'pending' or s == 'confirmed' %} pending{% elif s == 'assigned' or s == 'out' or s == 'delivered' %} done{% endif %}">
         <div class="dt-icon"><i class="fas fa-id-badge"></i></div>
         <div class="dt-body">
           <div class="dt-title">Driver Assigned</div>
-          <div class="dt-time">{{ active_order.driver_assigned_at|time:"H:i" }}</div>
-          <div class="dt-desc">{{ active_order.driver.name }} is your delivery driver</div>
+          <div class="dt-time">{{ active_order.driver_assigned_at|time:"H:i"|default:"—" }}</div>
+          <div class="dt-desc">{% if active_order.driver %}{{ active_order.driver.name }} is your delivery driver{% else %}A driver will be assigned shortly{% endif %}</div>
         </div>
       </div>
-      <div class="dt-line active"></div>
-      <div class="dt-step active">
-        <div class="dt-icon pulse-ring"><i class="fas fa-truck-fast"></i></div>
+      <div class="dt-line{% if s == 'delivered' %} done{% elif s == 'out' or s == 'assigned' %} active{% endif %}"></div>
+      <div class="dt-step{% if s == 'pending' or s == 'confirmed' or s == 'assigned' %} pending{% elif s == 'out' %} active{% elif s == 'delivered' %} done{% endif %}">
+        <div class="dt-icon{% if s == 'out' %} pulse-ring{% endif %}"><i class="fas fa-truck-fast"></i></div>
         <div class="dt-body">
           <div class="dt-title">Out for Delivery</div>
-          <div class="dt-time">Now</div>
-          <div class="dt-desc">Driver is heading to your location</div>
+          <div class="dt-time">{% if s == 'out' %}Now{% elif s == 'delivered' %}{{ active_order.delivered_at|time:"H:i" }}{% else %}—{% endif %}</div>
+          <div class="dt-desc">{% if s == 'delivered' %}Fuel has been delivered{% elif s == 'out' %}Driver is heading to your location{% else %}Waiting for dispatch{% endif %}</div>
         </div>
       </div>
-      <div class="dt-line"></div>
-      <div class="dt-step pending">
+      <div class="dt-line{% if s == 'delivered' %} done{% endif %}"></div>
+      <div class="dt-step{% if s == 'delivered' %} done{% else %} pending{% endif %}">
         <div class="dt-icon"><i class="fas fa-circle-check"></i></div>
         <div class="dt-body">
           <div class="dt-title">Delivered</div>
-          <div class="dt-time">—</div>
-          <div class="dt-desc">Waiting for completion</div>
+          <div class="dt-time">{% if s == 'delivered' %}{{ active_order.delivered_at|time:"H:i" }}{% else %}—{% endif %}</div>
+          <div class="dt-desc">{% if s == 'delivered' %}Delivery completed{% else %}Waiting for completion{% endif %}</div>
         </div>
       </div>
     </div>
+    {% endwith %}
 
     <!-- Map placeholder -->
     <div class="map-container">
