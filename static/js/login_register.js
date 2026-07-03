@@ -102,7 +102,7 @@ function switchRole(role) {
   if (noSignupNote) {
     noSignupNote.style.display = cfg.canRegister ? 'none' : 'flex';
     if (!cfg.canRegister) {
-      noSignupNote.innerHTML = `<i class="fas fa-info-circle text-orange"></i>
+      noSignupNote.innerHTML = `<i class="fas fa-info-circle text-green"></i>
         Admin accounts are created by the system administrator only.`;
     }
   }
