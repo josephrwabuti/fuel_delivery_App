@@ -1,0 +1,1126 @@
+let App = {
+  user: null,
+  role: null,
+  currentPage: null,
+  navItems: [],
+  geolocationWatchId: null,
+  selectedStation: null,
+};
+
+function $id(id) { return document.getElementById(id); }
+function qs(sel, ctx) { return (ctx || document).querySelector(sel); }
+function qsa(sel, ctx) { return (ctx || document).querySelectorAll(sel); }
+
+function escapeHtml(s) {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function statusBadge(status) {
+  const cls = "badge-" + status.toLowerCase().replace(/\s+/g, "_");
+  const labels = {
+    pending: "Pending", confirmed: "Confirmed", assigned: "Assigned",
+    picked_up: "Picked Up", delivering: "Delivering", delivered: "Delivered",
+    cancelled: "Cancelled", out: "Out for Delivery",
+  };
+  return `<span class="badge ${cls}">${labels[status] || status}</span>`;
+}
+
+function showToast(msg, type) {
+  const t = $id("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (type ? " " + type : "");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+function showLoading(show) {
+  $id("loading-overlay").style.display = show ? "flex" : "none";
+}
+
+// ─── Router ───────────────────────────────────────────
+function navigate(hash) {
+  if (!hash || hash === "#") hash = App.role === "customer" ? "#/customer/dashboard" : "#/driver/dashboard";
+  location.hash = hash;
+}
+
+window.addEventListener("hashchange", () => renderPage());
+window.addEventListener("load", () => init());
+
+async function init() {
+  await registerSW();
+  renderAuth();
+  try {
+    const res = await API.getUser();
+    if (res.status === "success" && res.user) {
+      App.user = res.user;
+      App.role = res.user.role;
+      showApp();
+      if (!location.hash || location.hash === "#") navigate();
+      renderPage();
+    } else {
+      showAuth();
+    }
+  } catch {
+    showAuth();
+  }
+}
+
+async function registerSW() {
+  if ("serviceWorker" in navigator) {
+    try {
+      await navigator.serviceWorker.register("/static/pwa/sw.js");
+    } catch {}
+  }
+}
+
+function showApp() {
+  $id("auth-screen").classList.remove("show");
+  $id("app").style.display = "flex";
+  $id("bottom-nav").classList.add("show");
+  updateHeader();
+}
+
+function showAuth() {
+  $id("auth-screen").classList.add("show");
+  $id("app").style.display = "none";
+  $id("bottom-nav").classList.remove("show");
+}
+
+// ─── Header & Nav ─────────────────────────────────────
+function updateHeader(title, showBack, action) {
+  const h = $id("app-header");
+  const back = qs(".back-btn", h);
+  const h1 = qs("h1", h);
+  const act = qs(".header-action", h);
+  back.style.display = showBack ? "block" : "none";
+  h1.textContent = title || "FuelGo";
+  if (action) {
+    act.style.display = "block";
+    act.textContent = action.label;
+    act.onclick = action.onclick;
+  } else {
+    act.style.display = "none";
+  }
+}
+
+function setupNav(items) {
+  const nav = $id("bottom-nav");
+  nav.innerHTML = items.map((item, i) => `
+    <button class="nav-item" data-index="${i}" onclick="navigate('${item.hash}')">
+      <span class="nav-icon-wrap">
+        <span class="nav-icon">${item.icon}</span>
+        ${item.badge ? `<span class="badge">${item.badge}</span>` : ""}
+      </span>
+      <span>${item.label}</span>
+    </button>
+  `).join("");
+  App.navItems = items;
+}
+
+function updateNavActive(hash) {
+  qsa(".nav-item").forEach((el, i) => {
+    el.classList.toggle("active", App.navItems[i] && App.navItems[i].hash === hash);
+  });
+}
+
+function updateNavBadge(index, count) {
+  const items = qsa(".nav-item");
+  if (items[index]) {
+    const wrap = qs(".nav-icon-wrap", items[index]);
+    let badge = qs(".badge", wrap);
+    if (count > 0) {
+      if (!badge) {
+        badge = document.createElement("span");
+        badge.className = "badge";
+        wrap.appendChild(badge);
+      }
+      badge.textContent = count;
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+}
+
+// ─── Page Renderer ────────────────────────────────────
+async function renderPage() {
+  const hash = location.hash || "#/customer/dashboard";
+  updateNavActive(hash);
+
+  const content = $id("app-content");
+  const pages = qsa(".page", content);
+
+  let match;
+  if ((match = hash.match(/^#\/customer\/(\w+)(?:\?(.+))?$/))) {
+    App.role = "customer";
+    const page = match[1];
+    const params = new URLSearchParams(match[2] || "");
+    setupCustomerNav();
+    await renderCustomerPage(page, params);
+  } else if ((match = hash.match(/^#\/driver\/(\w+)$/))) {
+    App.role = "driver";
+    const page = match[1];
+    setupDriverNav();
+    await renderDriverPage(page);
+  } else {
+    navigate();
+  }
+}
+
+// ─── CUSTOMER PAGES ───────────────────────────────────
+const CUSTOMER_NAV = [
+  { hash: "#/customer/dashboard", icon: "🏠", label: "Home" },
+  { hash: "#/customer/stations", icon: "⛽", label: "Stations" },
+  { hash: "#/customer/order", icon: "📋", label: "Order" },
+  { hash: "#/customer/tracking", icon: "📍", label: "Track" },
+  { hash: "#/customer/history", icon: "📜", label: "History" },
+  { hash: "#/customer/profile", icon: "👤", label: "Profile" },
+  { hash: "#/customer/notifications", icon: "🔔", label: "Alerts" },
+];
+
+function setupCustomerNav() {
+  setupNav(CUSTOMER_NAV);
+}
+
+async function renderCustomerPage(page, params) {
+  const content = $id("app-content");
+  content.scrollTop = 0;
+  try {
+    switch (page) {
+      case "dashboard": await renderCustomerDashboard(content); break;
+      case "stations": await renderCustomerStations(content); break;
+      case "order": await renderCustomerOrder(content, params); break;
+      case "tracking": await renderCustomerTracking(content); break;
+      case "history": await renderCustomerHistory(content); break;
+      case "profile": await renderCustomerProfile(content); break;
+      case "notifications": await renderCustomerNotifications(content); break;
+      default: navigate("#/customer/dashboard");
+    }
+  } catch (e) {
+    content.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Error loading page</div><div class="empty-sub">${escapeHtml(e.message)}</div></div>`;
+  }
+}
+
+async function renderCustomerDashboard(content) {
+  updateHeader("FuelGo");
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.customerDashboard();
+  if (data.status !== "success") return;
+  const d = data;
+  const active = d.active_order;
+
+  let html = `
+    <div style="margin-bottom:16px">
+      <div style="font-size:14px;color:var(--text2)">Good ${d.time_of_day},</div>
+      <div style="font-size:22px;font-weight:700">${escapeHtml(App.user.first_name || "Customer")}</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value">${d.total_orders}</div><div class="stat-label">Total Orders</div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value">${d.delivered_orders}</div><div class="stat-label">Delivered</div></div>
+      <div class="stat-card"><div class="stat-icon">⛽</div><div class="stat-value">${d.total_litres}</div><div class="stat-label">Litres</div></div>
+      <div class="stat-card"><div class="stat-icon">⏱️</div><div class="stat-value">${d.avg_delivery_time || "--"}</div><div class="stat-label">Avg Min</div></div>
+    </div>`;
+
+  if (active) {
+    html += `
+      <div class="card" style="border-left:3px solid var(--primary);cursor:pointer" onclick="navigate('#/customer/tracking')">
+        <div class="card-header"><span class="card-title">🚚 Active Order #${active.id}</span>${statusBadge(active.status)}</div>
+        <div style="font-size:13px;color:var(--text2)">${escapeHtml(active.fuel_type)} · ${active.quantity}L · TZS ${Number(active.total_amount).toLocaleString()}</div>
+        <div style="font-size:13px;color:var(--text2)">${escapeHtml(active.station_name)}</div>
+      </div>`;
+  }
+
+  html += `<div class="card"><div class="card-header"><span class="card-title">⛽ Nearby Stations</span></div>`;
+  if (d.nearby_stations && d.nearby_stations.length) {
+    html += `<div class="h-scroll">`;
+    for (const s of d.nearby_stations) {
+      html += `
+        <div class="card station-card" style="min-width:180px;cursor:pointer" onclick="navigate('#/customer/order?station=${s.id}')">
+          <div class="sc-name">${escapeHtml(s.name)}</div>
+          <div class="sc-addr">${escapeHtml(s.address)}</div>
+          <div class="sc-meta">⭐ ${s.rating} · ${s.review_count} reviews</div>
+        </div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="empty-state"><div class="empty-icon">📍</div><div class="empty-title">No stations nearby</div></div>`;
+  }
+  html += `</div>`;
+
+  html += `<div class="card"><div class="card-header"><span class="card-title">📜 Recent Orders</span></div>`;
+  if (d.recent_orders && d.recent_orders.length) {
+    for (const o of d.recent_orders) {
+      html += `
+        <div class="list-item">
+          <div class="li-icon">⛽</div>
+          <div class="li-content">
+            <div class="li-title">${escapeHtml(o.station_name)}</div>
+            <div class="li-sub">${o.fuel_type} · ${o.quantity}L · ${o.created_at}</div>
+          </div>
+          <div class="li-right">${statusBadge(o.status)}<br><span style="font-size:12px;color:var(--text2)">TZS ${Number(o.total_amount).toLocaleString()}</span></div>
+        </div>`;
+    }
+  } else {
+    html += `<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-title">No orders yet</div></div>`;
+  }
+  html += `</div>`;
+
+  content.innerHTML = html;
+}
+
+async function renderCustomerStations(content) {
+  updateHeader("Find Stations");
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.customerStations();
+  if (data.status !== "success") return;
+
+  let html = `
+    <div class="search-bar">
+      <input type="text" id="station-search" placeholder="Search stations..." oninput="filterStations()">
+      <select id="fuel-filter" onchange="filterStations()">
+        <option value="">All Fuels</option>
+        <option value="Petrol">Petrol</option>
+        <option value="Diesel">Diesel</option>
+        <option value="Kerosene">Kerosene</option>
+      </select>
+    </div>
+    <div id="stations-list">`;
+
+  for (const s of data.stations) {
+    html += `
+      <div class="card station-card" data-name="${escapeHtml(s.name).toLowerCase()}" data-fuels="${s.fuels.map(f => f.type).join(",")}">
+        <div class="sc-name">${escapeHtml(s.name)}</div>
+        <div class="sc-addr">${escapeHtml(s.address)}</div>
+        <div class="sc-fuels">${s.fuels.map(f => `<span class="fuel-tag"><span class="ft-dot ${f.available ? 'available' : 'unavailable'}"></span>${f.type} · TZS ${Number(f.price).toLocaleString()}</span>`).join("")}</div>
+        <div class="sc-meta">⭐ ${s.rating} · ${s.review_count} reviews · ${s.hours}</div>
+        <div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="navigate('#/customer/order?station=${s.id}')">Order Here</button></div>
+      </div>`;
+  }
+  html += `</div>`;
+  content.innerHTML = html;
+  window.filterStations = function () {
+    const q = $id("station-search").value.toLowerCase();
+    const fuel = $id("fuel-filter").value;
+    qsa(".station-card").forEach(el => {
+      const name = el.dataset.name;
+      const fuels = el.dataset.fuels;
+      const matchName = !q || name.includes(q);
+      const matchFuel = !fuel || fuels.includes(fuel);
+      el.style.display = matchName && matchFuel ? "block" : "none";
+    });
+  };
+}
+
+async function renderCustomerOrder(content, params) {
+  updateHeader("Place Order", true, { label: "Stations", onclick: () => navigate("#/customer/stations") });
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+
+  const stationsRes = await API.customerStations();
+  let html = `
+    <div class="form-group">
+      <label>Station</label>
+      <select id="order-station" onchange="updateOrderFuels()">
+        <option value="">Select station</option>`;
+  for (const s of stationsRes.stations) {
+    html += `<option value="${s.id}" ${params.get("station") == s.id ? "selected" : ""}>${escapeHtml(s.name)}</option>`;
+  }
+  html += `</select></div>
+    <div class="form-group"><label>Fuel Type</label><select id="order-fuel"><option value="">Select station first</option></select></div>
+    <div class="form-group"><label>Quantity (Litres)</label><input type="number" id="order-qty" min="1" value="5" oninput="updateOrderTotal()"></div>
+    <div class="form-group"><label>Delivery Address</label><input type="text" id="order-address" placeholder="Your delivery address"></div>
+    <div class="form-group"><label>Phone</label><input type="tel" id="order-phone" placeholder="Phone number" value="${escapeHtml(App.user.phone || "")}"></div>
+    <div class="form-group"><label>Payment Method</label>
+      <select id="order-payment">
+        <option value="Cash">Cash on Delivery</option>
+        <option value="M-Pesa">M-Pesa</option>
+        <option value="Tigo Pesa">Tigo Pesa</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Notes (optional)</label><textarea id="order-notes" rows="2"></textarea></div>
+    <div class="card" style="background:var(--bg2)">
+      <div style="display:flex;justify-content:space-between;font-size:14px">
+        <span>Delivery Fee</span><span>TZS 2,000</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:14px;margin-top:4px">
+        <span>Fuel Cost</span><span id="order-fuel-cost">TZS 0</span>
+      </div>
+      <hr style="border-color:var(--bg3);margin:8px 0">
+      <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:700">
+        <span>Total</span><span id="order-total">TZS 2,000</span>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-block" style="margin-top:8px" onclick="submitOrder()">Place Order</button>`;
+
+  content.innerHTML = html;
+  window._stations = stationsRes.stations;
+  if (params.get("station")) updateOrderFuels();
+}
+
+window.updateOrderFuels = function () {
+  const sel = $id("order-station");
+  const fuelSel = $id("order-fuel");
+  const sid = parseInt(sel.value);
+  fuelSel.innerHTML = '<option value="">Select fuel</option>';
+  if (!sid) return;
+  const s = window._stations.find(st => st.id === sid);
+  if (s && s.fuels) {
+    for (const f of s.fuels) {
+      if (f.available) fuelSel.innerHTML += `<option value="${f.type}" data-price="${f.price}">${f.type} · TZS ${Number(f.price).toLocaleString()}/L</option>`;
+    }
+  }
+  updateOrderTotal();
+};
+
+window.updateOrderTotal = function () {
+  const fuelSel = $id("order-fuel");
+  const qty = parseFloat($id("order-qty").value) || 0;
+  const opt = fuelSel.options[fuelSel.selectedIndex];
+  const price = opt ? parseFloat(opt.dataset.price || "0") : 0;
+  const fuelCost = price * qty;
+  const total = fuelCost + 2000;
+  $id("order-fuel-cost").textContent = `TZS ${fuelCost.toLocaleString()}`;
+  $id("order-total").textContent = `TZS ${total.toLocaleString()}`;
+};
+
+window.submitOrder = async function () {
+  const stationId = parseInt($id("order-station").value);
+  const fuelType = $id("order-fuel").value;
+  const qty = parseFloat($id("order-qty").value);
+  const address = $id("order-address").value;
+  const phone = $id("order-phone").value;
+  const payment = $id("order-payment").value;
+  const notes = $id("order-notes").value;
+
+  if (!stationId || !fuelType || !qty || !address) {
+    showToast("Please fill all required fields", "error");
+    return;
+  }
+
+  try {
+    showLoading(true);
+    const res = await API.createOrder({ station_id: stationId, fuel_type: fuelType, quantity: qty, delivery_address: address, phone, payment_method: payment, notes });
+    showLoading(false);
+    if (res.status === "success") {
+      showToast("Order placed successfully!", "success");
+      navigate("#/customer/tracking");
+    }
+  } catch (e) {
+    showLoading(false);
+    showToast(e.message, "error");
+  }
+};
+
+async function renderCustomerTracking(content) {
+  updateHeader("Track Delivery");
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.customerTracking();
+  if (data.status !== "success") return;
+  const o = data.active_order;
+  if (!o) {
+    content.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">No Active Order</div><div class="empty-sub">Place an order to track it here</div><button class="btn btn-primary" style="margin-top:16px" onclick="navigate('#/customer/order')">Order Now</button></div>`;
+    return;
+  }
+
+  const steps = [
+    { label: "Order Placed", time: o.created_at, done: true },
+    { label: "Confirmed", time: o.confirmed_at, done: !!o.confirmed_at },
+    { label: "Picked Up", time: o.picked_up_at, done: !!o.picked_up_at },
+    { label: "Delivered", time: null, done: o.status === "delivered" },
+  ];
+  const currentIdx = steps.findLastIndex(s => s.done);
+
+  let html = `
+    <div class="card">
+      <div class="card-header"><span class="card-title">Order #${o.id}</span>${statusBadge(o.status)}</div>
+      <div style="font-size:14px"><strong>${escapeHtml(o.station_name)}</strong></div>
+      <div style="font-size:13px;color:var(--text2)">${escapeHtml(o.fuel_type)} · ${o.quantity}L · TZS ${Number(o.total_amount).toLocaleString()}</div>
+      <div style="font-size:13px;color:var(--text2)">📍 ${escapeHtml(o.delivery_address)}</div>
+    </div>`;
+
+  if (o.driver) {
+    html += `
+      <div class="card">
+        <div class="card-title" style="margin-bottom:8px">🚚 Driver</div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="avatar" style="width:48px;height:48px;font-size:20px;margin:0">👤</div>
+          <div>
+            <div style="font-weight:600">${escapeHtml(o.driver.name)}</div>
+            <div style="font-size:13px;color:var(--text2)">📞 ${escapeHtml(o.driver.phone)}</div>
+            <div style="font-size:13px;color:var(--text2)">🚗 ${escapeHtml(o.driver.plate)} · ⭐ ${o.driver.rating}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  html += `<div class="card"><div class="card-title" style="margin-bottom:12px">Progress</div><ul class="stepper">`;
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i];
+    const cls = s.done ? "completed" : (i === currentIdx + 1 ? "active" : "");
+    html += `<li class="step ${cls}"><div class="step-dot">${s.done ? "✓" : (i === currentIdx + 1 ? "●" : "")}</div><div class="step-content"><div class="step-label">${s.label}</div>${s.time ? `<div class="step-time">${s.time}</div>` : ""}</div></li>`;
+  }
+  html += `</ul></div>`;
+
+  if (o.status === "delivering") {
+    html += `<button class="btn btn-success btn-block" onclick="confirmDelivery(${o.id})">✓ Confirm Delivery</button>`;
+  }
+  if (["pending", "confirmed", "assigned"].includes(o.status)) {
+    html += `<button class="btn btn-danger btn-block" style="margin-top:8px" onclick="cancelOrder(${o.id})">✕ Cancel Order</button>`;
+  }
+
+  content.innerHTML = html;
+}
+
+window.confirmDelivery = async function (id) {
+  try {
+    showLoading(true);
+    const res = await API.confirmDelivery(id);
+    showLoading(false);
+    if (res.status === "success") { showToast("Delivery confirmed!", "success"); navigate("#/customer/tracking"); }
+  } catch (e) { showLoading(false); showToast(e.message, "error"); }
+};
+
+window.cancelOrder = async function (id) {
+  if (!confirm("Cancel this order?")) return;
+  try {
+    showLoading(true);
+    const res = await API.cancelOrder(id);
+    showLoading(false);
+    if (res.status === "success") { showToast("Order cancelled", "success"); navigate("#/customer/tracking"); }
+  } catch (e) { showLoading(false); showToast(e.message, "error"); }
+};
+
+async function renderCustomerHistory(content) {
+  updateHeader("Order History");
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.customerHistory();
+  if (data.status !== "success") return;
+
+  if (!data.orders || !data.orders.length) {
+    content.innerHTML = `<div class="empty-state"><div class="empty-icon">📜</div><div class="empty-title">No orders yet</div><div class="empty-sub">Your order history will appear here</div></div>`;
+    return;
+  }
+
+  const statuses = ["All", "Pending", "Confirmed", "Delivered", "Cancelled"];
+  let html = `<div class="tabs" id="history-tabs">`;
+  for (const s of statuses) {
+    html += `<button class="tab ${s === 'All' ? 'active' : ''}" onclick="filterHistory('${s}')">${s}</button>`;
+  }
+  html += `</div><div id="history-list">`;
+  for (const o of data.orders) {
+    html += `
+      <div class="order-card card" data-status="${o.status}">
+        <div class="oc-row"><span class="oc-title">#${o.id} · ${escapeHtml(o.station_name)}</span>${statusBadge(o.status)}</div>
+        <div class="oc-sub">${escapeHtml(o.fuel_type)} · ${o.quantity}L · TZS ${Number(o.total_amount).toLocaleString()}</div>
+        <div class="oc-sub">${o.created_at} · ${escapeHtml(o.payment_method)}</div>
+      </div>`;
+  }
+  html += `</div>`;
+  content.innerHTML = html;
+
+  window.filterHistory = function (status) {
+    qsa("#history-tabs .tab").forEach(t => t.classList.toggle("active", t.textContent === status));
+    qsa(".order-card").forEach(el => {
+      el.style.display = status === "All" || el.dataset.status === status.toLowerCase() ? "block" : "none";
+    });
+  };
+}
+
+async function renderCustomerProfile(content) {
+  updateHeader("My Profile");
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.customerProfile();
+  if (data.status !== "success") return;
+  const p = data.profile;
+  const s = data.stats;
+
+  let html = `
+    <div style="text-align:center;margin-bottom:16px">
+      <div class="avatar">${(App.user.first_name || "C")[0].toUpperCase()}</div>
+      <div style="font-size:18px;font-weight:600">${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</div>
+      <div style="font-size:13px;color:var(--text2)">${escapeHtml(p.email)}</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value">${s.total_orders}</div><div class="stat-label">Orders</div></div>
+      <div class="stat-card"><div class="stat-value">${s.delivered_orders}</div><div class="stat-label">Delivered</div></div>
+      <div class="stat-card"><div class="stat-value">${s.total_litres}</div><div class="stat-label">Litres</div></div>
+      <div class="stat-card"><div class="stat-value">${escapeHtml(p.date_joined)}</div><div class="stat-label">Member</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Edit Profile</div>
+      <div class="form-group"><label>First Name</label><input type="text" id="pf-fname" value="${escapeHtml(p.first_name)}"></div>
+      <div class="form-group"><label>Last Name</label><input type="text" id="pf-lname" value="${escapeHtml(p.last_name)}"></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="pf-phone" value="${escapeHtml(p.phone || "")}"></div>
+      <button class="btn btn-primary btn-block" onclick="updateCustomerProfile()">Save Changes</button>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Change Password</div>
+      <div class="form-group"><label>Current Password</label><input type="password" id="cp-old"></div>
+      <div class="form-group"><label>New Password</label><input type="password" id="cp-new1"></div>
+      <div class="form-group"><label>Confirm Password</label><input type="password" id="cp-new2"></div>
+      <button class="btn btn-outline btn-block" onclick="changePassword()">Change Password</button>
+    </div>
+    <button class="btn btn-danger btn-block" style="margin-top:8px" onclick="logoutUser()">Logout</button>`;
+
+  content.innerHTML = html;
+}
+
+window.updateCustomerProfile = async function () {
+  try {
+    showLoading(true);
+    const res = await API.updateCustomerProfile({
+      first_name: $id("pf-fname").value,
+      last_name: $id("pf-lname").value,
+      phone: $id("pf-phone").value,
+    });
+    showLoading(false);
+    if (res.status === "success") showToast("Profile updated!", "success");
+  } catch (e) { showLoading(false); showToast(e.message, "error"); }
+};
+
+window.changePassword = async function () {
+  const old = $id("cp-old").value;
+  const p1 = $id("cp-new1").value;
+  const p2 = $id("cp-new2").value;
+  if (!old || !p1 || !p2) { showToast("Fill all fields", "error"); return; }
+  if (p1 !== p2) { showToast("Passwords don't match", "error"); return; }
+  try {
+    showLoading(true);
+    const res = await API.changePassword({ old_password: old, password1: p1, password2: p2 });
+    showLoading(false);
+    if (res.status === "success") { showToast("Password changed!", "success"); $id("cp-old").value = $id("cp-new1").value = $id("cp-new2").value = ""; }
+  } catch (e) { showLoading(false); showToast(e.message, "error"); }
+};
+
+async function renderCustomerNotifications(content) {
+  updateHeader("Notifications");
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.customerNotifications();
+  if (data.status !== "success") return;
+
+  let html = `<div style="text-align:right;margin-bottom:8px">`;
+  if (data.unread_count > 0) html += `<button class="btn btn-sm btn-outline" onclick="markAllRead()">Mark All Read</button>`;
+  html += `</div><div id="notif-list">`;
+
+  if (!data.notifications || !data.notifications.length) {
+    html += `<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-title">No notifications</div></div>`;
+  } else {
+    for (const n of data.notifications) {
+      html += `
+        <div class="notif-item ${n.is_read ? "" : "unread"}">
+          <div class="notif-title">${escapeHtml(n.title)}</div>
+          <div class="notif-message">${escapeHtml(n.message)}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+            <span class="notif-time">${n.time}</span>
+            ${n.is_read ? "" : `<button class="btn btn-sm btn-outline" onclick="dismissNotif(${n.id})">Dismiss</button>`}
+          </div>
+        </div>`;
+    }
+  }
+  html += `</div>`;
+  content.innerHTML = html;
+}
+
+window.dismissNotif = async function (id) {
+  try {
+    await API.dismissNotification(id);
+    renderPage();
+  } catch {}
+};
+
+window.markAllRead = async function () {
+  try {
+    await API.markNotificationsRead();
+    renderPage();
+  } catch {}
+};
+
+// ─── DRIVER PAGES ─────────────────────────────────────
+const DRIVER_NAV = [
+  { hash: "#/driver/dashboard", icon: "🏠", label: "Home" },
+  { hash: "#/driver/orders", icon: "📋", label: "Orders" },
+  { hash: "#/driver/active", icon: "📍", label: "Active" },
+  { hash: "#/driver/earnings", icon: "💰", label: "Earnings" },
+  { hash: "#/driver/history", icon: "📜", label: "History" },
+  { hash: "#/driver/profile", icon: "👤", label: "Profile" },
+  { hash: "#/driver/notifications", icon: "🔔", label: "Alerts" },
+];
+
+function setupDriverNav() {
+  setupNav(DRIVER_NAV);
+}
+
+async function renderDriverPage(page) {
+  const content = $id("app-content");
+  content.scrollTop = 0;
+  try {
+    switch (page) {
+      case "dashboard": await renderDriverDashboard(content); break;
+      case "orders": await renderDriverOrders(content); break;
+      case "active": await renderDriverActive(content); break;
+      case "earnings": await renderDriverEarnings(content); break;
+      case "history": await renderDriverHistory(content); break;
+      case "profile": await renderDriverProfile(content); break;
+      case "notifications": await renderDriverNotifications(content); break;
+      default: navigate("#/driver/dashboard");
+    }
+  } catch (e) {
+    content.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Error</div><div class="empty-sub">${escapeHtml(e.message)}</div></div>`;
+  }
+}
+
+async function renderDriverDashboard(content) {
+  updateHeader("Driver Dashboard", false, {
+    label: "Duty",
+    onclick: toggleDuty,
+  });
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.driverDashboard();
+  if (data.status !== "success") return;
+  const d = data;
+
+  let html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div style="font-size:14px;color:var(--text2)">Good ${d.time_of_day},</div>
+        <div style="font-size:22px;font-weight:700">${escapeHtml(App.user.driver?.name || "Driver")}</div>
+      </div>
+      <div class="duty-indicator ${d.on_duty ? 'duty-on' : 'duty-off'}">
+        <span class="duty-dot"></span> ${d.on_duty ? "On Duty" : "Off Duty"}
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value">${d.today_deliveries}</div><div class="stat-label">Today</div></div>
+      <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-value">${d.total_deliveries}</div><div class="stat-label">Total</div></div>
+      <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-value">${d.rating}</div><div class="stat-label">Rating</div></div>
+      <div class="stat-card"><div class="stat-icon">⏱️</div><div class="stat-value">${d.on_time_pct}%</div><div class="stat-label">On Time</div></div>
+    </div>
+    <div class="card"><div class="card-title" style="margin-bottom:8px">💰 Earnings</div>
+      <div class="stats-grid" style="grid-template-columns:repeat(2,1fr)">
+        <div class="stat-card"><div class="stat-value">TZS ${Number(d.today_earnings).toLocaleString()}</div><div class="stat-label">Today</div></div>
+        <div class="stat-card"><div class="stat-value">TZS ${Number(d.weekly_earnings).toLocaleString()}</div><div class="stat-label">This Week</div></div>
+      </div>
+      <div class="bar-chart">`;
+  for (const ed of d.earnings_data) {
+    html += `<div class="bar-item"><div class="bar" style="height:${ed.pct}%"></div><div class="bar-label">${ed.day}</div></div>`;
+  }
+  html += `</div></div>`;
+
+  if (d.assigned_orders && d.assigned_orders.length) {
+    html += `<div class="card"><div class="card-title" style="margin-bottom:8px">📋 New Orders</div>`;
+    for (const o of d.assigned_orders) {
+      html += `
+        <div class="list-item" onclick="navigate('#/driver/active')">
+          <div class="li-icon">⛽</div>
+          <div class="li-content">
+            <div class="li-title">${escapeHtml(o.station_name)} → ${escapeHtml(o.customer_name)}</div>
+            <div class="li-sub">${o.fuel_type} · ${o.quantity}L · ${escapeHtml(o.delivery_address)}</div>
+          </div>
+          <div class="li-right"><span style="color:var(--primary);font-weight:600">TZS ${Number(o.total_amount).toLocaleString()}</span></div>
+        </div>`;
+    }
+    html += `</div>`;
+  }
+
+  if (d.recent_deliveries && d.recent_deliveries.length) {
+    html += `<div class="card"><div class="card-title" style="margin-bottom:8px">✅ Recent Deliveries</div>`;
+    for (const r of d.recent_deliveries) {
+      html += `<div class="list-item"><div class="li-icon">✅</div><div class="li-content"><div class="li-title">${escapeHtml(r.customer_name)}</div><div class="li-sub">${r.fuel_type} · ${r.quantity}L · ${r.completed_at}</div></div><div class="li-right"><span style="font-size:14px;font-weight:600;color:var(--success)">TZS ${Number(r.driver_earning).toLocaleString()}</span></div></div>`;
+    }
+    html += `</div>`;
+  }
+
+  content.innerHTML = html;
+  updateHeader("Driver Dashboard", false, {
+    label: d.on_duty ? "🟢 On" : "🔴 Off",
+    onclick: toggleDuty,
+  });
+}
+
+window.toggleDuty = async function () {
+  try {
+    const res = await API.toggleDuty();
+    if (res.status === "success") {
+      showToast(res.on_duty ? "You're now ON DUTY" : "You're now OFF DUTY", res.on_duty ? "success" : "error");
+      renderPage();
+    }
+  } catch (e) { showToast(e.message, "error"); }
+};
+
+async function renderDriverOrders(content) {
+  updateHeader("Assigned Orders");
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.driverOrders();
+  if (data.status !== "success") return;
+
+  if (!data.orders || !data.orders.length) {
+    content.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No orders assigned</div><div class="empty-sub">Waiting for new deliveries...</div></div>`;
+    return;
+  }
+
+  let html = `<div class="search-bar"><input type="text" placeholder="Search orders..." oninput="filterDriverOrders(this.value)"></div><div id="driver-orders-list">`;
+  for (const o of data.orders) {
+    html += `
+      <div class="card order-card" data-search="${escapeHtml(o.customer_name).toLowerCase()} ${o.fuel_type.toLowerCase()}">
+        <div class="oc-row">
+          <span class="oc-title">📍 ${escapeHtml(o.customer_name)}</span>
+          ${statusBadge(o.status)}
+        </div>
+        <div class="oc-sub">⛽ ${escapeHtml(o.station_name)} · ${o.fuel_type} · ${o.quantity}L</div>
+        <div class="oc-sub">📞 ${escapeHtml(o.customer_phone)}</div>
+        <div class="oc-sub">🏠 ${escapeHtml(o.delivery_address)}</div>
+        <div class="oc-actions">
+          ${o.status === "assigned" ? `<button class="btn btn-primary btn-sm" onclick="driverUpdateStatus(${o.id},'picked_up')">Start Delivery</button>` : ""}
+          ${o.status === "picked_up" ? `<button class="btn btn-primary btn-sm" onclick="driverUpdateStatus(${o.id},'delivering')">Mark Delivering</button>` : ""}
+          ${o.status === "delivering" ? `<button class="btn btn-success btn-sm" onclick="driverUpdateStatus(${o.id},'delivered')">Mark Delivered</button>` : ""}
+        </div>
+      </div>`;
+  }
+  html += `</div>`;
+  content.innerHTML = html;
+  window.filterDriverOrders = function (q) {
+    qsa("#driver-orders-list .order-card").forEach(el => {
+      el.style.display = !q || el.dataset.search.includes(q.toLowerCase()) ? "block" : "none";
+    });
+  };
+}
+
+window.driverUpdateStatus = async function (orderId, status) {
+  try {
+    showLoading(true);
+    const res = await API.updateOrderStatus(orderId, status);
+    showLoading(false);
+    if (res.status === "success") {
+      showToast(`Status updated to ${status}`, "success");
+      renderPage();
+    }
+  } catch (e) { showLoading(false); showToast(e.message, "error"); }
+};
+
+async function renderDriverActive(content) {
+  updateHeader("Active Delivery");
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.driverActive();
+  if (data.status !== "success") return;
+  const o = data.active_order;
+
+  if (!o) {
+    content.innerHTML = `<div class="empty-state"><div class="empty-icon">📍</div><div class="empty-title">No Active Delivery</div><div class="empty-sub">Check assigned orders</div><button class="btn btn-primary" style="margin-top:16px" onclick="navigate('#/driver/orders')">View Orders</button></div>`;
+    return;
+  }
+
+  const statusOrder = ["assigned", "picked_up", "delivering", "delivered"];
+  const currentIdx = statusOrder.indexOf(o.status);
+
+  let html = `
+    <div class="card">
+      <div class="card-header"><span class="card-title">Order #${o.id}</span>${statusBadge(o.status)}</div>
+      <div style="font-size:14px;font-weight:500">${escapeHtml(o.customer_name)}</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px">📞 ${escapeHtml(o.customer_phone)}</div>
+      <div style="font-size:13px;color:var(--text2)">⛽ ${escapeHtml(o.station_name)}</div>
+      <div style="font-size:13px;color:var(--text2)">📍 ${escapeHtml(o.delivery_address)}</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px">${o.fuel_type} · ${o.quantity}L · TZS ${Number(o.total_amount).toLocaleString()}</div>
+    </div>
+    <div class="card"><div class="card-title" style="margin-bottom:12px">Progress</div><ul class="stepper">`;
+
+  const stepLabels = ["Assigned", "Picked Up", "Delivering", "Delivered"];
+  for (let i = 0; i < stepLabels.length; i++) {
+    const cls = i < currentIdx ? "completed" : (i === currentIdx ? "active" : "");
+    html += `<li class="step ${cls}"><div class="step-dot">${i < currentIdx ? "✓" : (i === currentIdx ? "●" : "")}</div><div class="step-content"><div class="step-label">${stepLabels[i]}</div></div></li>`;
+  }
+  html += `</ul></div>`;
+
+  if (o.customer_lat && o.customer_lng && o.station_lat && o.station_lng) {
+    html += `
+      <div class="card">
+        <div class="card-title" style="margin-bottom:8px">🗺️ Map</div>
+        <div class="map-placeholder" id="delivery-map">
+          <div style="text-align:center">
+            <div style="font-size:24px">📍</div>
+            <div style="font-size:12px;color:var(--text2)">Station to Customer</div>
+            <a href="https://www.openstreetmap.org/directions?from=${o.station_lat}%2C${o.station_lng}&to=${o.customer_lat}%2C${o.customer_lng}" target="_blank" style="color:var(--primary);font-size:13px;margin-top:4px;display:block">Open in Maps</a>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  html += `<div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">`;
+  if (o.status === "assigned") html += `<button class="btn btn-primary btn-block" onclick="driverUpdateStatus(${o.id},'picked_up')">📥 Picked Up Fuel</button>`;
+  if (o.status === "picked_up") html += `<button class="btn btn-primary btn-block" onclick="driverUpdateStatus(${o.id},'delivering')">🚚 Start Delivery</button>`;
+  if (o.status === "delivering") html += `<button class="btn btn-success btn-block" onclick="driverUpdateStatus(${o.id},'delivered')">✅ Mark Delivered</button>`;
+  html += `</div>`;
+
+  content.innerHTML = html;
+}
+
+async function renderDriverEarnings(content) {
+  updateHeader("Earnings");
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.driverEarnings();
+  if (data.status !== "success") return;
+  const d = data;
+
+  let html = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value" style="font-size:18px">TZS ${Number(d.today_earnings).toLocaleString()}</div><div class="stat-label">Today</div></div>
+      <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value" style="font-size:18px">TZS ${Number(d.weekly_earnings).toLocaleString()}</div><div class="stat-label">This Week</div></div>
+      <div class="stat-card"><div class="stat-icon">📆</div><div class="stat-value" style="font-size:18px">TZS ${Number(d.monthly_earnings).toLocaleString()}</div><div class="stat-label">This Month</div></div>
+      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value">${d.total_deliveries}</div><div class="stat-label">Deliveries</div></div>
+    </div>
+    <div class="card"><div class="card-title" style="margin-bottom:8px">Weekly Earnings</div>
+      <div class="bar-chart">`;
+  for (const ed of d.earnings_data) {
+    html += `<div class="bar-item"><div class="bar" style="height:${ed.pct}%"></div><div class="bar-label">${ed.day}</div></div>`;
+  }
+  html += `</div><div style="display:flex;justify-content:space-around;font-size:12px;color:var(--text2)">`;
+  for (const ed of d.earnings_data) {
+    html += `<span>TZS ${ed.amount.toLocaleString()}</span>`;
+  }
+  html += `</div></div>`;
+  content.innerHTML = html;
+}
+
+async function renderDriverHistory(content) {
+  updateHeader("Delivery History");
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.driverHistory();
+  if (data.status !== "success") return;
+
+  if (!data.deliveries || !data.deliveries.length) {
+    content.innerHTML = `<div class="empty-state"><div class="empty-icon">📜</div><div class="empty-title">No deliveries yet</div></div>`;
+    return;
+  }
+
+  let html = ``;
+  for (const d of data.deliveries) {
+    html += `
+      <div class="card order-card">
+        <div class="oc-row"><span class="oc-title">${escapeHtml(d.customer_name)}</span><span style="font-size:14px;font-weight:600;color:var(--success)">TZS ${Number(d.driver_earning).toLocaleString()}</span></div>
+        <div class="oc-sub">${d.fuel_type} · ${d.quantity}L · ${escapeHtml(d.delivery_address)}</div>
+        <div class="oc-sub">✅ ${d.completed_at}</div>
+      </div>`;
+  }
+  content.innerHTML = html;
+}
+
+async function renderDriverProfile(content) {
+  updateHeader("My Profile");
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.driverProfile();
+  if (data.status !== "success") return;
+  const p = data.profile;
+  const s = data.stats;
+
+  let html = `
+    <div style="text-align:center;margin-bottom:16px">
+      <div class="avatar">${(p.name || "D")[0].toUpperCase()}</div>
+      <div style="font-size:18px;font-weight:600">${escapeHtml(p.name)}</div>
+      <div style="font-size:13px;color:var(--text2)">${escapeHtml(p.email)}</div>
+      <div style="margin-top:8px">
+        <span class="duty-indicator ${p.on_duty ? 'duty-on' : 'duty-off'}"><span class="duty-dot"></span> ${p.on_duty ? "On Duty" : "Off Duty"}</span>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value">⭐ ${p.rating}</div><div class="stat-label">Rating</div></div>
+      <div class="stat-card"><div class="stat-value">${s.total_deliveries}</div><div class="stat-label">Deliveries</div></div>
+      <div class="stat-card"><div class="stat-value">${s.on_time_pct}%</div><div class="stat-label">On Time</div></div>
+      <div class="stat-card"><div class="stat-value" style="font-size:12px">${escapeHtml(p.station_name || "Unassigned")}</div><div class="stat-label">Station</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Edit Profile</div>
+      <div class="form-group"><label>First Name</label><input type="text" id="dp-fname" value="${escapeHtml(p.first_name || "")}"></div>
+      <div class="form-group"><label>Last Name</label><input type="text" id="dp-lname" value="${escapeHtml(p.last_name || "")}"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="dp-email" value="${escapeHtml(p.email)}"></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="dp-phone" value="${escapeHtml(p.phone || "")}"></div>
+      <div class="form-group"><label>Plate Number</label><input type="text" id="dp-plate" value="${escapeHtml(p.plate_number || "")}"></div>
+      <button class="btn btn-primary btn-block" onclick="updateDriverProfile()">Save Changes</button>
+    </div>
+    <button class="btn btn-danger btn-block" style="margin-top:8px" onclick="logoutUser()">Logout</button>`;
+
+  content.innerHTML = html;
+}
+
+window.updateDriverProfile = async function () {
+  try {
+    showLoading(true);
+    const res = await API.updateDriverProfile({
+      first_name: $id("dp-fname").value,
+      last_name: $id("dp-lname").value,
+      email: $id("dp-email").value,
+      phone: $id("dp-phone").value,
+      plate_number: $id("dp-plate").value,
+    });
+    showLoading(false);
+    if (res.status === "success") showToast("Profile updated!", "success");
+  } catch (e) { showLoading(false); showToast(e.message, "error"); }
+};
+
+async function renderDriverNotifications(content) {
+  updateHeader("Notifications");
+  content.innerHTML = `<div class="loading"><span class="spinner"></span> Loading...</div>`;
+  const data = await API.driverNotifications();
+  if (data.status !== "success") return;
+
+  let html = `<div style="text-align:right;margin-bottom:8px">`;
+  if (data.unread_count > 0) html += `<button class="btn btn-sm btn-outline" onclick="markAllRead()">Mark All Read</button>`;
+  html += `</div><div id="notif-list">`;
+
+  if (!data.notifications || !data.notifications.length) {
+    html += `<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-title">No notifications</div></div>`;
+  } else {
+    for (const n of data.notifications) {
+      html += `
+        <div class="notif-item ${n.is_read ? "" : "unread"}">
+          <div class="notif-title">${escapeHtml(n.title)}</div>
+          <div class="notif-message">${escapeHtml(n.message)}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+            <span class="notif-time">${n.time}</span>
+            ${n.is_read ? "" : `<button class="btn btn-sm btn-outline" onclick="dismissNotif(${n.id})">Dismiss</button>`}
+          </div>
+        </div>`;
+    }
+  }
+  html += `</div>`;
+  content.innerHTML = html;
+}
+
+window.logoutUser = async function () {
+  try {
+    await API.logout();
+    App.user = null;
+    App.role = null;
+    showAuth();
+    renderAuth();
+    location.hash = "";
+  } catch {}
+};
+
+// ─── AUTH UI ──────────────────────────────────────────
+function renderAuth() {
+  let html = `
+    <div class="auth-logo">⛽</div>
+    <div class="auth-title">FuelGo</div>
+    <div class="auth-subtitle">Fuel delivery at your doorstep</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Sign Up</button>
+    </div>
+    <div id="auth-form-container"></div>`;
+  $id("auth-screen").innerHTML = html;
+  renderLoginForm();
+}
+
+window.switchAuthTab = function (tab) {
+  qsa(".auth-tab").forEach(t => t.classList.toggle("active", t.textContent.toLowerCase().includes(tab === "login" ? "sign in" : "sign up")));
+  if (tab === "login") renderLoginForm();
+  else renderRegisterForm();
+};
+
+function renderLoginForm() {
+  $id("auth-form-container").innerHTML = `
+    <div class="auth-form">
+      <div class="auth-error" id="login-error"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com" autocomplete="email"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password"></div>
+      <button class="btn btn-primary btn-block" onclick="handleLogin()">Sign In</button>
+    </div>`;
+}
+
+function renderRegisterForm() {
+  $id("auth-form-container").innerHTML = `
+    <div class="auth-form">
+      <div class="auth-error" id="register-error"></div>
+      <div class="form-group"><label>First Name</label><input type="text" id="reg-fname" placeholder="John"></div>
+      <div class="form-group"><label>Last Name</label><input type="text" id="reg-lname" placeholder="Doe"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@example.com"></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="reg-phone" placeholder="+255 7XX XXX XXX"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="reg-password" placeholder="Min 8 characters"></div>
+      <div class="form-group">
+        <label>I am a</label>
+        <div class="role-selector">
+          <div class="role-option selected" data-role="customer" onclick="selectRole(this)">👤 Customer</div>
+          <div class="role-option" data-role="driver" onclick="selectRole(this)">🚚 Driver</div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="handleRegister()">Create Account</button>
+    </div>`;
+}
+
+window.selectRole = function (el) {
+  qsa(".role-option").forEach(r => r.classList.remove("selected"));
+  el.classList.add("selected");
+};
+
+window.handleLogin = async function () {
+  const email = $id("login-email").value;
+  const password = $id("login-password").value;
+  const err = $id("login-error");
+  if (!email || !password) { err.textContent = "Please fill all fields"; err.style.display = "block"; return; }
+  try {
+    showLoading(true);
+    const res = await API.login(email, password);
+    showLoading(false);
+    if (res.status === "success") {
+      App.user = res.user;
+      App.role = res.user.role;
+      showApp();
+      navigate();
+    }
+  } catch (e) {
+    showLoading(false);
+    err.textContent = e.message;
+    err.style.display = "block";
+  }
+};
+
+window.handleRegister = async function () {
+  const data = {
+    first_name: $id("reg-fname").value,
+    last_name: $id("reg-lname").value,
+    email: $id("reg-email").value,
+    phone: $id("reg-phone").value,
+    password: $id("reg-password").value,
+    role: qs(".role-option.selected")?.dataset.role || "customer",
+  };
+  const err = $id("register-error");
+  if (!data.first_name || !data.last_name || !data.email || !data.password) {
+    err.textContent = "Please fill all required fields"; err.style.display = "block"; return;
+  }
+  if (data.password.length < 8) {
+    err.textContent = "Password must be at least 8 characters"; err.style.display = "block"; return;
+  }
+  try {
+    showLoading(true);
+    const res = await API.register(data);
+    showLoading(false);
+    if (res.status === "success") {
+      showToast("Account created! Please sign in.", "success");
+      switchAuthTab("login");
+    }
+  } catch (e) {
+    showLoading(false);
+    err.textContent = e.message;
+    err.style.display = "block";
+  }
+};
+
+// ─── Init ─────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  const appHtml = `
+  <div id="toast" class="toast"></div>
+  <div id="loading-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:center;justify-content:center">
+    <div style="text-align:center"><div class="spinner" style="width:40px;height:40px;border-width:4px;margin:0 auto 12px"></div><div style="color:var(--text2);font-size:14px">Loading...</div></div>
+  </div>
+  <div id="auth-screen"></div>
+  <div id="app" style="display:none">
+    <header id="app-header">
+      <button class="back-btn" onclick="window.history.back()">‹</button>
+      <h1>FuelGo</h1>
+      <button class="header-action" style="display:none"></button>
+    </header>
+    <main id="app-content"></main>
+  </div>
+  <nav id="bottom-nav"></nav>`;
+  document.body.innerHTML = appHtml;
+  init();
+});

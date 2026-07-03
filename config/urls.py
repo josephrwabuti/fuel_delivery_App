@@ -28,4 +28,6 @@ urlpatterns = [
     
     path('delivery/', include('delivery.urls')),
     
+    path('pwa/', include('pwa.urls')),
+    
 ]
