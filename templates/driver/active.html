@@ -230,27 +230,29 @@
 </div>
 
 <!-- ===== DELIVERY STEPPER ===== -->
+{% with s=active_order.status %}
 <div class="delivery-stepper" style="margin-bottom:16px">
   <div class="ds-step done" id="ds1">
     <div class="ds-icon"><i class="fas fa-check"></i></div>
     <div class="ds-body"><div class="ds-title">Assigned</div><div class="ds-time" id="assignedTime">{{ active_order.assigned_at|time:"H:i"|default:"—" }}</div></div>
   </div>
-  <div class="ds-line" id="dl1"></div>
-  <div class="ds-step" id="ds2">
+  <div class="ds-line{% if s == 'picked_up' or s == 'delivering' or s == 'delivered' %} done{% endif %}" id="dl1"></div>
+  <div class="ds-step{% if s == 'assigned' %} active{% elif s == 'picked_up' or s == 'delivering' or s == 'delivered' %} done{% endif %}" id="ds2">
     <div class="ds-icon"><i class="fas fa-gas-pump"></i></div>
-    <div class="ds-body"><div class="ds-title">Picked Up</div><div class="ds-time" id="pickedTime">—</div></div>
+    <div class="ds-body"><div class="ds-title">Picked Up</div><div class="ds-time" id="pickedTime">{{ active_order.picked_up_at|time:"H:i"|default:"—" }}</div></div>
   </div>
-  <div class="ds-line" id="dl2"></div>
-  <div class="ds-step" id="ds3">
+  <div class="ds-line{% if s == 'delivering' or s == 'delivered' %} done{% endif %}" id="dl2"></div>
+  <div class="ds-step{% if s == 'picked_up' %} active{% elif s == 'delivering' or s == 'delivered' %} done{% endif %}" id="ds3">
     <div class="ds-icon"><i class="fas fa-truck-fast"></i></div>
     <div class="ds-body"><div class="ds-title">En Route</div><div class="ds-time" id="enrouteTime">—</div></div>
   </div>
-  <div class="ds-line" id="dl3"></div>
-  <div class="ds-step" id="ds4">
+  <div class="ds-line{% if s == 'delivered' %} done{% endif %}" id="dl3"></div>
+  <div class="ds-step{% if s == 'delivering' %} active{% elif s == 'delivered' %} done{% endif %}" id="ds4">
     <div class="ds-icon"><i class="fas fa-circle-check"></i></div>
-    <div class="ds-body"><div class="ds-title">Delivered</div><div class="ds-time" id="deliveredTime">—</div></div>
+    <div class="ds-body"><div class="ds-title">Delivered</div><div class="ds-time" id="deliveredTime">{{ active_order.delivered_at|time:"H:i"|default:"—" }}</div></div>
   </div>
 </div>
+{% endwith %}
 
 <div class="active-del-layout">
   <div class="adl-main">
