@@ -33,13 +33,13 @@
         <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
       </ul>
       <div class="nav-auth-buttons d-flex gap-2 align-items-center flex-wrap">
-        <a href="{% url 'login' %}" class="btn btn-auth btn-customer">
+        <a href="{% url 'login' %}?role=customer" class="btn btn-auth btn-customer">
           <i class="fas fa-user me-1"></i> Customer
         </a>
-        <a href="{% url 'login' %}" class="btn btn-auth btn-provider">
+        <a href="{% url 'login' %}?role=provider" class="btn btn-auth btn-provider">
           <i class="fas fa-gas-pump me-1"></i> Station Owner
         </a>
-        <a href="{% url 'login' %}" class="btn btn-auth btn-admin">
+        <a href="{% url 'login' %}?role=admin" class="btn btn-auth btn-admin">
           <i class="fas fa-shield-halved me-1"></i> Admin
         </a>
       </div>
@@ -67,7 +67,7 @@
           FuelGo connects customers with nearby petrol stations for seamless on-demand fuel delivery — powered by AI demand prediction to keep supply ahead of need.
         </p>
         <div class="hero-actions d-flex flex-wrap gap-3 mt-4">
-          <a href="{% url 'register' %}" class="btn btn-hero-primary">
+          <a href="{% url 'register' %}?role=customer&mode=signup" class="btn btn-hero-primary">
             <i class="fas fa-bolt me-2"></i>Order Fuel Now
           </a>
           <a href="#how-it-works" class="btn btn-hero-outline">
@@ -282,7 +282,7 @@
             <li>Track deliveries live</li>
             <li>View order history</li>
           </ul>
-          <a href="{% url 'register' %}" class="btn btn-role btn-role-customer">Get Started</a>
+          <a href="{% url 'register' %}?role=customer&mode=signup" class="btn btn-role btn-role-customer">Get Started</a>
         </div>
       </div>
       <div class="col-lg-3 col-md-6 col-12">
@@ -296,7 +296,7 @@
             <li>Assign drivers</li>
             <li>View demand reports</li>
           </ul>
-          <a href="{% url 'login' %}" class="btn btn-role btn-role-provider">Partner With Us</a>
+          <a href="{% url 'login' %}?role=provider" class="btn btn-role btn-role-provider">Partner With Us</a>
         </div>
       </div>
       <div class="col-lg-3 col-md-6 col-12">
@@ -309,7 +309,7 @@
             <li>Update delivery status</li>
             <li>View delivery history</li>
           </ul>
-          <a href="{% url 'login' %}" class="btn btn-role btn-role-driver">Driver Login</a>
+          <a href="{% url 'login' %}?role=driver" class="btn btn-role btn-role-driver">Driver Login</a>
         </div>
       </div>
       <div class="col-lg-3 col-md-6 col-12">
@@ -322,7 +322,7 @@
             <li>Monitor system activity</li>
             <li>System-wide reports</li>
           </ul>
-          <a href="{% url 'login' %}" class="btn btn-role btn-role-admin">Admin Portal</a>
+          <a href="{% url 'login' %}?role=admin" class="btn btn-role btn-role-admin">Admin Portal</a>
         </div>
       </div>
     </div>
@@ -450,8 +450,8 @@
     <h2 class="cta-title">Join FuelGo Today</h2>
     <p class="cta-desc">Whether you're a customer, station owner, or driver — FuelGo has a place for you.</p>
     <div class="cta-actions d-flex flex-wrap justify-content-center gap-3 mt-4">
-      <a href="{% url 'register' %}" class="btn btn-cta-primary"><i class="fas fa-user-plus me-2"></i>Register as Customer</a>
-      <a href="{% url 'login' %}" class="btn btn-cta-outline"><i class="fas fa-gas-pump me-2"></i>Register Your Station</a>
+      <a href="{% url 'register' %}?role=customer&mode=signup" class="btn btn-cta-primary"><i class="fas fa-user-plus me-2"></i>Register as Customer</a>
+      <a href="{% url 'login' %}?role=provider" class="btn btn-cta-outline"><i class="fas fa-gas-pump me-2"></i>Register Your Station</a>
     </div>
   </div>
 </section>
@@ -529,20 +529,20 @@
       <div class="col-lg-2 col-md-6 col-6">
         <h6 class="footer-heading">Access</h6>
         <ul class="footer-links">
-          <li><a href="{% url 'register' %}">Customer Sign Up</a></li>
-          <li><a href="{% url 'login' %}">Customer Login</a></li>
-          <li><a href="{% url 'login' %}">Station Owner</a></li>
-          <li><a href="{% url 'login' %}">Driver Login</a></li>
-          <li><a href="{% url 'login' %}">Admin Portal</a></li>
+          <li><a href="{% url 'register' %}?role=customer&mode=signup">Customer Sign Up</a></li>
+          <li><a href="{% url 'login' %}?role=customer">Customer Login</a></li>
+          <li><a href="{% url 'login' %}?role=provider">Station Owner</a></li>
+          <li><a href="{% url 'login' %}?role=driver">Driver Login</a></li>
+          <li><a href="{% url 'login' %}?role=admin">Admin Portal</a></li>
         </ul>
       </div>
       <div class="col-lg-4 col-md-6 col-12">
         <h6 class="footer-heading">Quick Access Portals</h6>
         <div class="footer-portals">
-          <a href="{% url 'login' %}" class="fp-btn customer"><i class="fas fa-user"></i> Customer</a>
-          <a href="{% url 'login' %}" class="fp-btn provider"><i class="fas fa-gas-pump"></i> Station Owner</a>
-          <a href="{% url 'login' %}" class="fp-btn driver"><i class="fas fa-id-badge"></i> Driver</a>
-          <a href="{% url 'login' %}" class="fp-btn admin"><i class="fas fa-shield-halved"></i> Admin</a>
+          <a href="{% url 'login' %}?role=customer" class="fp-btn customer"><i class="fas fa-user"></i> Customer</a>
+          <a href="{% url 'login' %}?role=provider" class="fp-btn provider"><i class="fas fa-gas-pump"></i> Station Owner</a>
+          <a href="{% url 'login' %}?role=driver" class="fp-btn driver"><i class="fas fa-id-badge"></i> Driver</a>
+          <a href="{% url 'login' %}?role=admin" class="fp-btn admin"><i class="fas fa-shield-halved"></i> Admin</a>
         </div>
       </div>
     </div>
