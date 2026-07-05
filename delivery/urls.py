@@ -7,6 +7,7 @@ urlpatterns = [
     path("active/", views.driver_active, name="driver_active"),
     path("earnings/", views.driver_earnings, name="driver_earnings"),
     path("history/", views.driver_history, name="driver_history"),
+    path("history/export/", views.driver_history_export, name="driver_history_export"),
     path("profile/", views.driver_profile, name="driver_profile"),
     path("notifications/", views.driver_notifications, name="driver_notifications"),
     path("update-profile/", views.driver_update_profile, name="driver_update_profile"),

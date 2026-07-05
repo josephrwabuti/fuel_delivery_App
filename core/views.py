@@ -9,7 +9,7 @@ from core.models import Notification, PlatformSettings
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.db.models import Sum, Count, Q, Avg, F, Value, FloatField
 from django.db.models.functions import TruncDate, ExtractWeekDay
 from django.utils import timezone
@@ -17,6 +17,7 @@ from django.utils.timesince import timesince
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from datetime import timedelta
+import csv
 import json
 
 
@@ -633,6 +634,31 @@ def admin_customers(request):
     return render(request, 'admin_panel/customers.html', ctx)
 
 
+@login_required(login_url='login')
+@role_required('admin')
+def admin_customers_export(request):
+    customers = User.objects.filter(role="customer").annotate(
+        order_count=Count("order"),
+        total_spent=Sum("order__total_amount"),
+    ).select_related("customerprofile")
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="customers.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["Name", "Email", "Phone", "Orders", "Total Spent", "Joined"])
+
+    for c in customers:
+        writer.writerow([
+            c.get_full_name(),
+            c.email,
+            getattr(getattr(c, "customerprofile", None), "phone", "") or "",
+            c.order_count or 0,
+            f"TZS {c.total_spent or 0}",
+            c.date_joined.strftime("%d %b %Y") if c.date_joined else "",
+        ])
+    return response
+
+
 # ===========================
 #  ADMIN ORDERS
 # ===========================
@@ -688,6 +714,34 @@ def admin_orders(request):
         "total_orders": total_orders,
     })
     return render(request, 'admin_panel/orders.html', ctx)
+
+
+@login_required(login_url='login')
+@role_required('admin')
+def admin_orders_export(request):
+    orders = Order.objects.select_related(
+        "customer", "station", "driver"
+    ).order_by("-created_at")
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="orders.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["Order ID", "Customer", "Station", "Fuel", "Quantity", "Total", "Driver", "Status", "Date", "Address"])
+
+    for o in orders:
+        writer.writerow([
+            o.id,
+            o.customer.get_full_name(),
+            o.station.name,
+            o.fuel_type,
+            o.quantity,
+            f"TZS {o.total_amount}",
+            o.driver.name if o.driver else "",
+            o.get_status_display(),
+            o.created_at.strftime("%d %b %Y, %H:%M") if o.created_at else "",
+            o.delivery_address,
+        ])
+    return response
 
 
 # ===========================
@@ -760,6 +814,35 @@ def admin_reports(request):
         "top_driver_max": top_driver_max,
     })
     return render(request, 'admin_panel/reports.html', ctx)
+
+
+@login_required(login_url='login')
+@role_required('admin')
+def admin_reports_export(request):
+    today = timezone.now().date()
+    period = int(request.GET.get('period', 7))
+    since = today - timedelta(days=period)
+    period_qs = Order.objects.filter(created_at__date__gte=since).select_related("customer", "station", "driver")
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="system_reports.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["Order ID", "Customer", "Station", "Fuel", "Quantity", "Total", "Driver", "Status", "Date", "Address"])
+
+    for o in period_qs:
+        writer.writerow([
+            o.id,
+            o.customer.get_full_name(),
+            o.station.name,
+            o.fuel_type,
+            o.quantity,
+            f"TZS {o.total_amount}",
+            o.driver.name if o.driver else "",
+            o.get_status_display(),
+            o.created_at.strftime("%d %b %Y, %H:%M") if o.created_at else "",
+            o.delivery_address,
+        ])
+    return response
 
 
 # ===========================

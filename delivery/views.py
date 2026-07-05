@@ -3,9 +3,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
 from django.utils.timesince import timesince
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
+import csv
 import json
 
 from accounts.decorators import role_required
@@ -209,6 +210,36 @@ def driver_history(request):
 
     ctx["deliveries"] = deliveries
     return render(request, "driver/history.html", ctx)
+
+
+@login_required(login_url="login")
+@role_required("driver")
+def driver_history_export(request):
+    driver = request.user.driver
+    deliveries = DeliveryLog.objects.filter(
+        driver=driver
+    ).select_related("order", "order__customer").order_by("-completed_at")
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="delivery_history.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(["Order ID", "Customer", "Fuel", "Quantity", "Address", "Status", "Completed", "Earnings", "Rating"])
+
+    for d in deliveries:
+        writer.writerow([
+            d.order.id,
+            d.order.customer.get_full_name(),
+            d.order.fuel_type,
+            d.order.quantity,
+            d.order.delivery_address,
+            d.get_status_display(),
+            d.completed_at.strftime("%d %b %Y, %H:%M") if d.completed_at else "",
+            f"TZS {d.driver_earning}",
+            d.rating if d.rating is not None else "",
+        ])
+
+    return response
 
 
 @login_required(login_url="login")

@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.db.models import Sum, Count, Q, F, Value, Case, When, CharField
 from django.db.models.functions import TruncDate
 from django.utils import timezone
@@ -13,6 +13,7 @@ from providers.models import StationStock
 from delivery.models import DeliveryLog
 from core.models import Notification
 from django.utils.timesince import timesince
+import csv
 import json
 from datetime import timedelta, date, datetime
 
@@ -464,6 +465,38 @@ def provider_reports(request):
     }
     context.update(get_context_base(request))
     return render(request, "provider/reports.html", context)
+
+
+@login_required(login_url='login')
+@role_required('provider')
+def provider_reports_export(request):
+    station = request.user.station
+    period = request.GET.get('period', 7)
+    try:
+        period = int(period)
+    except ValueError:
+        period = 7
+    since = timezone.now() - timedelta(days=period)
+    orders_qs = Order.objects.filter(station=station, created_at__gte=since).select_related("customer", "driver")
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="station_reports.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["Order ID", "Customer", "Fuel", "Quantity", "Total", "Driver", "Status", "Date", "Delivery Address"])
+
+    for o in orders_qs:
+        writer.writerow([
+            o.id,
+            o.customer.get_full_name(),
+            o.fuel_type,
+            o.quantity,
+            f"TZS {o.total_amount}",
+            o.driver.name if o.driver else "",
+            o.get_status_display(),
+            o.created_at.strftime("%d %b %Y, %H:%M") if o.created_at else "",
+            o.delivery_address,
+        ])
+    return response
 
 
 @login_required(login_url='login')
