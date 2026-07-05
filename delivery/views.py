@@ -354,7 +354,7 @@ def driver_update_status(request, order_id):
                 Notification.objects.create(
                     user=order.customer,
                     title="Fuel Delivered",
-                    message=f"Your fuel order #{order.id} has been delivered successfully.",
+                    message=f"Your fuel order #{order.display_id} has been delivered successfully.",
                 )
 
     return redirect("driver_active")

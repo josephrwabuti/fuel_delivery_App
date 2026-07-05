@@ -89,7 +89,7 @@
       {% if active_order %}
       <a href="{% url 'customer_tracking' %}" class="active-order-pill">
         <span class="aop-dot"></span>
-        Order #{{ active_order.id }} · Delivering
+        Order #{{ active_order.display_id }} · Delivering
       </a>
       {% endif %}
       <!-- Notifications -->

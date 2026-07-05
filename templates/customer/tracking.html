@@ -24,7 +24,7 @@
   <div class="tsb-left">
     <div class="tsb-pulse"></div>
     <div>
-      <div class="tsb-title">Order #{{ active_order.id }} — <span id="statusLabel">{{ active_order.get_status_display }}</span></div>
+      <div class="tsb-title">Order #{{ active_order.display_id }} — <span id="statusLabel">{{ active_order.get_status_display }}</span></div>
       <div class="tsb-sub">{{ active_order.station.name }} · {{ active_order.fuel_type }} · {{ active_order.quantity }}L</div>
     </div>
   </div>
@@ -170,7 +170,7 @@
     <!-- Order summary card -->
     <div class="track-order-summary">
       <div class="tos-title">Order Details</div>
-      <div class="tos-row"><span>Order ID</span><strong>#{{ active_order.id }}</strong></div>
+      <div class="tos-row"><span>Order ID</span><strong>#{{ active_order.display_id }}</strong></div>
       <div class="tos-row"><span>Fuel Type</span><strong>{{ active_order.fuel_type }}</strong></div>
       <div class="tos-row"><span>Quantity</span><strong>{{ active_order.quantity }} Litres</strong></div>
       <div class="tos-row"><span>Station</span><strong>{{ active_order.station.name }}</strong></div>

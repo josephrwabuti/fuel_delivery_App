@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from accounts.decorators import role_required
-from accounts.models import Station, Driver, FuelPrice
+from accounts.models import Station, Driver
 from orders.models import Order
 from providers.models import StationStock
 from delivery.models import DeliveryLog
@@ -133,7 +133,7 @@ def provider_orders(request):
     station = request.user.station
     orders = map_status_tag(Order.objects.filter(
         station=station
-    ).select_related('customer').order_by('-created_at'))
+    ).select_related('customer', 'driver').order_by('-created_at'))
 
     available_drivers = Driver.objects.filter(
         station=station, status='approved'
@@ -145,6 +145,7 @@ def provider_orders(request):
     for o in orders:
         orders_json.append({
             'id': o.id,
+            'display_id': o.display_id,
             'status': o.status,
             'status_display': o.get_status_display(),
             'customer_name': o.customer.get_full_name() or o.customer.username,
@@ -155,6 +156,7 @@ def provider_orders(request):
             'total_amount': str(o.total_amount),
             'payment_method': o.payment_method,
             'created_at': timesince(o.created_at) + ' ago',
+            'driver_name': o.driver.name if o.driver else '—',
         })
 
     context = {
@@ -194,7 +196,7 @@ def provider_accept_order(request, id):
     order.status = 'confirmed'
     order.confirmed_at = timezone.now()
     order.save()
-    messages.success(request, f'Order #{order.id} accepted.')
+    messages.success(request, f'Order #{order.display_id} accepted.')
     return redirect('provider_orders')
 
 
@@ -207,7 +209,7 @@ def provider_reject_order(request, id):
         reason = request.POST.get('reason', '')
         order.status = 'cancelled'
         order.save()
-        messages.info(request, f'Order #{order.id} rejected.')
+        messages.info(request, f'Order #{order.display_id} rejected.')
     return redirect('provider_orders')
 
 
@@ -224,7 +226,7 @@ def provider_assign_driver(request, id):
         order.driver_assigned_at = timezone.now()
         order.save()
         if messages:
-            messages.success(request, f'Driver {driver.name} assigned to Order #{order.id}.')
+            messages.success(request, f'Driver {driver.name} assigned to Order #{order.display_id}.')
     return redirect('provider_orders')
 
 
@@ -261,17 +263,6 @@ def provider_update_stock(request):
         if capacity:
             stock.capacity = capacity
         stock.save()
-
-        # Sync price to customer-facing FuelPrice
-        if price:
-            fuel_price, _ = FuelPrice.objects.get_or_create(
-                station=station, type=stock.fuel_type,
-                defaults={"price": stock.price_per_litre, "available": True},
-            )
-            fuel_price.price = stock.price_per_litre
-            fuel_price.available = stock.litres_available > 0
-            fuel_price.save()
-
         messages.success(request, 'Stock updated.')
     return redirect('provider_stock')
 

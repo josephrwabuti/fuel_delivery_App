@@ -40,8 +40,12 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
     driver_assigned_at = models.DateTimeField(null=True, blank=True)
-    
-    
+    customer_seq = models.IntegerField(default=0)
+
+    @property
+    def display_id(self):
+        return self.customer_id * 100 + self.customer_seq
+
     @property
     def assigned_at(self):
         return self.driver_assigned_at

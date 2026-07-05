@@ -41,7 +41,7 @@
   <div class="aob-left">
     <span class="aob-dot-pulse"></span>
     <div>
-      <div class="aob-title">Order #{{ active_order.id }} is on the way</div>
+      <div class="aob-title">Order #{{ active_order.display_id }} is on the way</div>
       <div class="aob-sub">{{ active_order.fuel_type }} · {{ active_order.quantity }}L · Driver: {{ active_order.driver.user.first_name }}</div>
     </div>
   </div>
@@ -177,7 +177,7 @@
   </div>
   {% for order in recent_orders %}
   <div class="rot-row">
-    <span class="rot-id">#{{ order.id }}</span>
+    <span class="rot-id">#{{ order.display_id }}</span>
     <span>{{ order.station.name }}</span>
     <span>{{ order.fuel_type }}</span>
     <span>{{ order.quantity }}L</span>

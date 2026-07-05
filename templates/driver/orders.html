@@ -24,7 +24,7 @@
   {% for order in assigned_orders %}
   <div class="order-card" data-status="{{ order.status }}" data-search="{{ order.id|lower }} {{ order.delivery_address|lower }}">
     <div class="oc-header">
-      <div class="oc-id">#{{ order.id }}</div>
+      <div class="oc-id">#{{ order.display_id }}</div>
       <div class="status-chip {{ order.status }}">{{ order.get_status_display }}</div>
     </div>
     <div class="oc-station">

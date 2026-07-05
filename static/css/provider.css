@@ -214,7 +214,7 @@ a{text-decoration:none;color:inherit}
 /* ===== DATA TABLE ===== */
 .data-table-wrap{background:var(--glass-l);border:1px solid var(--border-s);border-radius:var(--radius);overflow:hidden;overflow-x:auto}
 .data-table{min-width:900px}
-.dt-header,.dt-row{display:grid;grid-template-columns:80px 140px 80px 60px 110px 130px 80px 100px 90px 120px;gap:8px;padding:11px 16px;align-items:center}
+.dt-header,.dt-row{display:grid;grid-template-columns:80px 140px 80px 60px 110px 130px 80px 100px 110px 90px 120px;gap:8px;padding:11px 16px;align-items:center}
 .dt-header{background:var(--navy-800);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-m)}
 .dt-row{border-top:1px solid var(--border-s);font-size:0.82rem;color:var(--text-s);transition:background var(--tr)}
 .dt-row:hover{background:rgba(0,0,0,0.02)}

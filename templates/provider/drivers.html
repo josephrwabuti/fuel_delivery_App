@@ -47,7 +47,7 @@
     </div>
     {% if driver.current_order %}
     <div class="dcf-current-order">
-      <i class="fas fa-truck-fast text-orange"></i> Delivering <strong>#{{ driver.current_order.id }}</strong>
+      <i class="fas fa-truck-fast text-orange"></i> Delivering <strong>#{{ driver.current_order.display_id }}</strong>
     </div>
     {% endif %}
     <div class="dcf-actions">

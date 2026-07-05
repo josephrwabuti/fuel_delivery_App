@@ -313,7 +313,7 @@ async function renderCustomerDashboard(content) {
   if (active) {
     html += `
       <div class="card" style="border-left:3px solid var(--primary);cursor:pointer" onclick="navigate('#/customer/tracking')">
-        <div class="card-header"><span class="card-title">🚚 Active Order #${active.id}</span>${statusBadge(active.status)}</div>
+        <div class="card-header"><span class="card-title">🚚 Active Order #${active.display_id}</span>${statusBadge(active.status)}</div>
         <div style="font-size:13px;color:var(--text2)">${escapeHtml(active.fuel_type)} · ${active.quantity}L · TZS ${Number(active.total_amount).toLocaleString()}</div>
         <div style="font-size:13px;color:var(--text2)">${escapeHtml(active.station_name)}</div>
       </div>`;
@@ -726,7 +726,7 @@ async function renderCustomerTracking(content) {
 
   let html = `
     <div class="card">
-      <div class="card-header"><span class="card-title">Order #${o.id}</span>${statusBadge(o.status)}</div>
+      <div class="card-header"><span class="card-title">Order #${o.display_id}</span>${statusBadge(o.status)}</div>
       <div style="font-size:14px"><strong>${escapeHtml(o.station_name)}</strong></div>
       <div style="font-size:13px;color:var(--text2)">${escapeHtml(o.fuel_type)} · ${o.quantity}L · TZS ${Number(o.total_amount).toLocaleString()}</div>
       <div style="font-size:13px;color:var(--text2)">📍 ${escapeHtml(o.delivery_address)}</div>
@@ -1152,7 +1152,7 @@ async function renderDriverActive(content) {
 
   let html = `
     <div class="card">
-      <div class="card-header"><span class="card-title">Order #${o.id}</span>${statusBadge(o.status)}</div>
+      <div class="card-header"><span class="card-title">Order #${o.display_id}</span>${statusBadge(o.status)}</div>
       <div style="font-size:14px;font-weight:500">${escapeHtml(o.customer_name)}</div>
       <div style="font-size:13px;color:var(--text2);margin-top:4px">📞 ${escapeHtml(o.customer_phone)}</div>
       <div style="font-size:13px;color:var(--text2)">⛽ ${escapeHtml(o.station_name)}</div>

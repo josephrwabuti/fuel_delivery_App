@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from accounts.decorators import role_required
 from accounts.models import User, Station, Driver, FuelPrice
+from providers.models import StationStock
 from core.models import Notification
 from delivery.models import DeliveryLog
 from orders.models import Order
@@ -198,14 +199,14 @@ def api_customer_dashboard(request):
             "delivery_radius": s.delivery_radius,
         } for s in nearby_stations],
         "recent_orders": [{
-            "id": o.id, "station_name": o.station.name if o.station else "—",
+            "id": o.id, "display_id": o.display_id, "customer_seq": o.customer_seq, "station_name": o.station.name if o.station else "—",
             "fuel_type": o.fuel_type, "quantity": o.quantity,
             "total_amount": float(o.total_amount),
             "status": o.status, "status_display": o.get_status_display(),
             "created_at": o.created_at.strftime("%d %b %Y"),
         } for o in recent_orders],
         "active_order": None if not active_order else {
-            "id": active_order.id,
+            "id": active_order.id, "display_id": active_order.display_id, "customer_seq": active_order.customer_seq,
             "station_name": active_order.station.name if active_order.station else "—",
             "fuel_type": active_order.fuel_type,
             "quantity": active_order.quantity,
@@ -269,10 +270,18 @@ def api_create_order(request):
         fuel_price = station.fuels.get(type=fuel_type)
         price_per_litre = float(fuel_price.price)
     except FuelPrice.DoesNotExist:
-        price_map = {"Petrol": 2850, "Diesel": 2700, "Kerosene": 2600}
-        price_per_litre = price_map.get(fuel_type, 2850)
+        stock = StationStock.objects.filter(station=station, fuel_type=fuel_type).first()
+        price_per_litre = float(stock.price_per_litre) if stock else {"Petrol": 2850, "Diesel": 2700, "Kerosene": 2600}.get(fuel_type, 2850)
 
     total_price = price_per_litre * float(quantity) + 2000
+
+    stock = StationStock.objects.filter(station=station, fuel_type=fuel_type).first()
+    if stock and stock.litres_available >= float(quantity):
+        stock.litres_available -= float(quantity)
+        stock.save()
+
+    last_seq = Order.objects.filter(customer=request.user).order_by("-customer_seq").first()
+    next_seq = (last_seq.customer_seq + 1) if last_seq else 1
 
     order = Order.objects.create(
         customer=request.user, station=station,
@@ -281,9 +290,9 @@ def api_create_order(request):
         delivery_address=delivery_address, phone=phone,
         notes=notes, payment_method=payment_method,
         customer_lat=customer_lat, customer_lng=customer_lng,
-        landmark=landmark,
+        landmark=landmark, customer_seq=next_seq,
     )
-    return JsonResponse({"status": "success", "order_id": order.id, "total_amount": float(total_price)})
+    return JsonResponse({"status": "success", "order_id": order.id, "display_id": order.display_id, "customer_seq": order.customer_seq, "total_amount": float(total_price)})
 
 
 @api_login_required
@@ -296,7 +305,7 @@ def api_tracking(request):
     return JsonResponse({
         "status": "success",
         "active_order": {
-            "id": active_order.id,
+            "id": active_order.id, "display_id": active_order.display_id, "customer_seq": active_order.customer_seq,
             "station_name": active_order.station.name if active_order.station else "—",
             "station_address": active_order.station.address if active_order.station else "",
             "station_phone": active_order.station.phone if active_order.station else "",
@@ -333,7 +342,7 @@ def api_history(request):
     return JsonResponse({
         "status": "success",
         "orders": [{
-            "id": o.id,
+            "id": o.id, "display_id": o.display_id, "customer_seq": o.customer_seq,
             "station_name": o.station.name if o.station else "—",
             "fuel_type": o.fuel_type,
             "quantity": o.quantity,
@@ -652,7 +661,7 @@ def api_driver_update_status(request, order_id):
         Notification.objects.create(
             user=order.customer,
             title="Fuel Delivered",
-            message=f"Your fuel order #{order.id} has been delivered successfully.",
+            message=f"Your fuel order #{order.display_id} has been delivered successfully.",
         )
 
     return JsonResponse({"status": "success", "new_status": new_status})

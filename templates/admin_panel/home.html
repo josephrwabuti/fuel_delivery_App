@@ -111,7 +111,7 @@
     <div class="mini-orders">
       {% for order in recent_orders_list %}
       <div class="mo-row">
-        <span class="mo-id">#{{ order.id }}</span>
+        <span class="mo-id">#{{ order.display_id }}</span>
         <span>{{ order.customer.get_full_name }}</span>
         <span>{{ order.fuel_type }} {{ order.quantity }}L</span>
         <span><div class="status-chip {{ order.status }}">{{ order.get_status_display }}</div></span>

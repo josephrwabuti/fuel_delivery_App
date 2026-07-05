@@ -1,9 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from accounts.decorators import role_required
-from orders.forms import OrderForm
-from accounts.models import Station, Driver, CustomerProfile, FuelPrice
-from providers.models import StationStock
+from accounts.models import Station, Driver, CustomerProfile
 from orders.models import Order
 from delivery.models import DeliveryLog
 from core.models import Notification, PlatformSettings
@@ -11,7 +9,7 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 from django.http import HttpResponse, JsonResponse
-from django.db.models import Sum, Count, Q, Avg, F, Value, FloatField
+from django.db.models import Sum, Count, Q, Avg, F
 from django.db.models.functions import TruncDate, ExtractWeekDay
 from django.utils import timezone
 from django.utils.timesince import timesince
@@ -158,13 +156,16 @@ def create_order(request):
         if station and not station.is_open:
             messages.error(request, "Cannot place order — station is closed.")
             return redirect("customer_stations")
+        last_seq = Order.objects.filter(customer=request.user).order_by("-customer_seq").first()
+        next_seq = (last_seq.customer_seq + 1) if last_seq else 1
         order = Order.objects.create(
             customer=request.user,
             station=station,
             fuel_type=request.POST['fuel_type'],
             quantity=request.POST['quantity'],
             total_amount=request.POST['total_amount'],
-            status="pending"
+            status="pending",
+            customer_seq=next_seq,
         )
         return redirect("customer_tracking")
 
@@ -190,6 +191,8 @@ def history_view(request):
     for o in orders:
         orders_list.append({
             "id": o.id,
+            "display_id": o.display_id,
+            "customer_seq": o.customer_seq,
             "station": o.station.name if o.station else "—",
             "fuel_type": o.fuel_type,
             "quantity": o.quantity,
@@ -314,21 +317,17 @@ def customer_place_order(request):
             messages.error(request, "Cannot place order — station is currently closed.")
             return redirect("customer_stations")
 
-        fuel_price = FuelPrice.objects.filter(station=station, type=fuel_type).first()
-        stock = StationStock.objects.filter(station=station, fuel_type=fuel_type).first()
+        price_map = {
+            "Petrol": 2850,
+            "Diesel": 2700,
+            "Kerosene": 2600
+        }
 
-        if fuel_price:
-            price_per_litre = float(fuel_price.price)
-        elif stock:
-            price_per_litre = float(stock.price_per_litre)
-        else:
-            price_per_litre = {"Petrol": 2850, "Diesel": 2700, "Kerosene": 2600}.get(fuel_type, 2850)
-
+        price_per_litre = price_map.get(fuel_type, 2850)
         total_price = price_per_litre * float(quantity) + 2000
 
-        if stock and stock.litres_available >= float(quantity):
-            stock.litres_available -= float(quantity)
-            stock.save()
+        last_seq = Order.objects.filter(customer=request.user).order_by("-customer_seq").first()
+        next_seq = (last_seq.customer_seq + 1) if last_seq else 1
 
         order = Order.objects.create(
             customer=request.user,
@@ -338,7 +337,8 @@ def customer_place_order(request):
             delivery_address=delivery_address,
             phone=phone,
             total_amount=total_price,
-            status="pending"
+            status="pending",
+            customer_seq=next_seq,
         )
 
         return redirect("customer_tracking")

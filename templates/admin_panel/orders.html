@@ -31,7 +31,7 @@
     <div class="dt-header or-grid"><span>Order ID</span><span>Customer</span><span>Station</span><span>Fuel</span><span>Qty</span><span>Total</span><span>Driver</span><span>Status</span><span>Date</span><span>View</span></div>
     {% for order in orders %}
     <div class="dt-row or-grid" data-status="{{ order.status }}" data-search="{{ order.id }} {{ order.customer.get_full_name|lower }} {{ order.station.name|lower }}">
-      <span class="dt-id">#{{ order.id }}</span>
+      <span class="dt-id">#{{ order.display_id }}</span>
       <span class="dt-sub-text">{{ order.customer.get_full_name }}</span>
       <span class="dt-sub-text">{{ order.station.name|truncatechars:20 }}</span>
       <span><span class="fuel-badge {{ order.fuel_type|lower }}">{{ order.fuel_type }}</span></span>
@@ -82,7 +82,7 @@ const ORDERS_DATA = {{ orders_json|safe }};
 function openOrderDetail(id) {
   const o = ORDERS_DATA.find(x => String(x.id) === String(id));
   if (!o) return;
-  document.getElementById('odTitle').textContent = 'Order #' + o.id;
+  document.getElementById('odTitle').textContent = 'Order #' + o.display_id;
   document.getElementById('odStatus').textContent = o.status_display;
   document.getElementById('odStatus').className = 'status-chip ' + o.status;
   document.getElementById('odCustomer').textContent = o.customer_name;

@@ -35,13 +35,14 @@
       <span>Address</span>
       <span>Payment</span>
       <span>Status</span>
+      <span>Driver</span>
       <span>Time</span>
       <span>Actions</span>
     </div>
 
     {% for order in orders %}
-    <div class="dt-row" data-status="{{ order.status }}" data-search="{{ order.id }} {{ order.customer.get_full_name|lower }}">
-      <span class="dt-id">#{{ order.id }}</span>
+    <div class="dt-row" data-status="{{ order.status }}" data-search="{{ order.id }} {{ order.customer.get_full_name|lower }} {{ order.driver.name|lower|default:'' }}">
+      <span class="dt-id">#{{ order.display_id }}</span>
       <span class="dt-customer">
         <div class="cust-mini">
           <div class="cust-init">{{ order.customer.first_name|slice:":1" }}</div>
@@ -54,6 +55,7 @@
       <span class="dt-addr" title="{{ order.delivery_address }}">{{ order.delivery_address|truncatechars:24 }}</span>
       <span><span class="pay-badge">{{ order.payment_method }}</span></span>
       <span><div class="status-chip {{ order.status }}">{{ order.get_status_display }}</div></span>
+      <span class="dt-driver">{{ order.driver.name|default:"—" }}</span>
       <span class="dt-time">{{ order.created_at|timesince }} ago</span>
       <span class="dt-actions">
         {% if order.status == 'pending' %}
@@ -182,6 +184,7 @@
         <div class="odg-val" id="detailFuel"><i class="fas fa-fire-flame-curved text-orange"></i> —</div>
         <div class="odg-val" id="detailQty"><i class="fas fa-droplet text-blue"></i> —</div>
         <div class="odg-val" id="detailPayment"><i class="fas fa-wallet text-orange"></i> —</div>
+        <div class="odg-val" id="detailDriver"><i class="fas fa-id-badge text-blue"></i> —</div>
         <div class="odg-val" id="detailDelivery"><i class="fas fa-clock text-orange"></i> —</div>
       </div>
       <div class="odg-section">
@@ -261,6 +264,7 @@ function openOrderDetail(orderId) {
     document.getElementById('detailFuel').innerHTML = '<i class="fas fa-fire-flame-curved text-orange"></i> ' + order.fuel_type;
     document.getElementById('detailQty').innerHTML = '<i class="fas fa-droplet text-blue"></i> ' + order.quantity + ' Litres';
     document.getElementById('detailPayment').innerHTML = '<i class="fas fa-wallet text-orange"></i> ' + order.payment_method;
+    document.getElementById('detailDriver').innerHTML = '<i class="fas fa-id-badge text-blue"></i> ' + (order.driver_name || '—');
     document.getElementById('detailDelivery').innerHTML = '<i class="fas fa-clock text-orange"></i> ' + order.created_at;
     document.getElementById('detailTotal').textContent = 'TZS ' + order.total_amount;
     const isConfirmed = order.status === 'confirmed';

@@ -72,7 +72,7 @@
       </div>
       {% for order in recent_orders %}
       <div class="omt-row">
-        <span class="omt-id">#{{ order.id }}</span>
+        <span class="omt-id">#{{ order.display_id }}</span>
         <span>{{ order.customer.get_full_name }}</span>
         <span>{{ order.fuel_type }}</span>
         <span>{{ order.quantity }}L</span>
@@ -140,7 +140,7 @@
           <span class="dml-name">{{ driver.name }}</span>
           <span class="dml-status {{ driver.status_css }}">{{ driver.get_status_display }}</span>
         </div>
-        <div class="dml-order">{% if driver.current_order %}#{{ driver.current_order.id }}{% else %}—{% endif %}</div>
+        <div class="dml-order">{% if driver.current_order %}#{{ driver.current_order.display_id }}{% else %}—{% endif %}</div>
       </div>
       {% empty %}
       <div class="dml-item" style="justify-content:center;padding:20px;color:var(--text-s)">

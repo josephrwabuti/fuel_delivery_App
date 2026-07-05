@@ -30,7 +30,7 @@
 
     {% for order in orders %}
     <div class="ht-row" data-status="{{ order.status }}">
-      <span class="ht-id">#{{ order.id }}</span>
+      <span class="ht-id">#{{ order.display_id }}</span>
       <span class="ht-station">{{ order.station.name }}</span>
       <span>{{ order.fuel_type }}</span>
       <span>{{ order.quantity }}L</span>
@@ -104,7 +104,7 @@ const ORDERS = {{ orders_json|safe }};
 function openOrderDetail(id) {
   const o = ORDERS.find(x => x.id === id);
   if (!o) return;
-  document.getElementById('modalOrderId').textContent = 'Order #' + o.id;
+  document.getElementById('modalOrderId').textContent = 'Order #' + o.display_id;
   const statusEl = document.getElementById('modalOrderStatus');
   statusEl.innerHTML = '<span class="status-chip ' + o.status + '">' + o.status_display + '</span>';
   document.getElementById('mStation').textContent = o.station;

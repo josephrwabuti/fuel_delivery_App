@@ -44,7 +44,7 @@
   <div class="adb-left">
     <div class="adb-pulse"></div>
     <div>
-      <div class="adb-title">Active Delivery — Order #{{ active_order.id }}</div>
+      <div class="adb-title">Active Delivery — Order #{{ active_order.display_id }}</div>
       <div class="adb-sub">{{ active_order.fuel_type }} · {{ active_order.quantity }}L → {{ active_order.delivery_address|truncatechars:40 }}</div>
     </div>
   </div>
@@ -67,7 +67,7 @@
       {% for order in assigned_orders|slice:":3" %}
       <div class="ao-item">
         <div class="ao-left">
-          <div class="ao-order-id">#{{ order.id }}</div>
+          <div class="ao-order-id">#{{ order.display_id }}</div>
           <div class="ao-details">
             <span><i class="fas fa-fire-flame-curved text-orange"></i> {{ order.fuel_type }} · {{ order.quantity }}L</span>
             <span><i class="fas fa-location-dot text-orange"></i> {{ order.delivery_address|truncatechars:36 }}</span>
@@ -146,7 +146,7 @@
       <div class="rdt-header"><span>Order</span><span>Fuel</span><span>Address</span><span>Status</span><span>Time</span><span>Earnings</span></div>
       {% for d in recent_deliveries %}
       <div class="rdt-row">
-        <span class="rdt-id">#{{ d.order.id }}</span>
+        <span class="rdt-id">#{{ d.order.display_id }}</span>
         <span>{{ d.order.fuel_type }} {{ d.order.quantity }}L</span>
         <span class="rdt-addr">{{ d.order.delivery_address|truncatechars:28 }}</span>
         <span><div class="status-chip {{ d.status }}">{{ d.get_status_display }}</div></span>
