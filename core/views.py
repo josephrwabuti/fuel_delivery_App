@@ -2,7 +2,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from accounts.decorators import role_required
 from orders.forms import OrderForm
-from accounts.models import Station, Driver, CustomerProfile
+from accounts.models import Station, Driver, CustomerProfile, FuelPrice
+from providers.models import StationStock
 from orders.models import Order
 from delivery.models import DeliveryLog
 from core.models import Notification, PlatformSettings
@@ -313,14 +314,21 @@ def customer_place_order(request):
             messages.error(request, "Cannot place order — station is currently closed.")
             return redirect("customer_stations")
 
-        price_map = {
-            "Petrol": 2850,
-            "Diesel": 2700,
-            "Kerosene": 2600
-        }
+        fuel_price = FuelPrice.objects.filter(station=station, type=fuel_type).first()
+        stock = StationStock.objects.filter(station=station, fuel_type=fuel_type).first()
 
-        price_per_litre = price_map.get(fuel_type, 2850)
+        if fuel_price:
+            price_per_litre = float(fuel_price.price)
+        elif stock:
+            price_per_litre = float(stock.price_per_litre)
+        else:
+            price_per_litre = {"Petrol": 2850, "Diesel": 2700, "Kerosene": 2600}.get(fuel_type, 2850)
+
         total_price = price_per_litre * float(quantity) + 2000
+
+        if stock and stock.litres_available >= float(quantity):
+            stock.litres_available -= float(quantity)
+            stock.save()
 
         order = Order.objects.create(
             customer=request.user,

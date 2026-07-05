@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from accounts.decorators import role_required
-from accounts.models import Station, Driver
+from accounts.models import Station, Driver, FuelPrice
 from orders.models import Order
 from providers.models import StationStock
 from delivery.models import DeliveryLog
@@ -261,6 +261,17 @@ def provider_update_stock(request):
         if capacity:
             stock.capacity = capacity
         stock.save()
+
+        # Sync price to customer-facing FuelPrice
+        if price:
+            fuel_price, _ = FuelPrice.objects.get_or_create(
+                station=station, type=stock.fuel_type,
+                defaults={"price": stock.price_per_litre, "available": True},
+            )
+            fuel_price.price = stock.price_per_litre
+            fuel_price.available = stock.litres_available > 0
+            fuel_price.save()
+
         messages.success(request, 'Stock updated.')
     return redirect('provider_stock')
 
