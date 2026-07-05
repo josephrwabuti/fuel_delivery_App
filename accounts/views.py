@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
@@ -96,7 +97,7 @@ def register(request):
             )
 
         messages.success(request, "Account created successfully")
-        return redirect("login")
+        return redirect(f"{reverse('login')}?role={role}")
 
     return render(request, "accounts/login_register.html")
 
