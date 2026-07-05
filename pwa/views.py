@@ -96,6 +96,9 @@ def api_register(request):
             Driver.objects.create(
                 user=user, name=f"{first_name} {last_name}",
                 phone=phone, status="pending", is_approved=False,
+                licence_number=data.get("licence_number", ""),
+                vehicle_type=data.get("vehicle_type", ""),
+                plate_number=data.get("plate_number", ""),
             )
         if role == "provider":
             Station.objects.create(

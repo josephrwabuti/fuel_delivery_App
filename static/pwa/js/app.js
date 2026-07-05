@@ -126,7 +126,11 @@ function cleanupMap(mapVar) {
 
 // ─── Router ───────────────────────────────────────────
 function navigate(hash) {
-  if (!hash || hash === "#") hash = App.role === "customer" ? "#/customer/dashboard" : "#/driver/dashboard";
+  if (!hash || hash === "#") {
+    if (App.role === "customer") hash = "#/customer/dashboard";
+    else if (App.role === "driver") hash = "#/driver/dashboard";
+    else { window.location.href = "/"; return; }
+  }
   location.hash = hash;
 }
 
@@ -644,12 +648,21 @@ window.updateOrderFuels = function () {
   const sel = $id("order-station");
   const fuelSel = $id("order-fuel");
   const sid = parseInt(sel.value);
+  const defaultPrices = { Petrol: 2850, Diesel: 2700, Kerosene: 2600 };
   fuelSel.innerHTML = '<option value="">Select fuel</option>';
   if (!sid) return;
   const s = window._stations.find(st => st.id === sid);
+  const stationFuels = {};
   if (s && s.fuels) {
     for (const f of s.fuels) {
-      if (f.available) fuelSel.innerHTML += `<option value="${f.type}" data-price="${f.price}">${f.type} · TZS ${Number(f.price).toLocaleString()}/L</option>`;
+      stationFuels[f.type] = parseFloat(f.price);
+    }
+  }
+  const types = ["Petrol", "Diesel", "Kerosene"];
+  for (const type of types) {
+    const price = stationFuels[type] || defaultPrices[type];
+    if (price) {
+      fuelSel.innerHTML += `<option value="${type}" data-price="${price}">${type} · TZS ${Number(price).toLocaleString()}/L</option>`;
     }
   }
   updateOrderTotal();
@@ -1408,16 +1421,117 @@ function renderRegisterForm() {
         <div class="role-selector">
           <div class="role-option selected" data-role="customer" onclick="selectRole(this)">👤 Customer</div>
           <div class="role-option" data-role="driver" onclick="selectRole(this)">🚚 Driver</div>
+          <div class="role-option" data-role="provider" onclick="selectRole(this)">⛽ Provider</div>
+        </div>
+      </div>
+      <div id="reg-driver-fields" style="display:none">
+        <div class="form-group"><label>🚛 Vehicle Type</label>
+          <select id="reg-vehicle-type">
+            <option value="">Select vehicle</option>
+            <option value="Truck">Truck</option>
+            <option value="Van">Van</option>
+            <option value="Motorcycle">Motorcycle</option>
+            <option value="Pickup">Pickup</option>
+          </select>
+        </div>
+        <div class="form-group"><label>🔢 Licence Number</label><input type="text" id="reg-licence" placeholder="e.g. DL123456"></div>
+        <div class="form-group"><label>🚗 Plate Number</label><input type="text" id="reg-plate" placeholder="e.g. T 123 ABC"></div>
+      </div>
+      <div id="reg-provider-fields" style="display:none">
+        <div class="form-group"><label>⛽ Station Name</label><input type="text" id="reg-station-name" placeholder="My Fuel Station"></div>
+        <div class="form-group"><label>📍 Station Address</label><input type="text" id="reg-station-addr" placeholder="Street, area, city"></div>
+        <div class="form-group">
+          <label>🗺️ Station Location</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <button class="btn btn-primary btn-sm" id="btn-detect-station-loc" onclick="detectStationLocation()">📡 Use My Location</button>
+          </div>
+          <div id="reg-station-loc-status" style="font-size:13px;color:var(--text2);margin-bottom:8px">📍 Pin your station on the map below</div>
+          <div id="reg-map-container" style="height:220px;border-radius:var(--radius-sm);overflow:hidden"></div>
+          <input type="hidden" id="reg-station-lat">
+          <input type="hidden" id="reg-station-lng">
         </div>
       </div>
       <button class="btn btn-primary btn-block" onclick="handleRegister()">Create Account</button>
     </div>`;
+
+  window._regStationMap = null;
+  window._regStationMarker = null;
+
+  setTimeout(() => {
+    const container = $id("reg-map-container");
+    if (container) {
+      const map = L.map("reg-map-container", { zoomControl: true, scrollWheelZoom: true }).setView([-6.8235, 39.2695], 12);
+      osmLayer().addTo(map);
+      window._regStationMap = map;
+      map.on("click", async (e) => {
+        const lat = e.latlng.lat, lng = e.latlng.lng;
+        $id("reg-station-lat").value = lat;
+        $id("reg-station-lng").value = lng;
+        if (window._regStationMarker) {
+          window._regStationMarker.setLatLng([lat, lng]);
+        } else {
+          window._regStationMarker = L.marker([lat, lng], { draggable: true }).addTo(window._regStationMap)
+            .on("dragend", (ev) => {
+              const p = ev.target.getLatLng();
+              $id("reg-station-lat").value = p.lat;
+              $id("reg-station-lng").value = p.lng;
+            });
+        }
+        const addr = await reverseGeocode(lat, lng);
+        $id("reg-station-addr").value = addr;
+        $id("reg-station-loc-status").innerHTML = `<span style="color:var(--success)">✅ Pinned: ${escapeHtml(addr)}</span>`;
+      });
+    }
+  }, 200);
+
+  window.detectStationLocation = async function () {
+    const status = $id("reg-station-loc-status");
+    const btn = $id("btn-detect-station-loc");
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Detecting...';
+    status.innerHTML = '<span style="color:var(--primary)">📍 Getting location...</span>';
+    try {
+      const pos = await requestLocation();
+      $id("reg-station-lat").value = pos.lat;
+      $id("reg-station-lng").value = pos.lng;
+      const addr = await reverseGeocode(pos.lat, pos.lng);
+      $id("reg-station-addr").value = addr;
+      status.innerHTML = `<span style="color:var(--success)">✅ Location: ${escapeHtml(addr)}</span>`;
+      btn.innerHTML = '📡 Update';
+      btn.disabled = false;
+      if (window._regStationMap) {
+        window._regStationMap.setView([pos.lat, pos.lng], 15);
+        if (window._regStationMarker) {
+          window._regStationMarker.setLatLng([pos.lat, pos.lng]);
+        } else {
+          window._regStationMarker = L.marker([pos.lat, pos.lng], { draggable: true }).addTo(window._regStationMap)
+            .on("dragend", (ev) => {
+              const p = ev.target.getLatLng();
+              $id("reg-station-lat").value = p.lat;
+              $id("reg-station-lng").value = p.lng;
+            });
+        }
+      }
+    } catch (e) {
+      status.innerHTML = `<span style="color:var(--danger)">⚠️ ${e.message}. Pin on map instead.</span>`;
+      btn.innerHTML = '📡 Try Again';
+      btn.disabled = false;
+    }
+  };
 }
 
 window.selectRole = function (el) {
   qsa(".role-option").forEach(r => r.classList.remove("selected"));
   el.classList.add("selected");
+  toggleExtraFields(el.dataset.role);
 };
+
+function toggleExtraFields(role) {
+  const driverExtra = $id("reg-driver-fields");
+  const providerExtra = $id("reg-provider-fields");
+  driverExtra.style.display = role === "driver" ? "block" : "none";
+  providerExtra.style.display = role === "provider" ? "block" : "none";
+}
 
 window.handleLogin = async function () {
   const email = $id("login-email").value;
@@ -1431,6 +1545,8 @@ window.handleLogin = async function () {
     if (res.status === "success") {
       App.user = res.user;
       App.role = res.user.role;
+      if (res.user.role === "provider") { window.location.href = "/provider/"; return; }
+      if (res.user.role === "admin") { window.location.href = "/admin-panel/"; return; }
       showApp();
       navigate();
     }
@@ -1442,13 +1558,14 @@ window.handleLogin = async function () {
 };
 
 window.handleRegister = async function () {
+  const role = qs(".role-option.selected")?.dataset.role || "customer";
   const data = {
     first_name: $id("reg-fname").value,
     last_name: $id("reg-lname").value,
     email: $id("reg-email").value,
     phone: $id("reg-phone").value,
     password: $id("reg-password").value,
-    role: qs(".role-option.selected")?.dataset.role || "customer",
+    role: role,
   };
   const err = $id("register-error");
   if (!data.first_name || !data.last_name || !data.email || !data.password) {
@@ -1456,6 +1573,19 @@ window.handleRegister = async function () {
   }
   if (data.password.length < 8) {
     err.textContent = "Password must be at least 8 characters"; err.style.display = "block"; return;
+  }
+  if (role === "driver") {
+    data.licence_number = $id("reg-licence").value;
+    data.vehicle_type = $id("reg-vehicle-type").value;
+    data.plate_number = $id("reg-plate").value;
+    if (!data.vehicle_type) { err.textContent = "Please select your vehicle type"; err.style.display = "block"; return; }
+  }
+  if (role === "provider") {
+    data.station_name = $id("reg-station-name").value;
+    data.station_address = $id("reg-station-addr").value;
+    data.lat = $id("reg-station-lat").value;
+    data.lng = $id("reg-station-lng").value;
+    if (!data.lat || !data.lng) { err.textContent = "Please pin your station location on the map"; err.style.display = "block"; return; }
   }
   try {
     showLoading(true);
