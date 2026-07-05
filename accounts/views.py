@@ -103,8 +103,9 @@ def register(request):
 
 
 def logout_view(request):
+    role = request.user.role if request.user.is_authenticated else "customer"
     logout(request)
-    return redirect('login')
+    return redirect(f"{reverse('login')}?role={role}")
 
 def forgot_password(request):
     return render(request, "accounts/login_register.html")
