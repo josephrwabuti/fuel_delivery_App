@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from accounts.decorators import role_required
-from accounts.models import Station, Driver
+from accounts.models import Station, Driver, FuelPrice
 from orders.models import Order
 from providers.models import StationStock
 from delivery.models import DeliveryLog
@@ -207,6 +207,12 @@ def provider_reject_order(request, id):
     order = get_object_or_404(Order, id=id, station=station, status='pending')
     if request.method == 'POST':
         reason = request.POST.get('reason', '')
+        stock = StationStock.objects.filter(
+            station=order.station, fuel_type=order.fuel_type
+        ).first()
+        if stock:
+            stock.litres_available += order.quantity
+            stock.save()
         order.status = 'cancelled'
         order.save()
         messages.info(request, f'Order #{order.display_id} rejected.')
@@ -263,6 +269,16 @@ def provider_update_stock(request):
         if capacity:
             stock.capacity = capacity
         stock.save()
+
+        if price:
+            fuel_price, _ = FuelPrice.objects.get_or_create(
+                station=station, type=fuel_type,
+                defaults={'price': price, 'available': True}
+            )
+            fuel_price.price = price
+            fuel_price.available = stock.litres_available > 0
+            fuel_price.save()
+
         messages.success(request, 'Stock updated.')
     return redirect('provider_stock')
 

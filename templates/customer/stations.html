@@ -128,11 +128,11 @@
   </div>
   <div class="sc-divider"></div>
   <div class="sc-fuels-row">
-    {% for fuel in station.fuels.all %}
+    {% for stock in station.stock_levels.all %}
     <div class="sc-fuel-item">
-      <span class="sc-fuel-type">{{ fuel.type }}</span>
-      <span class="sc-fuel-price">TZS {{ fuel.price }}/L</span>
-      <span class="sc-fuel-stock {% if fuel.available %}in{% else %}out{% endif %}">{{ fuel.available|yesno:"In Stock,Out" }}</span>
+      <span class="sc-fuel-type">{{ stock.fuel_type }}</span>
+      <span class="sc-fuel-price">TZS {{ stock.price_per_litre|floatformat:0 }}/L</span>
+      <span class="sc-fuel-stock {% if stock.litres_available > 0 %}in{% else %}out{% endif %}">{% if stock.litres_available > 0 %}In Stock{% else %}Out{% endif %}</span>
     </div>
     {% endfor %}
   </div>

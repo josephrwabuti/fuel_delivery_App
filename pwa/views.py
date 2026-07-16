@@ -160,7 +160,7 @@ def api_customer_dashboard(request):
     user = request.user
     nearby_stations = Station.objects.filter(
         status="approved", is_open=True
-    ).prefetch_related("fuels").order_by("-created_at")[:6]
+    ).prefetch_related("stock_levels").order_by("-created_at")[:6]
 
     recent_orders = Order.objects.filter(customer=user).select_related("station").order_by("-created_at")[:5]
 
@@ -227,7 +227,7 @@ def api_customer_dashboard(request):
 @api_login_required
 @role_required("customer")
 def api_stations(request):
-    stations = Station.objects.filter(status="approved", is_open=True).prefetch_related("fuels")
+    stations = Station.objects.filter(status="approved", is_open=True).prefetch_related("stock_levels")
     return JsonResponse({
         "status": "success",
         "stations": [{
@@ -237,7 +237,7 @@ def api_stations(request):
             "hours": s.hours or "24/7", "phone": s.phone or "—",
             "delivery_radius": s.delivery_radius,
             "description": s.description or "",
-            "fuels": [{"type": f.type, "price": float(f.price), "available": f.available} for f in s.fuels.all()],
+            "fuels": [{"type": st.fuel_type, "price": float(st.price_per_litre), "available": st.litres_available > 0} for st in s.stock_levels.all()],
         } for s in stations],
     })
 
@@ -270,17 +270,25 @@ def api_create_order(request):
         return JsonResponse({"status": "error", "message": "Station is currently closed"}, status=400)
 
     try:
-        fuel_price = station.fuels.get(type=fuel_type)
-        price_per_litre = float(fuel_price.price)
-    except FuelPrice.DoesNotExist:
         stock = StationStock.objects.filter(station=station, fuel_type=fuel_type).first()
-        price_per_litre = float(stock.price_per_litre) if stock else {"Petrol": 2850, "Diesel": 2700, "Kerosene": 2600}.get(fuel_type, 2850)
+        if stock:
+            price_per_litre = float(stock.price_per_litre)
+            if stock.litres_available < int(quantity):
+                return JsonResponse({"status": "error", "message": f"Insufficient stock. Only {stock.litres_available}L of {fuel_type} available."}, status=400)
+        else:
+            try:
+                fuel_price = station.fuels.get(type=fuel_type)
+                price_per_litre = float(fuel_price.price)
+            except FuelPrice.DoesNotExist:
+                return JsonResponse({"status": "error", "message": f"{fuel_type} is not available at this station."}, status=400)
 
-    total_price = price_per_litre * float(quantity) + 2000
+    except Exception:
+        return JsonResponse({"status": "error", "message": "Unable to determine fuel price."}, status=400)
 
-    stock = StationStock.objects.filter(station=station, fuel_type=fuel_type).first()
-    if stock and stock.litres_available >= float(quantity):
-        stock.litres_available -= float(quantity)
+    total_price = price_per_litre * int(quantity) + 2000
+
+    if stock:
+        stock.litres_available -= int(quantity)
         stock.save()
 
     last_seq = Order.objects.filter(customer=request.user).order_by("-customer_seq").first()
@@ -366,6 +374,13 @@ def api_cancel_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, customer=request.user)
     if order.status in ["delivered", "cancelled"]:
         return JsonResponse({"status": "error", "message": "Order cannot be cancelled"}, status=400)
+    if order.status not in ("delivered", "cancelled"):
+        stock = StationStock.objects.filter(
+            station=order.station, fuel_type=order.fuel_type
+        ).first()
+        if stock:
+            stock.litres_available += order.quantity
+            stock.save()
     order.status = "cancelled"
     order.save()
     return JsonResponse({"status": "success"})

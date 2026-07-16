@@ -52,6 +52,9 @@ urlpatterns = [
     path(
         'notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read_any'
     ),
+    path(
+        'api/station-stock/', views.api_station_stock, name='api_station_stock'
+    ),
     
     path('dashboard/admin/stations/', views.admin_stations, name='admin_stations'),
     path('dashboard/admin/station/approve/<int:station_id>/', views.approve_station, name='approve_station'),

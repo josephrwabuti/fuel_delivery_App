@@ -124,13 +124,8 @@
 
         <div class="fuel-type-selector">
           <div class="fts-label">Fuel Type</div>
-          <div class="fts-options">
-            <label class="fts-option selected"><input type="radio" name="fuel_type" value="Petrol" checked/>
-              <div class="fts-card"><i class="fas fa-fire-flame-curved"></i><strong>Petrol</strong><span class="fts-price" id="petrolPrice">TZS 2,850/L</span></div>
-            </label>
-            <label class="fts-option"><input type="radio" name="fuel_type" value="Diesel"/>
-              <div class="fts-card"><i class="fas fa-droplet"></i><strong>Diesel</strong><span class="fts-price" id="dieselPrice">TZS 2,700/L</span></div>
-            </label>
+          <div class="fts-options" id="fuelTypeOptions">
+            <div style="font-size:.82rem;color:var(--text-s);padding:10px">Loading fuel types…</div>
           </div>
         </div>
 
@@ -151,11 +146,11 @@
         </div>
 
         <div class="order-cost-preview">
-          <div class="ocp-row"><span>Price per litre</span><span id="pricePerL">TZS 2,850</span></div>
+          <div class="ocp-row"><span>Price per litre</span><span id="pricePerL">Loading…</span></div>
           <div class="ocp-row"><span>Quantity</span><span id="qtyDisplay">20 L</span></div>
-          <div class="ocp-row"><span>Delivery fee</span><span>TZS 2,000</span></div>
+          <div class="ocp-row"><span>Delivery fee</span><span id="deliveryFeeDisplay">TZS 2,000</span></div>
           <div class="ocp-divider"></div>
-          <div class="ocp-row total"><span>Estimated Total</span><span id="totalCost">TZS 59,000</span></div>
+          <div class="ocp-row total"><span>Estimated Total</span><span id="totalCost">—</span></div>
         </div>
 
         <div class="step-actions">
@@ -293,8 +288,8 @@
       <div class="oss-row"><span>Station</span><span id="summStation">—</span></div>
       <div class="oss-row"><span>Fuel</span><span id="summFuel">Petrol</span></div>
       <div class="oss-row"><span>Quantity</span><span id="summQty">20L</span></div>
-      <div class="oss-row"><span>Price/L</span><span id="summPPL">TZS 2,850</span></div>
-      <div class="oss-row"><span>Delivery</span><span>TZS 2,000</span></div>
+      <div class="oss-row"><span>Price/L</span><span id="summPPL">—</span></div>
+      <div class="oss-row"><span>Delivery</span><span id="summDelivery">TZS 2,000</span></div>
       <div class="oss-divider"></div>
       <div class="oss-total"><span>Total</span><span id="summTotal">TZS 59,000</span></div>
       <div class="oss-row" id="summLocRow" style="display:none">
@@ -320,8 +315,8 @@
 /* =====================================================
    ORDER FORM — Multi-step + Auto Location + Leaflet Map
    ===================================================== */
-const PRICES = { Petrol: 2850, Diesel: 2700 };
-const DELIVERY_FEE = 2000;
+let PRICES = {};
+let DELIVERY_FEE = 2000;
 let deliveryLat = null, deliveryLng = null;
 let deliveryMapInstance = null, deliveryMarker = null;
 let confirmThumbMap = null;
@@ -329,6 +324,42 @@ let mapPanelOpen = false;
 const urlParams = new URLSearchParams(window.location.search);
 const stationParam = urlParams.get('station');
 let selectedStationName = '—';
+
+function fetchStationPrices(sid) {
+  if (!sid) return;
+  fetch(`/api/station-stock/?station_id=${sid}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.fuels && data.fuels.length > 0) {
+        const container = document.getElementById('fuelTypeOptions');
+        container.innerHTML = '';
+        const icons = { Petrol: 'fa-fire-flame-curved', Diesel: 'fa-droplet', Kerosene: 'fa-droplet' };
+        data.fuels.forEach((f, idx) => {
+          PRICES[f.fuel_type] = f.price_per_litre;
+          const icon = icons[f.fuel_type] || 'fa-gas-pump';
+          const label = document.createElement('label');
+          label.className = 'fts-option' + (idx === 0 ? ' selected' : '');
+          label.innerHTML = `<input type="radio" name="fuel_type" value="${f.fuel_type}" ${idx === 0 ? 'checked' : ''}/>
+            <div class="fts-card"><i class="fas ${icon}"></i><strong>${f.fuel_type}</strong><span class="fts-price" id="price_${f.fuel_type}">TZS ${f.price_per_litre.toLocaleString()}/L</span>
+            ${f.litres_available <= 0 ? '<span style="font-size:.7rem;color:#ef4444;display:block">Out of Stock</span>' : ''}
+            </div>`;
+          label.querySelector('input').addEventListener('change', function() {
+            container.querySelectorAll('.fts-option').forEach(o => o.classList.remove('selected'));
+            label.classList.add('selected');
+            updateTotal();
+          });
+          if (f.litres_available <= 0) {
+            label.querySelector('input').disabled = true;
+            label.style.opacity = '0.4';
+          }
+          container.appendChild(label);
+        });
+        DELIVERY_FEE = data.delivery_fee || 2000;
+        updateTotal();
+      }
+    })
+    .catch(() => {});
+}
 
 (function bootStation() {
   const sid = stationParam;
@@ -346,7 +377,7 @@ let selectedStationName = '—';
   }
   const summEl = document.getElementById('summStation');
   if (summEl) summEl.textContent = selectedStationName;
-  // Auto-skip to step 2 — station already chosen on the stations page
+  fetchStationPrices(sid);
   setTimeout(() => goStep(2), 60);
 })();
 
@@ -399,24 +430,21 @@ function selectStation(el, id, name) {
 function updateTotal() {
   const fuel  = document.querySelector('[name="fuel_type"]:checked')?.value || 'Petrol';
   const qty   = parseInt(document.getElementById('quantityInput').value) || 0;
-  const ppl   = PRICES[fuel] || 2850;
+  const ppl   = PRICES[fuel] || 0;
   const total = ppl * qty + DELIVERY_FEE;
-  document.getElementById('pricePerL').textContent = `TZS ${ppl.toLocaleString()}`;
+  document.getElementById('pricePerL').textContent = ppl ? `TZS ${ppl.toLocaleString()}` : 'Loading…';
   document.getElementById('qtyDisplay').textContent = `${qty} L`;
-  document.getElementById('totalCost').textContent  = `TZS ${total.toLocaleString()}`;
+  document.getElementById('deliveryFeeDisplay').textContent = `TZS ${DELIVERY_FEE.toLocaleString()}`;
+  document.getElementById('totalCost').textContent  = ppl ? `TZS ${total.toLocaleString()}` : '—';
   document.getElementById('summFuel').textContent   = fuel;
   document.getElementById('summQty').textContent    = `${qty}L`;
-  document.getElementById('summPPL').textContent    = `TZS ${ppl.toLocaleString()}`;
-  document.getElementById('summTotal').textContent  = `TZS ${total.toLocaleString()}`;
+  document.getElementById('summPPL').textContent    = ppl ? `TZS ${ppl.toLocaleString()}` : '—';
+  document.getElementById('summDelivery').textContent = `TZS ${DELIVERY_FEE.toLocaleString()}`;
+  document.getElementById('summTotal').textContent  = ppl ? `TZS ${total.toLocaleString()}` : '—';
 }
 function adjustQty(d) { const i = document.getElementById('quantityInput'); i.value = Math.max(5, Math.min(200, (parseInt(i.value) || 0) + d)); updateTotal(); }
 function setQty(v) { document.getElementById('quantityInput').value = v; updateTotal(); }
 
-document.querySelectorAll('[name="fuel_type"]').forEach(r => r.addEventListener('change', () => {
-  document.querySelectorAll('.fts-option').forEach(o => o.classList.remove('selected'));
-  r.closest('.fts-option').classList.add('selected');
-  updateTotal();
-}));
 document.querySelectorAll('[name="payment_method"]').forEach(r => r.addEventListener('change', () => {
   document.querySelectorAll('.pay-option').forEach(o => o.classList.remove('selected'));
   r.closest('.pay-option').classList.add('selected');
@@ -569,7 +597,7 @@ function populateConfirm() {
   const addr    = document.getElementById('manualAddress').value || `${deliveryLat?.toFixed(4)}, ${deliveryLng?.toFixed(4)}`;
   const payment = document.querySelector('[name="payment_method"]:checked')?.value || 'cash';
   const time    = document.querySelector('[name="preferred_time"]').value;
-  const ppl     = PRICES[fuel] || 2850;
+  const ppl     = PRICES[fuel] || 0;
   const total   = ppl * parseInt(qty) + DELIVERY_FEE;
   const payLabels = { cash:'Cash on Delivery', mpesa:'M-Pesa', tigopesa:'Tigo Pesa' };
   const timeLabels= { now:'As soon as possible', '30min':'Within 30 min', '1hr':'Within 1 hour' };

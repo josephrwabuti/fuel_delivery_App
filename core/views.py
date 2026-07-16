@@ -1,10 +1,11 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from accounts.decorators import role_required
-from accounts.models import Station, Driver, CustomerProfile
+from accounts.models import Station, Driver, CustomerProfile, FuelPrice
 from orders.models import Order
 from delivery.models import DeliveryLog
 from core.models import Notification, PlatformSettings
+from providers.models import StationStock
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -30,7 +31,7 @@ def customer_home(request):
 
     nearby_stations = Station.objects.filter(
         status="approved", is_open=True
-    ).prefetch_related("fuels").order_by("-created_at")[:6]
+    ).prefetch_related("stock_levels").order_by("-created_at")[:6]
 
     recent_orders = Order.objects.filter(
         customer=request.user
@@ -102,16 +103,17 @@ def provider_home(request):
 @login_required(login_url='login')
 @role_required('customer')
 def stations_view(request):
-    stations = Station.objects.filter(status="approved", is_open=True).prefetch_related("fuels")
+    stations = Station.objects.filter(status="approved", is_open=True).prefetch_related("stock_levels")
 
     stations_list = []
     for s in stations:
         fuels = []
-        for f in s.fuels.all():
+        for stock in s.stock_levels.all():
             fuels.append({
-                "type": f.type,
-                "price": f"{f.price:,.0f}",
-                "ok": f.available,
+                "type": stock.fuel_type,
+                "price": f"{stock.price_per_litre:,.0f}",
+                "ok": stock.litres_available > 0,
+                "litres_available": float(stock.litres_available),
             })
         stations_list.append({
             "id": s.id,
@@ -151,39 +153,25 @@ def create_order(request):
         messages.error(request, f"'{preselected_station.name}' is currently closed. Please choose an open station.")
         return redirect("customer_stations")
 
-    if request.method == "POST":
-        station = preselected_station
-        if station and not station.is_open:
-            messages.error(request, "Cannot place order — station is closed.")
-            return redirect("customer_stations")
-        last_seq = Order.objects.filter(customer=request.user).order_by("-customer_seq").first()
-        next_seq = (last_seq.customer_seq + 1) if last_seq else 1
-        order = Order.objects.create(
-            customer=request.user,
-            station=station,
-            fuel_type=request.POST['fuel_type'],
-            quantity=request.POST['quantity'],
-            total_amount=request.POST['total_amount'],
-            status="pending",
-            customer_seq=next_seq,
-        )
-        return redirect("customer_tracking")
-
     return render(request, "customer/order.html", {
         "preselected_station": preselected_station
     })
 
 
+@login_required(login_url='login')
+@role_required('customer')
 def tracking_view(request):
     active_order = Order.objects.filter(
         customer=request.user
-    ).exclude(status="delivered").select_related("station", "driver").first()
+    ).exclude(status__in=["delivered", "cancelled"]).select_related("station", "driver").first()
 
     return render(request, "customer/tracking.html", {
         "active_order": active_order
     })
 
 
+@login_required(login_url='login')
+@role_required('customer')
 def history_view(request):
     orders = Order.objects.filter(customer=request.user).select_related("station", "driver").order_by('-created_at')
 
@@ -210,20 +198,33 @@ def history_view(request):
         "orders_json": json.dumps(orders_list),
     })
     
+@login_required(login_url='login')
+@role_required('customer')
 def confirm_delivery(request, order_id):
     order = Order.objects.get(id=order_id, customer=request.user)
 
     if request.method == "POST":
         order.status = "delivered"
+        order.delivered_at = timezone.now()
         order.save()
 
     return redirect("customer_tracking")
 
 
+@login_required(login_url='login')
+@role_required('customer')
 def cancel_order(request, order_id):
     order = Order.objects.get(id=order_id, customer=request.user)
 
     if request.method == "POST":
+        if order.status not in ("delivered", "cancelled"):
+            stock = StationStock.objects.filter(
+                station=order.station, fuel_type=order.fuel_type
+            ).first()
+            if stock:
+                stock.litres_available += order.quantity
+                stock.save()
+
         order.status = "cancelled"
         order.save()
 
@@ -295,6 +296,29 @@ def dismiss_notification(request, notif_id):
 
 
 @login_required(login_url='login')
+def api_station_stock(request):
+    station_id = request.GET.get("station_id")
+    if not station_id:
+        return JsonResponse({"error": "station_id required"}, status=400)
+    station = get_object_or_404(Station, id=station_id)
+    stocks = StationStock.objects.filter(station=station)
+    fuels = []
+    for s in stocks:
+        fuels.append({
+            "fuel_type": s.fuel_type,
+            "price_per_litre": float(s.price_per_litre),
+            "litres_available": float(s.litres_available),
+            "capacity": float(s.capacity),
+        })
+    settings_obj = PlatformSettings.objects.first()
+    delivery_fee = float(settings_obj.delivery_fee) if settings_obj else 2000
+    return JsonResponse({
+        "fuels": fuels,
+        "delivery_fee": delivery_fee,
+    })
+
+
+@login_required(login_url='login')
 def mark_all_notifications_read(request):
     if request.method == "POST":
         Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
@@ -311,20 +335,33 @@ def customer_place_order(request):
         quantity = request.POST.get("quantity")
         delivery_address = request.POST.get("delivery_address", "")
         phone = request.POST.get("phone", "")
+        payment_method = request.POST.get("payment_method", "cash")
+        notes = request.POST.get("notes", "")
+        landmark = request.POST.get("landmark", "")
+        customer_lat = request.POST.get("delivery_lat", None)
+        customer_lng = request.POST.get("delivery_lng", None)
 
         station = get_object_or_404(Station, id=station_id)
         if not station.is_open:
             messages.error(request, "Cannot place order — station is currently closed.")
             return redirect("customer_stations")
 
-        price_map = {
-            "Petrol": 2850,
-            "Diesel": 2700,
-            "Kerosene": 2600
-        }
+        qty = int(quantity)
 
-        price_per_litre = price_map.get(fuel_type, 2850)
-        total_price = price_per_litre * float(quantity) + 2000
+        stock = StationStock.objects.filter(station=station, fuel_type=fuel_type).first()
+        if not stock:
+            messages.error(request, f"{fuel_type} is not available at this station.")
+            return redirect(f"/customer/order/?station={station_id}")
+        if stock.litres_available < qty:
+            messages.error(request, f"Insufficient stock. Only {stock.litres_available}L of {fuel_type} available.")
+            return redirect(f"/customer/order/?station={station_id}")
+
+        price_per_litre = float(stock.price_per_litre)
+
+        settings_obj = PlatformSettings.objects.first()
+        delivery_fee = float(settings_obj.delivery_fee) if settings_obj else 2000
+
+        total_price = price_per_litre * qty + delivery_fee
 
         last_seq = Order.objects.filter(customer=request.user).order_by("-customer_seq").first()
         next_seq = (last_seq.customer_seq + 1) if last_seq else 1
@@ -339,7 +376,15 @@ def customer_place_order(request):
             total_amount=total_price,
             status="pending",
             customer_seq=next_seq,
+            payment_method=payment_method,
+            notes=notes,
+            landmark=landmark,
+            customer_lat=customer_lat,
+            customer_lng=customer_lng,
         )
+
+        stock.litres_available -= qty
+        stock.save()
 
         return redirect("customer_tracking")
 

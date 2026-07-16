@@ -143,11 +143,8 @@
     <div class="smc-name">{{ station.name }}</div>
     <div class="smc-address"><i class="fas fa-location-dot"></i> {{ station.address }}</div>
     <div class="smc-fuels">
-      {% for fuel in station.fuels.all %}
-      <span class="fuel-chip">{{ fuel.type }}: <strong>TZS {{ fuel.price }}/L</strong></span>
-      {% empty %}
-      <span class="fuel-chip">Petrol: <strong>TZS 2,850/L</strong></span>
-      <span class="fuel-chip">Diesel: <strong>TZS 2,700/L</strong></span>
+      {% for stock in station.stock_levels.all %}
+      <span class="fuel-chip">{{ stock.fuel_type }}: <strong>TZS {{ stock.price_per_litre|floatformat:0 }}/L</strong></span>
       {% endfor %}
     </div>
     <div class="smc-meta">
