@@ -1,11 +1,21 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
-from .models import CustomerProfile, Driver, Station
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from .models import CustomerProfile, Driver, Station, User
 
-User = get_user_model()
 
-# User admin
-admin.site.register(User)
+@admin.register(User)
+class UserAdmin(BaseUserAdmin):
+    list_display = ('email', 'first_name', 'last_name', 'role', 'is_staff', 'is_active')
+    list_filter = ('role', 'is_staff', 'is_active')
+    search_fields = ('email', 'first_name', 'last_name')
+    ordering = ('email',)
+    fieldsets = BaseUserAdmin.fieldsets + (
+        ('Extra', {'fields': ('role', 'phone')}),
+    )
+    add_fieldsets = BaseUserAdmin.add_fieldsets + (
+        ('Extra', {'fields': ('role', 'phone')}),
+    )
 
 # Customer Profile
 admin.site.register(CustomerProfile)
