@@ -1,0 +1,32 @@
+
+Fuel Demand Prediction — Training Report
+=========================================
+Date range  : 2021-01-01 to 2024-12-31
+Stations    : 6
+Fuel types  : 3 (Petrol, Diesel, Kerosene)
+Total rows  : 26,280
+
+Model       : GradientBoostingRegressor
+Estimators  : 500
+Max depth   : 6
+Learning r. : 0.05
+
+Train rows  : 21,024
+Test  rows  : 5,256
+
+MAE   : 34.7 litres
+RMSE  : 45.8 litres
+R²    : 0.9118
+MAPE  : 11.50%
+
+Top Features:
+  demand_lag7          0.6016
+  demand_lag30         0.2562
+  dow_sin              0.0227
+  price_z              0.0202
+  is_weekend           0.0183
+  day_of_week_num      0.0179
+  is_holiday           0.0126
+  seasonal_factor      0.0066
+  station_id           0.0062
+  year_num             0.0061

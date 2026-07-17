@@ -12,37 +12,81 @@
     <div class="fi-title">AI-Powered Demand Prediction</div>
     <div class="fi-sub">Based on your historical orders, time patterns, and local demand trends, FuelGo predicts upcoming fuel demand to help you stay stocked and staffed.</div>
   </div>
-  <div class="fi-badge"><span class="live-dot"></span> Updated hourly</div>
+  {% if model_available %}
+  <div class="fi-badge"><span class="live-dot"></span> Model active</div>
+  {% else %}
+  <div class="fi-badge" style="background:#fff3cd;color:#856404"><i class="fas fa-exclamation-triangle"></i> Model not trained</div>
+  {% endif %}
 </div>
 
+{% if not model_available %}
+<div class="forecast-alert" style="border-left-color:#ffc107;background:#fff8e1;">
+  <i class="fas fa-info-circle text-orange"></i>
+  <div>
+    <strong>Demand model not available yet</strong>
+    <span>Run <code>python analytics/setup_ml.py</code> then <code>python analytics/train_model.py</code> to enable AI predictions.</span>
+  </div>
+</div>
+{% endif %}
+
+{% if model_available %}
 <!-- ===== FORECAST ALERT ===== -->
 <div class="forecast-alert">
   <i class="fas fa-triangle-exclamation text-orange"></i>
   <div>
-    <strong>High demand predicted Friday & Saturday</strong>
-    <span>Orders expected to spike 40% above average. Consider restocking Diesel and scheduling extra drivers.</span>
+    <strong>{{ forecast.alert.title }}</strong>
+    <span>{{ forecast.alert.detail }}</span>
   </div>
-  <button class="btn-primary-sm" onclick="openModal('restockModal')"><i class="fas fa-plus"></i> Update Stock</button>
 </div>
 
 <!-- ===== WEEKLY FORECAST CHART ===== -->
 <div class="forecast-card">
   <div class="fc-header">
-    <div class="fc-title"><i class="fas fa-chart-bar text-orange"></i> 7-Day Order Forecast</div>
+    <div class="fc-title"><i class="fas fa-chart-bar text-orange"></i> 7-Day Demand Forecast</div>
     <div class="fc-legend">
+      <span><span class="leg-dot navy"></span> Past (actual)</span>
       <span><span class="leg-dot orange"></span> Predicted</span>
-      <span><span class="leg-dot navy"></span> Actual (past)</span>
     </div>
   </div>
   <div class="forecast-chart">
     <div class="fch-bars">
-      <div class="fch-col past"><div class="fch-bar actual" style="height:45%"><span class="fch-val">8</span></div><div class="fch-day">Mon</div><div class="fch-type">actual</div></div>
-      <div class="fch-col past"><div class="fch-bar actual" style="height:60%"><span class="fch-val">11</span></div><div class="fch-day">Tue</div><div class="fch-type">actual</div></div>
-      <div class="fch-col past"><div class="fch-bar actual" style="height:50%"><span class="fch-val">9</span></div><div class="fch-day">Wed</div><div class="fch-type">actual</div></div>
-      <div class="fch-col past"><div class="fch-bar actual high" style="height:88%"><span class="fch-val">16</span></div><div class="fch-day">Thu</div><div class="fch-type">actual</div></div>
-      <div class="fch-col today-col"><div class="fch-bar actual today" style="height:38%"><span class="fch-val">7</span></div><div class="fch-day">Today</div><div class="fch-type">in progress</div></div>
-      <div class="fch-col"><div class="fch-bar predicted high" style="height:95%"><span class="fch-val">~17</span></div><div class="fch-day">Sat</div><div class="fch-type">predicted</div></div>
-      <div class="fch-col"><div class="fch-bar predicted" style="height:75%"><span class="fch-val">~14</span></div><div class="fch-day">Sun</div><div class="fch-type">predicted</div></div>
+      {% for day in forecast.daily %}
+      <div class="fch-col {% if day.is_today %}today-col{% elif forloop.counter <= 3 %}past{% endif %}">
+        <div class="fch-bar {% if forloop.counter <= 3 %}actual{% else %}predicted{% endif %} {% if day.total_litres > forecast.avg_demand %}high{% endif %} {% if day.is_today %}today{% endif %}"
+             style="height:{{ day.bar_pct }}%">
+          <span class="fch-val">{{ day.total_litres }}</span>
+        </div>
+        <div class="fch-day">{% if day.is_today %}Today{% else %}{{ day.day_short }}{% endif %}</div>
+        <div class="fch-type">{% if forloop.counter <= 3 %}actual{% else %}predicted{% endif %}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ===== FUEL BREAKDOWN ===== -->
+<div class="forecast-card" style="margin-top:16px">
+  <div class="fc-header">
+    <div class="fc-title"><i class="fas fa-gas-pump text-orange"></i> 7-Day Fuel Breakdown</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:8px 0;">
+    <div class="insight-card">
+      <div class="ic-icon blue"><i class="fas fa-droplet"></i></div>
+      <div class="ic-title">Petrol</div>
+      <div class="ic-val">{{ forecast.fuel_totals.Petrol|floatformat:0 }} L</div>
+      <div class="ic-desc">Next 7 days total</div>
+    </div>
+    <div class="insight-card">
+      <div class="ic-icon purple"><i class="fas fa-oil-can"></i></div>
+      <div class="ic-title">Diesel</div>
+      <div class="ic-val">{{ forecast.fuel_totals.Diesel|floatformat:0 }} L</div>
+      <div class="ic-desc">Next 7 days total</div>
+    </div>
+    <div class="insight-card">
+      <div class="ic-icon orange"><i class="fas fa-fire"></i></div>
+      <div class="ic-title">Kerosene</div>
+      <div class="ic-val">{{ forecast.fuel_totals.Kerosene|floatformat:0 }} L</div>
+      <div class="ic-desc">Next 7 days total</div>
     </div>
   </div>
 </div>
@@ -51,38 +95,69 @@
 <div class="insights-grid">
   <div class="insight-card">
     <div class="ic-icon orange"><i class="fas fa-fire"></i></div>
-    <div class="ic-title">Peak Time</div>
-    <div class="ic-val">6–9 PM Daily</div>
-    <div class="ic-desc">Ensure drivers are available during evening rush hours</div>
+    <div class="ic-title">Peak Day This Week</div>
+    <div class="ic-val">{{ forecast.peak_day_name }} — {{ forecast.max_demand }} L</div>
+    <div class="ic-desc">Highest predicted demand across all fuel types</div>
   </div>
   <div class="insight-card">
     <div class="ic-icon blue"><i class="fas fa-droplet"></i></div>
     <div class="ic-title">Highest Demand Fuel</div>
-    <div class="ic-val">Petrol (RON 91)</div>
-    <div class="ic-desc">60% of orders are for petrol — maintain adequate stock</div>
+    <div class="ic-val">{{ forecast.top_fuel }}</div>
+    <div class="ic-desc">{{ forecast.top_fuel_pct }}% of total weekly demand</div>
   </div>
   <div class="insight-card">
     <div class="ic-icon purple"><i class="fas fa-calendar-week"></i></div>
     <div class="ic-title">Busiest Day</div>
-    <div class="ic-val">Friday</div>
-    <div class="ic-desc">Schedule maximum driver availability on Fridays</div>
+    <div class="ic-val">{{ forecast.busiest_day }}</div>
+    <div class="ic-desc">Schedule maximum driver availability on {{ forecast.busiest_day }}s</div>
   </div>
   <div class="insight-card">
-    <div class="ic-icon orange"><i class="fas fa-triangle-exclamation"></i></div>
-    <div class="ic-title">Stock Alert</div>
-    <div class="ic-val">Diesel — 3 days left</div>
-    <div class="ic-desc">At current consumption, diesel will run out in ~3 days</div>
+    <div class="ic-icon orange"><i class="fas fa-chart-line"></i></div>
+    <div class="ic-title">Avg Daily Demand</div>
+    <div class="ic-val">{{ forecast.avg_demand }} L / day</div>
+    <div class="ic-desc">Total 7-day forecast: {{ forecast.total_7day|floatformat:0 }} litres</div>
   </div>
 </div>
+
+<!-- ===== STOCK ALERTS (if any) ===== -->
+{% if forecast.stock_alerts %}
+<div class="forecast-card" style="margin-top:16px;border-left:3px solid #e74c3c;">
+  <div class="fc-header">
+    <div class="fc-title"><i class="fas fa-triangle-exclamation" style="color:#e74c3c"></i> Stock Alerts</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;padding:8px 0;">
+    {% for alert in forecast.stock_alerts %}
+    <div class="insight-card" style="border-left:3px solid {% if alert.urgency == 'critical' %}#e74c3c{% elif alert.urgency == 'warning' %}#f39c12{% else %}#3498db{% endif %};">
+      <div class="ic-icon {% if alert.urgency == 'critical' %}orange{% else %}blue{% endif %}">
+        <i class="fas {% if alert.urgency == 'critical' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+      </div>
+      <div class="ic-title">{{ alert.fuel_type }}</div>
+      <div class="ic-val">{{ alert.days_left }} days left</div>
+      <div class="ic-desc">{{ alert.stock_litres|floatformat:0 }}L stock · {{ alert.daily_rate|floatformat:0 }}L/day rate</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 <!-- ===== RECOMMENDATIONS ===== -->
 <div class="recommendations-card">
   <div class="rec-title"><i class="fas fa-lightbulb text-orange"></i> AI Recommendations</div>
   <div class="rec-list">
-    <div class="rec-item"><div class="rec-icon green"><i class="fas fa-check"></i></div><div class="rec-body"><strong>Restock Diesel by Thursday</strong><span>Predicted demand will exhaust current 800L stock before the weekend. Order at least 2,000L.</span></div></div>
-    <div class="rec-item"><div class="rec-icon orange"><i class="fas fa-id-badge"></i></div><div class="rec-body"><strong>Schedule 3+ drivers on Friday & Saturday</strong><span>Demand forecast shows 40% spike. Having all 4 drivers available is recommended.</span></div></div>
-    <div class="rec-item"><div class="rec-icon blue"><i class="fas fa-clock"></i></div><div class="rec-body"><strong>Extend station hours on weekends</strong><span>18% of missed orders occur after 9PM on weekends. Consider operating until 11PM.</span></div></div>
+    {% for rec in forecast.recommendations %}
+    <div class="rec-item">
+      <div class="rec-icon {% if rec.color == 'green' %}green{% elif rec.color == 'orange' %}orange{% elif rec.color == 'blue' %}blue{% elif rec.color == 'red' %}orange{% else %}green{% endif %}">
+        <i class="{{ rec.icon }}"></i>
+      </div>
+      <div class="rec-body">
+        <strong>{{ rec.title }}</strong>
+        <span>{{ rec.detail }}</span>
+      </div>
+    </div>
+    {% endfor %}
   </div>
 </div>
+
+{% endif %}
 
 {% endblock %}

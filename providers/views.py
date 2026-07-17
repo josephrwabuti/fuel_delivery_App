@@ -520,7 +520,21 @@ def provider_reports_export(request):
 @login_required(login_url='login')
 @role_required('provider')
 def provider_demand(request):
-    context = {}
+    station = request.user.station
+    orders_qs = Order.objects.filter(station=station)
+    stock_qs = StationStock.objects.filter(station=station)
+
+    forecast = None
+    try:
+        from analytics.predict import generate_forecast
+        forecast = generate_forecast(station, orders_qs, stock_qs, days_ahead=7)
+    except Exception:
+        forecast = None
+
+    context = {
+        "forecast": forecast,
+        "model_available": forecast is not None,
+    }
     context.update(get_context_base(request))
     return render(request, "provider/demand.html", context)
 
