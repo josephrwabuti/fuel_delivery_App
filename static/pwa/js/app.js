@@ -302,9 +302,13 @@ async function renderCustomerDashboard(content) {
   const d = data;
   const active = d.active_order;
 
+  const now = new Date();
+  const h = now.getHours();
+  const timeOfDay = h < 12 ? "Morning" : h < 17 ? "Afternoon" : "Evening";
+
   let html = `
     <div style="margin-bottom:16px">
-      <div style="font-size:14px;color:var(--text2)">Good ${d.time_of_day},</div>
+      <div style="font-size:14px;color:var(--text2)">Good ${timeOfDay},</div>
       <div style="font-size:22px;font-weight:700">${escapeHtml(App.user.first_name || "Customer")}</div>
     </div>
     <div class="stats-grid">
@@ -1029,10 +1033,14 @@ async function renderDriverDashboard(content) {
   if (data.status !== "success") return;
   const d = data;
 
+  const now = new Date();
+  const h = now.getHours();
+  const timeOfDay = h < 12 ? "Morning" : h < 17 ? "Afternoon" : "Evening";
+
   let html = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <div>
-        <div style="font-size:14px;color:var(--text2)">Good ${d.time_of_day},</div>
+        <div style="font-size:14px;color:var(--text2)">Good ${timeOfDay},</div>
         <div style="font-size:22px;font-weight:700">${escapeHtml(App.user.driver?.name || "Driver")}</div>
       </div>
       <div class="duty-indicator ${d.on_duty ? 'duty-on' : 'duty-off'}">

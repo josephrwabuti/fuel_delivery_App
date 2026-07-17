@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}FuelGo – Home{% endblock %}
-{% block page_title %}Good {{ time_of_day }}, {{ request.user.first_name|default:'there' }} 👋{% endblock %}
+{% block page_title %}<span id="greeting-text">Good {{ time_of_day }}</span>, {{ request.user.first_name|default:'there' }} 👋{% endblock %}
 {% block nav_home %}active{% endblock %}
 
 {% block content %}
@@ -189,4 +189,14 @@
   {% endfor %}
 </div>
 
+{% endblock %}
+{% block extra_js %}
+<script>
+(function() {
+  var h = new Date().getHours();
+  var tod = h < 12 ? "Morning" : h < 17 ? "Afternoon" : "Evening";
+  var el = document.getElementById("greeting-text");
+  if (el) el.textContent = "Good " + tod;
+})();
+</script>
 {% endblock %}
