@@ -263,11 +263,11 @@ def provider_update_stock(request):
             stock = StationStock(station=station, fuel_type=fuel_type)
 
         if price:
-            stock.price_per_litre = price
+            stock.price_per_litre = float(price)
         if litres_available:
-            stock.litres_available = litres_available
+            stock.litres_available = float(litres_available)
         if capacity:
-            stock.capacity = capacity
+            stock.capacity = float(capacity)
         stock.save()
 
         if price:
@@ -275,7 +275,7 @@ def provider_update_stock(request):
                 station=station, type=fuel_type,
                 defaults={'price': price, 'available': True}
             )
-            fuel_price.price = price
+            fuel_price.price = float(price)
             fuel_price.available = stock.litres_available > 0
             fuel_price.save()
 
