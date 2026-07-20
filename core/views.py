@@ -161,12 +161,19 @@ def create_order(request):
 @login_required(login_url='login')
 @role_required('customer')
 def tracking_view(request):
-    active_order = Order.objects.filter(
+    all_orders = Order.objects.filter(
         customer=request.user
-    ).exclude(status__in=["delivered", "cancelled"]).select_related("station", "driver").first()
+    ).exclude(status__in=["delivered", "cancelled"]).select_related("station", "driver").order_by('-created_at')
+
+    selected_id = request.GET.get('order_id')
+    if selected_id:
+        active_order = all_orders.filter(id=selected_id).first()
+    else:
+        active_order = all_orders.first()
 
     return render(request, "customer/tracking.html", {
-        "active_order": active_order
+        "active_order": active_order,
+        "all_orders": all_orders,
     })
 
 

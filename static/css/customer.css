@@ -1085,3 +1085,45 @@ a{text-decoration:none;color:inherit}
   .pf-grid{grid-template-columns:1fr}
   .pf-grid .full-width{grid-column:1}
 }
+
+/* ===== Order Selector ===== */
+.order-selector{margin-bottom:20px}
+.os-label{font-size:0.85rem;font-weight:600;color:var(--text-s);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.os-list{display:flex;flex-direction:column;gap:12px}
+.os-card{
+  width:100%;padding:16px 18px;border-radius:var(--radius);
+  background:var(--glass);border:2px solid var(--border-s);
+  text-decoration:none;color:var(--text-p);transition:all var(--tr);
+  display:flex;align-items:center;gap:16px;cursor:pointer;
+}
+.os-card:hover{border-color:var(--orange-bdr);box-shadow:0 4px 12px rgba(0,0,0,0.06)}
+.os-card.active{border-color:var(--orange);background:var(--orange-dim);box-shadow:0 0 0 3px rgba(232,93,4,0.12)}
+.osc-icon{
+  width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:var(--orange-dim);color:var(--orange);font-size:1.1rem;flex-shrink:0;
+}
+.os-card.active .osc-icon{background:var(--orange);color:#fff}
+.osc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.osc-top{display:flex;align-items:center;justify-content:space-between}
+.osc-id{font-size:1rem;font-weight:800;color:var(--text-p)}
+.osc-status{display:flex;align-items:center;gap:5px;font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-s)}
+.osc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.osc-dot.status-pending{background:#eab308}
+.osc-dot.status-confirmed{background:var(--blue)}
+.osc-dot.status-assigned{background:var(--purple)}
+.osc-dot.status-out{background:var(--green);animation:pulse-dot 1.5s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.4}}
+.osc-details{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.osc-row{font-size:0.82rem;color:var(--text-s);display:flex;align-items:center;gap:5px}
+.osc-row i{font-size:0.78rem}
+.osc-row:nth-child(1) i{color:var(--orange)}
+.osc-row:nth-child(2) i{color:var(--blue)}
+.osc-row:nth-child(3) i{color:var(--green)}
+.osc-action{
+  flex-shrink:0;padding:8px 14px;border-radius:8px;
+  font-size:0.78rem;font-weight:700;color:var(--orange);
+  background:var(--orange-dim);display:flex;align-items:center;gap:6px;
+  transition:all var(--tr);
+}
+.os-card:hover .osc-action{background:var(--orange);color:#fff}
+.os-card.active .osc-action{background:var(--orange);color:#fff}

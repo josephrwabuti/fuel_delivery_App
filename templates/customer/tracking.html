@@ -19,6 +19,41 @@
 </div>
 {% else %}
 
+{% if all_orders|length > 1 %}
+<!-- ===== ORDER SELECTOR ===== -->
+<div class="order-selector">
+  <div class="os-label"><i class="fas fa-list-ul"></i> Select an Order to Track</div>
+  <div class="os-list">
+    {% for order in all_orders %}
+    <a href="?order_id={{ order.id }}" class="os-card{% if order.id == active_order.id %} active{% endif %}">
+      <div class="osc-icon"><i class="fas fa-gas-pump"></i></div>
+      <div class="osc-body">
+        <div class="osc-top">
+          <div class="osc-id">#{{ order.display_id }}</div>
+          <div class="osc-status">
+            <span class="osc-dot status-{{ order.status }}"></span>
+            {{ order.get_status_display }}
+          </div>
+        </div>
+        <div class="osc-details">
+          <div class="osc-row"><i class="fas fa-droplet"></i> {{ order.fuel_type }}</div>
+          <div class="osc-row"><i class="fas fa-battery-full"></i> {{ order.quantity }} Litres</div>
+          <div class="osc-row"><i class="fas fa-location-dot"></i> {{ order.station.name }}</div>
+        </div>
+      </div>
+      <div class="osc-action">
+        {% if order.id == active_order.id %}
+          <i class="fas fa-eye"></i> Tracking
+        {% else %}
+          <i class="fas fa-hand-pointer"></i> Track
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- ===== ORDER STATUS BANNER ===== -->
 <div class="tracking-status-banner status-{{ active_order.status }}">
   <div class="tsb-left">
