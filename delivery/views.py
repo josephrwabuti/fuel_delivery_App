@@ -18,11 +18,13 @@ from core.models import Notification
 
 def get_base_context(request):
     driver = request.user.driver
-    active_order = Order.objects.filter(
+    active_orders_qs = Order.objects.filter(
         driver=driver,
         status__in=["assigned", "picked_up", "delivering"]
-    ).select_related("station", "customer").first()
+    ).select_related("station", "customer")
+    active_order = active_orders_qs.first()
     new_orders_count = Order.objects.filter(driver=driver, status="assigned").count()
+    active_orders_count = active_orders_qs.count()
     notif_count = Notification.objects.filter(user=request.user, is_read=False).count()
 
     notifications = Notification.objects.filter(user=request.user).order_by("-created_at")[:5]
@@ -40,6 +42,7 @@ def get_base_context(request):
     return {
         "driver": driver,
         "active_order": active_order,
+        "active_orders_count": active_orders_count,
         "new_orders_count": new_orders_count,
         "notif_count": notif_count,
         "notifs_json": notifs_json,
@@ -141,12 +144,20 @@ def driver_active(request):
     ctx = get_base_context(request)
     driver = ctx["driver"]
 
-    active_order = Order.objects.filter(
+    active_orders = Order.objects.filter(
         driver=driver,
         status__in=["assigned", "picked_up", "delivering"]
-    ).select_related("station", "customer").first()
+    ).select_related("station", "customer").order_by("-driver_assigned_at")
+
+    selected_order_id = request.GET.get("order")
+    active_order = None
+    if selected_order_id:
+        active_order = active_orders.filter(id=selected_order_id).first()
+    if not active_order:
+        active_order = active_orders.first()
 
     ctx["active_order"] = active_order
+    ctx["all_active_orders"] = active_orders
     return render(request, "driver/active.html", ctx)
 
 
@@ -357,7 +368,9 @@ def driver_update_status(request, order_id):
                     message=f"Your fuel order #{order.display_id} has been delivered successfully.",
                 )
 
-    return redirect("driver_active")
+    from django.http import HttpResponseRedirect
+    from django.urls import reverse
+    return HttpResponseRedirect(f"{reverse('driver_active')}?order={order_id}")
 
 
 @login_required(login_url="login")

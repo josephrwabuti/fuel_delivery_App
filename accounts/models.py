@@ -126,7 +126,12 @@ class Driver(models.Model):
     @property
     def current_order(self):
         from orders.models import Order
-        return Order.objects.filter(driver=self, status__in=('assigned', 'out', 'delivered')).last()
+        return Order.objects.filter(driver=self, status__in=('assigned', 'picked_up', 'delivering')).first()
+
+    @property
+    def active_orders(self):
+        from orders.models import Order
+        return Order.objects.filter(driver=self, status__in=('assigned', 'picked_up', 'delivering'))
 
     def __str__(self):
         return self.name

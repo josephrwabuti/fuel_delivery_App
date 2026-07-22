@@ -138,9 +138,9 @@
         <div class="dml-avatar">{{ driver.name|slice:":1" }}</div>
         <div class="dml-info">
           <span class="dml-name">{{ driver.name }}</span>
-          <span class="dml-status {{ driver.status_css }}">{{ driver.get_status_display }}</span>
+          <span class="dml-status {{ driver.status_css }}">{% if driver.active_order_count > 0 %}{{ driver.active_order_count }} order{{ driver.active_order_count|pluralize }}{% else %}Available{% endif %}</span>
         </div>
-        <div class="dml-order">{% if driver.current_order %}#{{ driver.current_order.display_id }}{% else %}—{% endif %}</div>
+        <div class="dml-order">{% if driver.current_order %}#{{ driver.current_order.display_id }}{% if driver.active_order_count > 1 %} +{{ driver.active_order_count|add:"-1" }}{% endif %}{% else %}—{% endif %}</div>
       </div>
       {% empty %}
       <div class="dml-item" style="justify-content:center;padding:20px;color:var(--text-s)">

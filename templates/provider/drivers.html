@@ -45,9 +45,10 @@
       <div class="dcf-stat-div"></div>
       <div class="dcf-stat"><div class="dcs-num">{{ driver.on_time_pct|default:"0" }}%</div><div class="dcs-label">On Time</div></div>
     </div>
-    {% if driver.current_order %}
+    {% if driver.active_order_count > 0 %}
     <div class="dcf-current-order">
-      <i class="fas fa-truck-fast text-orange"></i> Delivering <strong>#{{ driver.current_order.display_id }}</strong>
+      <i class="fas fa-truck-fast text-orange"></i> {{ driver.active_order_count }} Active Order{{ driver.active_order_count|pluralize }}
+      — <strong>#{{ driver.current_order.display_id }}</strong>{% if driver.active_order_count > 1 %} +{{ driver.active_order_count|add:"-1" }} more{% endif %}
     </div>
     {% endif %}
     <div class="dcf-actions">

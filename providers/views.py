@@ -59,7 +59,7 @@ def provider_home(request):
 
     today_orders = Order.objects.filter(station=station, created_at__date=today).count()
     active_orders = Order.objects.filter(
-        station=station, status__in=('assigned', 'out')
+        station=station, status__in=('assigned', 'picked_up', 'delivering')
     ).count()
 
     today_agg = Order.objects.filter(station=station, created_at__date=today).aggregate(
@@ -81,9 +81,14 @@ def provider_home(request):
 
     active_drivers = Driver.objects.filter(
         station=station, on_duty=True
-    ).select_related('user')[:10]
+    ).select_related('user').annotate(
+        active_order_count=Count('order', filter=Q(order__status__in=('assigned', 'picked_up', 'delivering'))),
+    )[:10]
     for d in active_drivers:
-        d.status_css = 'busy' if d.current_order else 'available'
+        if d.active_order_count > 0:
+            d.status_css = 'busy'
+        else:
+            d.status_css = 'available'
 
     start_of_week = today - timedelta(days=today.weekday())
     orders_by_day = []
@@ -137,9 +142,9 @@ def provider_orders(request):
 
     available_drivers = Driver.objects.filter(
         station=station, status='approved'
-    ).exclude(
-        order__status__in=('assigned', 'out')
-    )
+    ).annotate(
+        active_order_count=Count('order', filter=Q(order__status__in=('assigned', 'picked_up', 'delivering'))),
+    ).order_by('name')
 
     orders_json = []
     for o in orders:
@@ -175,11 +180,9 @@ def provider_order_detail(request, id):
     order = get_object_or_404(Order, id=id, station=station)
     available_drivers = Driver.objects.filter(
         station=station, status='approved'
-    ).exclude(
-        order__status__in=('assigned', 'out')
     ).annotate(
-        display_status=Value('available', output_field=CharField()),
-    )
+        active_order_count=Count('order', filter=Q(order__status__in=('assigned', 'picked_up', 'delivering'))),
+    ).order_by('name')
     context = {
         'order': order,
         'available_drivers': available_drivers,
@@ -305,10 +308,14 @@ def provider_restock(request):
 @role_required('provider')
 def provider_drivers(request):
     station = request.user.station
-    drivers = Driver.objects.filter(station=station).select_related('user').order_by('name')
+    drivers = Driver.objects.filter(station=station).select_related('user').annotate(
+        active_order_count=Count('order', filter=Q(order__status__in=('assigned', 'picked_up', 'delivering'))),
+    ).order_by('name')
     for d in drivers:
         if d.status == 'assigned':
             d.status_css = 'pending'
+        elif d.status == 'approved' and d.on_duty and d.active_order_count > 0:
+            d.status_css = 'busy'
         elif d.status == 'approved' and d.on_duty:
             d.status_css = 'available'
         elif d.status == 'approved' and not d.on_duty:
@@ -317,8 +324,6 @@ def provider_drivers(request):
             d.status_css = 'offline'
         else:
             d.status_css = 'offline'
-        if d.current_order and d.on_duty:
-            d.status_css = 'busy'
     context = {'drivers': drivers}
     context.update(get_context_base(request))
     return render(request, "provider/drivers.html", context)

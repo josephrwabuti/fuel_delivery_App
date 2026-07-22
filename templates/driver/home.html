@@ -44,11 +44,11 @@
   <div class="adb-left">
     <div class="adb-pulse"></div>
     <div>
-      <div class="adb-title">Active Delivery — Order #{{ active_order.display_id }}</div>
+      <div class="adb-title">{% if active_orders_count > 1 %}{{ active_orders_count }} Active Deliveries{% else %}Active Delivery{% endif %} — Order #{{ active_order.display_id }}</div>
       <div class="adb-sub">{{ active_order.fuel_type }} · {{ active_order.quantity }}L → {{ active_order.delivery_address|truncatechars:40 }}</div>
     </div>
   </div>
-  <a href="{% url 'driver_active' %}" class="btn-goto-active">
+  <a href="{% url 'driver_active' %}?order={{ active_order.id }}" class="btn-goto-active">
     <i class="fas fa-map-location-dot"></i> View Delivery
   </a>
 </div>

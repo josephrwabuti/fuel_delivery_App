@@ -102,7 +102,7 @@
         <div class="dsl-avatar">{{ driver.name|slice:":1" }}</div>
         <div class="dsl-info">
           <strong>{{ driver.name }}</strong>
-          <span><i class="fas fa-star text-orange"></i> {{ driver.rating|default:"—" }} · <span class="dml-status available">Available</span></span>
+          <span><i class="fas fa-star text-orange"></i> {{ driver.rating|default:"—" }} · {% if driver.active_order_count > 0 %}<span class="dml-status busy">{{ driver.active_order_count }} active order{{ driver.active_order_count|pluralize }}</span>{% else %}<span class="dml-status available">Available</span>{% endif %}</span>
         </div>
         <div class="dsl-check"><i class="fas fa-circle-check"></i></div>
       </div>
