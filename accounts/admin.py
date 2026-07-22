@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import CustomerProfile, Driver, Station, User
+from .models import CustomerProfile, Customer, Driver, Station, User
 
 
 @admin.register(User)
@@ -17,8 +17,28 @@ class UserAdmin(BaseUserAdmin):
         ('Extra', {'fields': ('role', 'phone')}),
     )
 
-# Customer Profile
-admin.site.register(CustomerProfile)
+
+@admin.register(Customer)
+class CustomerAdmin(admin.ModelAdmin):
+    list_display = ('email', 'first_name', 'last_name', 'get_phone', 'date_joined')
+    search_fields = ('email', 'first_name', 'last_name', 'phone')
+    list_filter = ('is_active', 'date_joined')
+    ordering = ('-date_joined',)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(role='customer')
+
+    def get_phone(self, obj):
+        return obj.phone or ''
+    get_phone.short_description = 'Phone'
+
+
+@admin.register(CustomerProfile)
+class CustomerProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'phone')
+    search_fields = ('user__email', 'user__first_name', 'user__last_name')
+    raw_id_fields = ('user',)
+
 
 # Driver
 admin.site.register(Driver)

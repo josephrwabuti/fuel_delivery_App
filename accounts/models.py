@@ -19,6 +19,13 @@ class CustomerProfile(models.Model):
     phone = models.CharField(max_length=20, blank=True)
 
 
+class Customer(User):
+    class Meta:
+        proxy = True
+        verbose_name = 'Customer'
+        verbose_name_plural = 'Customers'
+
+
 class Station(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),
