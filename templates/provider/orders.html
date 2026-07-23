@@ -54,7 +54,7 @@
       <span class="dt-total">TZS {{ order.total_amount|floatformat:0 }}</span>
       <span class="dt-addr" title="{{ order.delivery_address }}">{{ order.delivery_address|truncatechars:24 }}</span>
       <span><span class="pay-badge">{{ order.payment_method }}</span></span>
-      <span><div class="status-chip {{ order.status }}">{{ order.get_status_display }}</div></span>
+      <span><div class="status-chip {{ order.status }}">{% if order.status == 'assigned' %}Assigned{% else %}{{ order.get_status_display }}{% endif %}</div></span>
       <span class="dt-driver">{{ order.driver.name|default:"—" }}</span>
       <span class="dt-time">{{ order.created_at|timesince }} ago</span>
       <span class="dt-actions">
@@ -297,7 +297,7 @@ function confirmAssign() {
     if (row) {
       row.dataset.status = 'assigned';
       row.querySelector('.status-chip').className = 'status-chip assigned';
-      row.querySelector('.status-chip').textContent = 'Driver Assigned';
+      row.querySelector('.status-chip').textContent = 'Assigned';
       row.querySelector('.dt-actions').innerHTML =
         `<button class="btn-view-sm" onclick="openOrderDetail('${currentOrderId}')" title="View"><i class="fas fa-eye"></i></button>`;
     }
