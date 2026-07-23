@@ -29,7 +29,7 @@
       <span>{{ d.order.customer.get_full_name }}</span>
       <span>{{ d.order.fuel_type }} {{ d.order.quantity }}L</span>
       <span class="dt-addr">{{ d.order.delivery_address|truncatechars:26 }}</span>
-      <span><div class="status-chip {{ d.status }}">{{ d.get_status_display }}</div></span>
+      <span><div class="status-chip {{ d.status }}">{% if d.status == 'assigned' %}Assigned{% else %}{{ d.get_status_display }}{% endif %}</div></span>
       <span class="dt-time">{{ d.completed_at|date:"d M Y, H:i" }}</span>
       <span class="dt-earn fw-600 text-green">TZS {{ d.driver_earning }}</span>
       <span class="dt-rating"><i class="fas fa-star text-orange"></i> {{ d.rating|default:"—" }}</span>

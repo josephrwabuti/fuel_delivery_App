@@ -35,7 +35,7 @@
       <span>{{ order.fuel_type }}</span>
       <span>{{ order.quantity }}L</span>
       <span class="ht-price">TZS {{ order.total_price }}</span>
-      <span><div class="status-chip {{ order.status }}">{{ order.get_status_display }}</div></span>
+      <span><div class="status-chip {{ order.status }}">{% if order.status == 'assigned' %}Assigned{% else %}{{ order.get_status_display }}{% endif %}</div></span>
       <span class="ht-date">{{ order.created_at|date:"d M Y" }}</span>
       <span>
         <button class="ht-action-btn" onclick="openOrderDetail({{ order.id }})">
