@@ -315,6 +315,7 @@ a{text-decoration:none;color:inherit}
 .status-chip.pending{background:rgba(234,179,8,0.12);color:#eab308;border:1px solid rgba(234,179,8,0.25)}
 .status-chip.confirmed{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue-bdr)}
 .status-chip.delivering{background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange-bdr)}
+.status-chip.assigned{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue-bdr)}
 .status-chip.cancelled{background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
 
 /* ===== FILTER BAR ===== */

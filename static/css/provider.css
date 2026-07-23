@@ -194,6 +194,7 @@ a{text-decoration:none;color:inherit}
 .status-chip.confirmed{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue-bdr)}
 .status-chip.delivering{background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange-bdr)}
 .status-chip.delivered{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25)}
+.status-chip.assigned{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue-bdr)}
 .status-chip.rejected,.status-chip.cancelled{background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
 
 /* ===== FILTER BAR ===== */
