@@ -204,10 +204,12 @@
       {{ forloop.counter }}
     </div>
     <div style="flex:1;min-width:0">
-      <div style="font-weight:700;font-size:.85rem">#{{ o.display_id }}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div style="font-weight:700;font-size:.85rem">#{{ o.display_id }}</div>
+        <div class="status-chip {{ o.status }}" style="font-size:.65rem;padding:2px 8px">{% if o.status == 'assigned' %}Assigned{% else %}{{ o.get_status_display }}{% endif %}</div>
+      </div>
       <div style="font-size:.75rem;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ o.fuel_type }} · {{ o.quantity }}L — {{ o.delivery_address|truncatechars:24 }}</div>
     </div>
-    <div class="status-chip {{ o.status }}" style="font-size:.7rem;padding:3px 8px">{{ o.get_status_display }}</div>
   </a>
   {% endfor %}
 </div>

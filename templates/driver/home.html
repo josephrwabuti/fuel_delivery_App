@@ -149,7 +149,7 @@
         <span class="rdt-id">#{{ d.order.display_id }}</span>
         <span>{{ d.order.fuel_type }} {{ d.order.quantity }}L</span>
         <span class="rdt-addr">{{ d.order.delivery_address|truncatechars:28 }}</span>
-        <span><div class="status-chip {{ d.status }}">{{ d.get_status_display }}</div></span>
+        <span><div class="status-chip {{ d.status }}">{% if d.status == 'assigned' %}Assigned{% else %}{{ d.get_status_display }}{% endif %}</div></span>
         <span class="rdt-time">{{ d.completed_at|timesince }} ago</span>
         <span class="rdt-earn">TZS {{ d.driver_earning }}</span>
       </div>
